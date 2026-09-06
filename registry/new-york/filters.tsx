@@ -30,7 +30,7 @@ export function FilterChip({ className, ...props }: FilterChipProps) {
     <div
       data-slot="filter-chip"
       className={cn(
-        "inline-flex h-9 max-w-full items-center overflow-hidden rounded-md border bg-secondary/50 text-sm text-muted-foreground",
+        "inline-flex h-9 max-w-full items-center bg-secondary text-sm text-muted-foreground",
         className,
       )}
       {...props}

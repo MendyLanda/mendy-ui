@@ -1,6 +1,6 @@
 # Mendy UI
 
-Composable React components by Mendy Landa. Built on shadcn/ui, distributed as source, and MIT licensed.
+My personal collection of components I like to use. Built with React and shadcn/ui. MIT licensed.
 
 [Documentation and demos](https://ui.mendylanda.com) · [Filters](https://ui.mendylanda.com/docs/components/filters)
 
@@ -8,7 +8,7 @@ Composable React components by Mendy Landa. Built on shadcn/ui, distributed as s
 npx shadcn@latest add https://ui.mendylanda.com/r/filters.json
 ```
 
-Launch scope: editable filter chips, text drafts, single selection, searchable multiple selection, and custom editors. The consuming app owns filter values, query logic, and persistence. React 19, Tailwind CSS 4, and Radix-based shadcn are the initial compatibility targets.
+The first component is Filters. It includes text, single-select, multi-select, and custom editors. Your app stores the values and filters its data. The demos use React 19, Tailwind CSS 4, and Radix-based shadcn.
 
 ## Development
 

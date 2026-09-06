@@ -1,6 +1,6 @@
 ---
 title: Filters
-description: Editable filters that keep your interface consistent and your state under your control.
+description: Filter chips with text, single-select, and multi-select editors.
 ---
 
 <FiltersDemo />
@@ -25,9 +25,9 @@ The table above combines different filter fields with AND. Multiple assignees ma
 
 Use `FilterSelectEditor` for one option, `FilterMultiSelectEditor` for several options, and `FilterTextEditor` for text. Both selection editors support optional search. [See the examples](/docs/examples).
 
-## Compose your own
+## Custom editors
 
-Use `FilterChip`, `FilterEditor`, `FilterEditorTrigger`, `FilterEditorContent`, and `FilterRemove` when you need control over the layout. `FilterMenuItem` can host an editor inside an add-filter submenu, and `FilterCheckboxItem` keeps that menu open after selection.
+Use `FilterChip`, `FilterEditor`, `FilterEditorTrigger`, `FilterEditorContent`, and `FilterRemove` to build a custom layout. Use `FilterMenuItem` for an options submenu and `FilterCheckboxItem` to keep it open after selection. Wrap checkbox items in a labeled `role="menu"` container. Put form fields in `FilterEditorContent`, which uses `role="dialog"`.
 
 The core component does not depend on a table library, a router, or an API client. Connect `onValueChange`, `onValuesChange`, and `onApply` to your state or URL persistence layer.
 

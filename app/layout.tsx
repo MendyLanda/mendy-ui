@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SiteHeader, SiteFooter } from "@/components/site-shell";
 import { SITE } from "@/constants/site";
@@ -7,7 +9,7 @@ import "@/styles/globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
-  title: { default: "Mendy UI · Components, considered.", template: "%s · Mendy UI" },
+  title: { default: "Mendy UI", template: "%s · Mendy UI" },
   description: SITE.description,
   authors: [{ name: "Mendy Landa", url: "https://mendylanda.com" }],
   icons: { icon: "/favicon.svg" },
@@ -24,7 +26,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="bg-background text-foreground font-sans antialiased">
+      <body
+        className={`${GeistSans.variable} ${GeistMono.variable} bg-background text-foreground font-sans antialiased`}
+      >
         <ThemeProvider>
           <a
             href="#main-content"

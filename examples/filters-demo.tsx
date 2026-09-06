@@ -1,16 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import {
-  Circle,
-  CircleCheck,
-  Clock3,
-  ListFilter,
-  Plus,
-  Search,
-  SlidersHorizontal,
-  UserRound,
-} from "lucide-react";
+import { Circle, CircleCheck, Clock3, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -28,21 +19,21 @@ import {
 const issues = [
   {
     id: "UI-042",
-    title: "Make the small interactions feel right",
+    title: "Restore focus to the trigger after Escape",
     status: "in-progress",
     priority: "high",
     assignee: "Mendy",
   },
   {
     id: "UI-041",
-    title: "Design the empty state",
+    title: "Show an empty state when no rows match",
     status: "todo",
     priority: "medium",
     assignee: "Alex",
   },
   {
     id: "UI-040",
-    title: "Add keyboard navigation",
+    title: "Add keyboard navigation to the option list",
     status: "in-progress",
     priority: "high",
     assignee: "Sam",
@@ -56,28 +47,28 @@ const issues = [
   },
   {
     id: "UI-038",
-    title: "Polish the dark theme",
+    title: "Fix chip hover contrast in dark mode",
     status: "todo",
     priority: "low",
     assignee: "Jordan",
   },
   {
     id: "UI-037",
-    title: "Test the mobile layout",
+    title: "Wrap filter chips on narrow screens",
     status: "in-progress",
     priority: "high",
     assignee: "Alex",
   },
   {
     id: "UI-036",
-    title: "Review screen reader labels",
+    title: "Label edit and remove buttons for screen readers",
     status: "done",
     priority: "high",
     assignee: "Sam",
   },
   {
     id: "UI-035",
-    title: "Simplify the component API",
+    title: "Hold text drafts locally until Apply",
     status: "todo",
     priority: "medium",
     assignee: "Mendy",
@@ -143,23 +134,8 @@ export function FiltersDemo() {
   );
 
   return (
-    <section
-      className="overflow-hidden rounded-xl border bg-background shadow-sm"
-      aria-label="Interactive issue filters"
-    >
-      <div className="flex items-center justify-between gap-4 border-b px-5 py-4">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <ListFilter className="size-4 text-muted-foreground" />
-          All issues
-          <span className="ml-1 rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
-            {issues.length}
-          </span>
-        </div>
-        <span className="hidden font-mono text-[10px] uppercase tracking-widest text-muted-foreground sm:inline">
-          Interactive preview
-        </span>
-      </div>
-      <div className="flex min-h-20 flex-wrap items-center gap-2 border-b bg-muted/15 p-4 sm:px-5">
+    <section className="rounded-md border" aria-label="Interactive issue filters">
+      <div className="flex flex-wrap items-center gap-2 border-b p-3">
         {active.includes("status") && (
           <AppliedFilter
             label="Status"
@@ -173,11 +149,8 @@ export function FiltersDemo() {
               />
             }
           >
-            <StatusIcon status={status} />
-            <span>Status</span>
-            <span className="text-foreground">
-              {statuses.find((item) => item.value === status)?.label ?? "Any"}
-            </span>
+            <span>Status:</span>
+            <span>{statuses.find((item) => item.value === status)?.label ?? "Any"}</span>
           </AppliedFilter>
         )}
         {active.includes("priority") && (
@@ -193,11 +166,8 @@ export function FiltersDemo() {
               />
             }
           >
-            <SlidersHorizontal className="size-3.5" />
-            <span>Priority</span>
-            <span className="text-foreground">
-              {priorities.find((item) => item.value === priority)?.label ?? "Any"}
-            </span>
+            <span>Priority:</span>
+            <span>{priorities.find((item) => item.value === priority)?.label ?? "Any"}</span>
           </AppliedFilter>
         )}
         {active.includes("assignee") && (
@@ -214,9 +184,8 @@ export function FiltersDemo() {
               />
             }
           >
-            <UserRound className="size-3.5" />
-            <span>Assignee</span>
-            <span className="max-w-40 truncate text-foreground">
+            <span>Assignee:</span>
+            <span className="max-w-40 truncate">
               {assignees.length ? assignees.join(", ") : "Anyone"}
             </span>
           </AppliedFilter>
@@ -238,9 +207,8 @@ export function FiltersDemo() {
               />
             }
           >
-            <Search className="size-3.5" />
-            <span>Title</span>
-            <span className="max-w-32 truncate text-foreground">{title || "Any"}</span>
+            <span>Title:</span>
+            <span className="max-w-32 truncate">{title || "Any"}</span>
           </AppliedFilter>
         )}
         {remaining.length > 0 && (
@@ -272,7 +240,7 @@ export function FiltersDemo() {
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto text-xs text-muted-foreground"
+            className="h-9 rounded-none px-2 font-normal text-muted-foreground underline hover:bg-transparent"
             onClick={() => {
               setActive([]);
               setStatus("");
@@ -297,66 +265,47 @@ export function FiltersDemo() {
           <caption className="sr-only">Issues matching the selected filters</caption>
           <thead className="text-xs text-muted-foreground">
             <tr className="border-b">
-              <th scope="col" className="px-5 py-3 font-normal">
+              <th scope="col" className="px-3 py-2 font-normal">
                 Issue
               </th>
-              <th scope="col" className="px-3 py-3 font-normal">
+              <th scope="col" className="px-3 py-2 font-normal">
                 Status
               </th>
-              <th scope="col" className="px-3 py-3 font-normal">
+              <th scope="col" className="px-3 py-2 font-normal">
                 Priority
               </th>
-              <th scope="col" className="px-5 py-3 font-normal">
+              <th scope="col" className="px-3 py-2 font-normal">
                 Assignee
               </th>
             </tr>
           </thead>
           <tbody>
             {visible.map((issue) => (
-              <tr key={issue.id} className="border-b last:border-b-0 hover:bg-muted/25">
-                <td className="px-5 py-3.5">
-                  <span className="mr-3 font-mono text-[11px] text-muted-foreground">
-                    {issue.id}
-                  </span>
-                  <span className="font-medium">{issue.title}</span>
+              <tr key={issue.id} className="border-b last:border-b-0 hover:bg-muted">
+                <td className="px-3 py-2">
+                  <span className="mr-3 font-mono text-xs text-muted-foreground">{issue.id}</span>
+                  {issue.title}
                 </td>
-                <td className="px-3 py-3.5">
-                  <span className="flex items-center gap-1.5 whitespace-nowrap text-xs">
+                <td className="px-3 py-2">
+                  <span className="flex items-center gap-1.5 whitespace-nowrap">
                     <StatusIcon status={issue.status} />
                     {statuses.find((item) => item.value === issue.status)?.label}
                   </span>
                 </td>
-                <td className="px-3 py-3.5">
-                  <span className="rounded border px-1.5 py-0.5 text-xs capitalize text-muted-foreground">
-                    {issue.priority}
-                  </span>
-                </td>
-                <td className="px-5 py-3.5">
-                  <span className="flex items-center gap-2 text-xs">
-                    <span
-                      aria-hidden="true"
-                      className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px]"
-                    >
-                      {issue.assignee[0]}
-                    </span>
-                    {issue.assignee}
-                  </span>
-                </td>
+                <td className="px-3 py-2 capitalize text-muted-foreground">{issue.priority}</td>
+                <td className="px-3 py-2">{issue.assignee}</td>
               </tr>
             ))}
           </tbody>
         </table>
         {visible.length === 0 && (
-          <div className="space-y-2 p-10 text-center">
-            <p className="text-sm font-medium">No matching issues</p>
-            <p className="text-xs text-muted-foreground">Try changing or removing a filter.</p>
+          <div className="space-y-1 p-8 text-center">
+            <p className="text-sm">No matching issues</p>
+            <p className="text-xs text-muted-foreground">Change or remove a filter.</p>
           </div>
         )}
       </div>
-      <div
-        role="status"
-        className="border-t bg-muted/10 px-5 py-3 font-mono text-[11px] text-muted-foreground"
-      >
+      <div role="status" className="border-t px-3 py-2 text-xs text-muted-foreground">
         {visible.length} of {issues.length} issues
       </div>
     </section>

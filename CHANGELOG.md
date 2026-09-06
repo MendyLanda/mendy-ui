@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Restore the flat filter chips and compact styling used in SimCall.
+- Use Geist and the original theme colors in the demos.
+- Simplify the site and describe it as a personal component collection.
+
 ## 0.1.0
 
 - Initial public filters registry and interactive documentation.

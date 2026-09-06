@@ -25,10 +25,7 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
     <div className="grid min-w-0 gap-12 xl:grid-cols-[minmax(0,1fr)_150px]">
       <article className="min-w-0 pb-12">
         <header className="mb-8">
-          <p className="mb-4 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            Mendy UI / {page.slugs[0] === "components" ? "Components" : "Documentation"}
-          </p>
-          <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">{page.data.title}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{page.data.title}</h1>
           <p className="mt-4 text-base leading-7 text-muted-foreground">{page.data.description}</p>
         </header>
         <Content components={mdxComponents} />

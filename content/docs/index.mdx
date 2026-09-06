@@ -1,11 +1,11 @@
 ---
 title: Introduction
-description: Small, composable components for your next interface.
+description: My personal collection of components I like to use.
 ---
 
-Mendy UI is an open source collection of React components by Mendy Landa. Install the source into your app with the shadcn CLI, then adapt it to your design.
+I'm Mendy Landa. I put these components here so I can reuse them across projects. You can install them with the shadcn CLI too.
 
-The first component is **Filters**: editable filter chips, reusable editors, and independent remove controls.
+There's one component so far, Filters. It has editable filter chips with text, single-select, and multi-select editors.
 
 ## Start with filters
 
@@ -13,9 +13,9 @@ The first component is **Filters**: editable filter chips, reusable editors, and
 
 [Try the interactive demo](/docs/components/filters), follow the [installation guide](/docs/installation), or browse the [examples](/docs/examples).
 
-## Composition and ownership
+## State
 
-The component handles editing interactions. Your app owns filter values, data fetching, URL persistence, and query semantics. Use it with a table, a list, a search page, or another interface.
+Filters handles opening, editing, and removing chips. Your app stores the values and decides how to filter its data.
 
 Changes to this registry do not automatically update source already installed in your app. Review the [changelog](https://github.com/MendyLanda/mendy-ui/blob/main/CHANGELOG.md) and compare local changes before reinstalling.
 
@@ -23,7 +23,7 @@ Changes to this registry do not automatically update source already installed in
 
 - React 19 and TypeScript.
 - Tailwind CSS 4 with shadcn semantic color variables.
-- Radix-based shadcn primitives.
+- Radix-based shadcn components.
 - Next.js and Vite React applications.
 
 Base UI and older React or Tailwind versions are not part of the initial compatibility target.

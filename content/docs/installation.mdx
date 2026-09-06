@@ -1,0 +1,78 @@
+---
+title: Installation
+description: Add the source to an existing shadcn application.
+---
+
+## Prepare your app
+
+Use a React 19 application with Tailwind CSS 4 and a Radix-based shadcn setup. Follow the official [shadcn installation instructions](https://ui.shadcn.com/docs/installation) if you do not yet have a `components.json` file.
+
+## Install filters
+
+Run this command from your application's root:
+
+<InstallCommand />
+
+The CLI installs the filter source files, Lucide icons, and the standard Button, Dropdown Menu, Input, and Textarea dependencies. Import paths follow your `components.json` aliases.
+
+Review any prompts about existing UI files. You should not need to overwrite customized primitives if they keep the standard Radix-based shadcn APIs.
+
+## Use a filter
+
+```tsx
+"use client";
+
+import { useState } from "react";
+import { AppliedFilter } from "@/components/ui/filters";
+import { FilterSelectEditor } from "@/components/ui/filter-select-editor";
+
+export function StatusFilter() {
+  const [status, setStatus] = useState("open");
+  return (
+    <AppliedFilter
+      label="Status"
+      onRemove={() => setStatus("")}
+      editor={
+        <FilterSelectEditor
+          label="Status"
+          value={status}
+          onValueChange={setStatus}
+          options={[
+            { value: "", label: "Any" },
+            { value: "open", label: "Open" },
+            { value: "closed", label: "Closed" },
+          ]}
+        />
+      }
+    >
+      Status: {status || "Any"}
+    </AppliedFilter>
+  );
+}
+```
+
+`onRemove` reports the user's intent. The example clears the value; conditionally render the component if you want removal to hide the chip too.
+
+## Install the complete demo
+
+<InstallCommand item="filters-demo" />
+
+Import `FiltersDemo` from the generated component file. It includes a small local dataset and demonstrates adding, editing, removing, and combining filters. The dataset and matching logic are example application code.
+
+## Optional namespace
+
+Add this entry to the `registries` object in your `components.json`:
+
+```json
+{
+  "registries": {
+    "@mendy-ui": "https://ui.mendylanda.com/r/{name}.json"
+  }
+}
+```
+
+You can then run `npx shadcn@latest add @mendy-ui/filters`. This is a locally configured namespace; it does not require an entry in the official shadcn directory.
+
+## Updates
+
+The installed files belong to your app. Reinstalling is an explicit source update: commit your local work first and review the resulting diff. The registry does not provide automatic npm-style upgrades.

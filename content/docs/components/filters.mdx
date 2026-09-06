@@ -1,0 +1,48 @@
+---
+title: Filters
+description: Editable filters that keep your interface consistent and your state under your control.
+---
+
+<FiltersDemo />
+
+## Installation
+
+<InstallCommand />
+
+## How it works
+
+`AppliedFilter` combines a chip, an edit trigger, an editor, and an optional remove button. Pass the current summary as children. Pass an editor as `editor`, and handle changes in your application state.
+
+- Editing and removal are separate buttons with separate accessible labels.
+- Single selection applies immediately and closes the editor.
+- Multiple selection applies immediately and keeps the editor open.
+- Text stays in a local draft until Apply. Close without applying to discard it.
+- A required filter can omit `onRemove` and remain editable.
+
+The table above combines different filter fields with AND. Multiple assignees match with OR. Those choices belong to this demo's matching function; the components do not prescribe them.
+
+## Built-in editors
+
+Use `FilterSelectEditor` for one option, `FilterMultiSelectEditor` for several options, and `FilterTextEditor` for text. Both selection editors support optional search. [See the examples](/docs/examples).
+
+## Compose your own
+
+Use `FilterChip`, `FilterEditor`, `FilterEditorTrigger`, `FilterEditorContent`, and `FilterRemove` when you need control over the layout. `FilterMenuItem` can host an editor inside an add-filter submenu, and `FilterCheckboxItem` keeps that menu open after selection.
+
+The core component does not depend on a table library, a router, or an API client. Connect `onValueChange`, `onValuesChange`, and `onApply` to your state or URL persistence layer.
+
+## Keyboard and focus
+
+- Tab to the edit or remove button.
+- Enter or Space opens the editor. Arrow keys navigate menu options.
+- In searchable editors, type in the search field; Arrow Down moves to the first available option.
+- Escape dismisses the editor and restores focus to its trigger.
+- Text inputs keep typing and cursor keys inside the field instead of triggering menu typeahead.
+
+If removing a chip also removes the focused element, your application should move focus to a sensible neighbor or the add-filter button. Custom editors must supply their own labels and keyboard behavior.
+
+## Source
+
+<ComponentSource name="filters" />
+
+See the [API reference](/docs/api) for props and customization points.

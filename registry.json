@@ -1,0 +1,47 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "mendy-ui",
+  "homepage": "https://ui.mendylanda.com",
+  "items": [
+    {
+      "name": "filters",
+      "type": "registry:ui",
+      "title": "Filters",
+      "description": "Composable applied filters with text, single-select, and searchable multiselect editors.",
+      "author": "Mendy Landa",
+      "dependencies": ["lucide-react", "class-variance-authority"],
+      "registryDependencies": ["button", "dropdown-menu", "input", "textarea"],
+      "files": [
+        {
+          "path": "registry/new-york/filters.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "registry/new-york/filter-text-editor.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "registry/new-york/filter-select-editor.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "registry/new-york/filter-utils.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "filters-demo",
+      "type": "registry:block",
+      "title": "Filters demo",
+      "description": "Interactive issue table with adding, editing, removing, and combining filters.",
+      "registryDependencies": ["https://ui.mendylanda.com/r/filters.json"],
+      "files": [
+        {
+          "path": "examples/filters-demo.tsx",
+          "type": "registry:component"
+        }
+      ]
+    }
+  ]
+}

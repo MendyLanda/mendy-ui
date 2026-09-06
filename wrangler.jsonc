@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mendy-ui",
+  "compatibility_date": "2026-09-06",
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "404-page",
+  },
+  "routes": [{ "pattern": "ui.mendylanda.com", "custom_domain": true }],
+  "workers_dev": true,
+}

@@ -1,0 +1,71 @@
+---
+title: API reference
+description: Component props, state ownership, and interaction contracts.
+---
+
+## AppliedFilter
+
+Import from `@/components/ui/filters`.
+
+| Prop           | Type                       | Behavior                                                                    |
+| -------------- | -------------------------- | --------------------------------------------------------------------------- |
+| `label`        | `string`                   | Required field name used to build default accessible labels.                |
+| `children`     | `ReactNode`                | The visible summary.                                                        |
+| `editor`       | `ReactNode`                | Enables editing. Omit for a static summary.                                 |
+| `onRemove`     | `() => void`               | Enables a separate remove button. Your app clears values or hides the chip. |
+| `disabled`     | `boolean`                  | Disables edit and remove controls.                                          |
+| `open`         | `boolean`                  | Optional controlled editor state.                                           |
+| `onOpenChange` | `(open: boolean) => void`  | Reports opening and dismissal.                                              |
+| `editLabel`    | `string`                   | Overrides the default edit accessible label.                                |
+| `removeLabel`  | `string`                   | Overrides the default remove accessible label.                              |
+| `contentProps` | `FilterEditorContentProps` | Controls alignment, focus callbacks, classes, and content label.            |
+| `className`    | `string`                   | Styles the chip. Other div props are forwarded to it.                       |
+
+Use the low-level composition if you need custom trigger or remove-button markup. Clicks on the convenience component's edit, remove, and editor content are stopped from bubbling into clickable parent containers.
+
+## FilterTextEditor
+
+Import from `@/components/ui/filter-text-editor`.
+
+| Prop           | Type                                     | Behavior                                                         |
+| -------------- | ---------------------------------------- | ---------------------------------------------------------------- |
+| `label`        | `string`                                 | Required visible textarea label.                                 |
+| `defaultValue` | `string`                                 | Initial draft when mounted.                                      |
+| `onApply`      | `(value: string) => void`                | Receives the raw draft. Does not close the editor automatically. |
+| `validate`     | `(value: string) => string \| undefined` | Return an error message to disable Apply.                        |
+| `applyLabel`   | `string`                                 | Button text; defaults to `Apply`.                                |
+| `placeholder`  | `string`                                 | Optional textarea placeholder.                                   |
+
+Close through the parent's `onApply` callback when desired. Changing `defaultValue` while the editor is mounted does not overwrite an in-progress draft. Avoid `forceMount` on content if you want dismissal to discard drafts automatically.
+
+## Selection editors
+
+Import `FilterSelectEditor` and `FilterMultiSelectEditor` from `@/components/ui/filter-select-editor`.
+
+Both accept `label`, `options`, `searchable`, `searchPlaceholder`, and `emptyMessage`. An option has a unique string `value`, a string `label`, and an optional `disabled` flag. Search matches label substrings without case sensitivity. Pass your own strings for localization.
+
+`FilterSelectEditor` takes `value` and `onValueChange`. `FilterMultiSelectEditor` takes `values` and `onValuesChange`. Selection changes are immediate; single selection closes the menu, while multiple selection keeps it open. Unknown selected values are retained when toggling another option.
+
+## Composition components
+
+| Component             | Underlying API                                                                   |
+| --------------------- | -------------------------------------------------------------------------------- |
+| `FilterEditor`        | Radix Dropdown Menu root props, with `modal={false}` by default.                 |
+| `FilterChip`          | Div props.                                                                       |
+| `FilterEditorTrigger` | shadcn DropdownMenuTrigger props, including `asChild`.                           |
+| `FilterEditorContent` | shadcn DropdownMenuContent props; a nonmodal dialog aligned to start by default. |
+| `FilterRemove`        | Button props plus a required `aria-label`.                                       |
+| `FilterMenuItem`      | DropdownMenuSub props plus `label` and optional `icon`.                          |
+| `FilterCheckboxItem`  | DropdownMenuCheckboxItem props; prevents dismissal after selection.              |
+
+## Parsing lists
+
+`parseFilterValues` from `@/components/ui/filter-utils` splits a string on commas, newlines, and tabs, trims each part, drops empty entries, and removes exact duplicates. It preserves order and case. It is not a CSV parser and does not perform domain-specific validation.
+
+The editor popup uses dialog semantics so it can contain form fields. Built-in selection editors place their choices in a labeled menu inside it. When composing `FilterCheckboxItem` directly, wrap the options in a labeled `role="menu"` element. `FilterMenuItem` creates a submenu for menu items; use the top-level editor for arbitrary form fields.
+
+## Styling and localization
+
+Components use the consumer's shadcn semantic tokens. There is no Mendy UI stylesheet to install. Supply classes on the composition components to adjust layout and sizing.
+
+Override `editLabel`, `removeLabel`, and `contentProps["aria-label"]` on `AppliedFilter`, plus editor labels, placeholders, empty messages, and `applyLabel`, to translate the interface.

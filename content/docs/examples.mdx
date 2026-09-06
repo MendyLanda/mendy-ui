@@ -1,0 +1,52 @@
+---
+title: Examples
+description: Text drafts, selections, and a custom editor you can adapt.
+---
+
+## Text with Apply
+
+<TextFilterDemo />
+
+The parent owns the applied tags and editor open state. Apply parses the draft, stores it, and closes the editor. Escape or outside dismissal unmounts the draft without committing it. Validation keeps an empty list from being applied.
+
+<ComponentSource name="text-filter-demo" />
+
+## Single and multiple selection
+
+Use the Status filter for a single choice. The Assignee filter supports search and several selections. Each selection immediately changes the matching rows.
+
+<FiltersDemo />
+
+<ComponentSource name="filters-demo" />
+
+## Custom, required filter
+
+<CustomFilterDemo />
+
+This editor uses a native checkbox. It updates immediately, and it has no remove action. Passing `editor` enables editing independently of `onRemove`.
+
+When placing form fields in a dropdown, stop typing and cursor keys from reaching menu typeahead. Leave Escape and Tab available to the menu's dismissal and focus handling.
+
+<ComponentSource name="custom-filter-demo" />
+
+## Low-level composition
+
+```tsx
+import {
+  FilterChip,
+  FilterEditor,
+  FilterEditorContent,
+  FilterEditorTrigger,
+  FilterRemove,
+} from "@/components/ui/filters";
+
+<FilterEditor open={open} onOpenChange={setOpen}>
+  <FilterChip>
+    <FilterEditorTrigger aria-label="Edit status filter">Status: {status}</FilterEditorTrigger>
+    <FilterRemove aria-label="Remove status filter" onClick={clearStatus} />
+  </FilterChip>
+  <FilterEditorContent aria-label="Status filter">{editor}</FilterEditorContent>
+</FilterEditor>;
+```
+
+Here `open`, `setOpen`, `status`, `clearStatus`, and `editor` come from your application. Use the complete examples above for a runnable starting point.

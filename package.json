@@ -1,0 +1,62 @@
+{
+  "name": "mendy-ui",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "pnpm registry:build && next build",
+    "preview": "wrangler dev",
+    "typecheck": "tsc --noEmit",
+    "registry:build": "shadcn build registry.json --output ./public/r",
+    "postinstall": "fumadocs-mdx",
+    "lint": "oxlint",
+    "format": "oxfmt --check .",
+    "format:fix": "oxfmt .",
+    "test": "playwright test",
+    "deploy": "pnpm build && wrangler deploy",
+    "verify:consumers": "node scripts/verify-consumers.mjs"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "fumadocs-core": "^16.8.4",
+    "fumadocs-mdx": "^14.3.1",
+    "lru-cache": "^11.3.5",
+    "lucide-react": "^1.11.0",
+    "next": "^16.3.4",
+    "next-themes": "0.4.6",
+    "radix-ui": "^1.4.3",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "rehype-pretty-code": "^0.14.3",
+    "shiki": "^4.0.2",
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "@playwright/test": "^1.58.2",
+    "@tailwindcss/postcss": "^4.2.4",
+    "@types/mdx": "^2.0.13",
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "oxfmt": "^0.46.0",
+    "oxlint": "^1.61.0",
+    "shadcn": "4.21.0",
+    "tailwindcss": "^4.2.4",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "^6.0.3",
+    "vite": "^7.3.6",
+    "wrangler": "^4.0.0"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
+  }
+}

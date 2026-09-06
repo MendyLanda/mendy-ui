@@ -628,6 +628,7 @@ function FieldEditor({
         value={value}
         input={input}
         options={options}
+        error={error}
         disabled={disabled}
         apply={apply}
         location={location}
@@ -662,8 +663,10 @@ function ChoiceEditor({
   disabled,
   apply,
   location,
+  error,
 }: CommitEditorProps & {
   value: unknown;
+  error?: string;
   options: ReturnType<typeof useFilterOptions>;
   location: "menu" | "chip";
 }) {
@@ -715,7 +718,11 @@ function ChoiceEditor({
             onValueChange={(next) => apply(next || field.clearValue)}
           >
             {location === "chip" && field.removable !== false && (
-              <DropdownMenuRadioItem value="" disabled={disabled}>
+              <DropdownMenuRadioItem
+                value=""
+                disabled={disabled}
+                onSelect={(event) => event.preventDefault()}
+              >
                 Any {field.label.toLowerCase()}
               </DropdownMenuRadioItem>
             )}
@@ -723,6 +730,7 @@ function ChoiceEditor({
               <DropdownMenuRadioItem
                 key={choice.value}
                 value={choice.value}
+                onSelect={(event) => event.preventDefault()}
                 disabled={disabled || choice.disabled}
               >
                 {choice.label}
@@ -747,6 +755,24 @@ function ChoiceEditor({
           ))
         )}
       </div>
+      <OptionFeedback options={options} error={error} />
+    </div>
+  );
+}
+function OptionFeedback({
+  options,
+  error,
+}: {
+  options: ReturnType<typeof useFilterOptions>;
+  error?: string;
+}) {
+  return (
+    <>
+      {error && (
+        <p role="alert" className="px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
       {options.loading && (
         <p role="status" className="px-3 py-2 text-sm text-muted-foreground">
           Loading options…
@@ -777,7 +803,7 @@ function ChoiceEditor({
           Load more
         </Button>
       )}
-    </div>
+    </>
   );
 }
 function ValueEditor({

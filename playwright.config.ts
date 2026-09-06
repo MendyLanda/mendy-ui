@@ -13,7 +13,7 @@ export default defineConfig({
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
   webServer: {
-    command: "npx wrangler dev --local --ip 127.0.0.1 --port 8787",
+    command: "node scripts/serve-test-build.mjs",
     url: "http://127.0.0.1:8787",
     reuseExistingServer: !process.env.CI,
     timeout: 60000,

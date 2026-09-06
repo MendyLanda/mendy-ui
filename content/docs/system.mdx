@@ -28,7 +28,7 @@ Shared settings include `label`, `defaultValue`, `clearValue`, `isActive`, `norm
 
 `suggestion: { value, label?, loading?, disabled? }` creates an unapplied shortcut. A valid preset applies on click and keeps the editor open. A suggestion without a value opens the editor without applying anything.
 
-`FilterBar` shows suggestions when no visible applied filters remain. Set `suggestions="always"` to keep unapplied suggestions visible alongside applied chips, or `suggestions="never"` to hide them.
+`FilterBar` keeps unapplied suggestions visible alongside applied chips by default. Applying one turns it into an applied chip in the same position; other suggestions stay available. Removing it restores the dashed suggestion. Set `suggestions="when-empty"` for empty-state shortcuts only, or `suggestions="never"` to hide them.
 
 Set a global `summary` on the bar and override it on individual definitions:
 
@@ -129,9 +129,15 @@ const filters = useControlledFilters({
 
 An existing state's field type must match its definition. Use `filter.options` for general string IDs, and literal option types for existing enums. Optional state fields read as the definition's default when undefined.
 
+## Menu behavior
+
+The filter menu stays open after applying any filter by default, including single selections, text, ranges, and custom editors. Continue with another filter, or dismiss with Escape, an outside click, or the filter button.
+
+Set `<FilterBar closeMenuOnApply />` to close it after each successful change. A definition can override the bar with `closeMenuOnApply: true` or `false`. Invalid values keep the editor open. This setting controls the add-filter menu; editing an existing chip keeps its existing completion behavior. A custom editor can still call `close()` explicitly.
+
 ## Custom editors and layout
 
-`renderEditor` receives typed `value`, `setValue`, `draft`, `setDraft`, `apply`, and `close`. `setValue` applies immediately and updates the draft; clearing the value closes its editor. Otherwise it stays open. `setDraft` changes only the local draft; `apply()` commits the draft and closes. Closing an editor discards an unfinished draft.
+`renderEditor` receives typed `value`, `setValue`, `draft`, `setDraft`, `apply`, and `close`. `setValue` applies immediately and updates the draft. In the filter menu, it follows `closeMenuOnApply`; in a chip, it stays open unless the value is cleared. `setDraft` changes only the local draft. `apply()` commits the draft and follows the menu's `closeMenuOnApply` setting; inside a chip it closes. Closing an editor discards an unfinished draft.
 
 Group related fields under one menu with `groups={[{ id: "status-menu", label: "Status", fields: ["status", "pendingPort", "pendingSwap"] }]}`. Grouping does not change state ownership or chip removal.
 

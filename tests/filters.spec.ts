@@ -10,6 +10,7 @@ async function openFilter(page: Page, name: string) {
 async function addStatus(page: Page, value = "Todo") {
   await openFilter(page, "Status");
   await page.getByRole("menuitemradio", { name: value, exact: true }).click();
+  await page.keyboard.press("Escape");
 }
 
 async function addAssignee(page: Page, value = "Mendy") {
@@ -42,6 +43,8 @@ test("menu items reveal options before applying, then the chip edits the value",
   const trigger = page.getByRole("button", { name: "Edit Status filter", includeHidden: true });
   await expect(trigger).toContainText("Todo");
   await expect(count(page, 3)).toBeVisible();
+  await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
   await trigger.focus();
   await page.keyboard.press("Enter");
   await page.getByRole("menuitemradio", { name: "In progress", exact: true }).click();
@@ -104,6 +107,8 @@ test("text is entered and applied in the submenu without creating an empty chip"
     page.getByRole("button", { name: "Edit Title filter", includeHidden: true }),
   ).toContainText("keyboard");
   await expect(count(page, 1)).toBeVisible();
+  await expect(input).toBeVisible();
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Edit Title filter", includeHidden: true }).click();
   await expect(input).toHaveValue("keyboard");
 });
@@ -239,6 +244,7 @@ test("toolbar search combines with filters and clears without resetting selectio
     page.getByRole("button", { name: "Edit Priority filter", includeHidden: true }),
   ).toHaveCount(0);
   await page.getByRole("menuitemradio", { name: "Medium", exact: true }).click();
+  await page.keyboard.press("Escape");
   await expect(search).toHaveValue("UI-039");
   await expect(count(page, 1)).toBeVisible();
   await page.getByRole("button", { name: "Clear all" }).click();
@@ -273,6 +279,7 @@ test("arrow keys explore submenus without applying and clearing a chip returns f
   await page.keyboard.press("ArrowRight");
   await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeFocused();
   await page.keyboard.press("Enter");
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Edit Status filter" }).click();
   await page.getByRole("menuitemradio", { name: "Any status", exact: true }).click();
   await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
@@ -286,6 +293,8 @@ test("touch selection opens options before adding a chip", async ({ page, isMobi
   await page.getByRole("menuitem", { name: "Status", exact: true }).tap();
   await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
   await page.getByRole("menuitemradio", { name: "Todo", exact: true }).tap();
+  await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeChecked();
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Edit Status filter" })).toContainText("Todo");
 });
 

@@ -152,6 +152,8 @@ test("composite dates update both state keys and sourcing drafts remain independ
     activeStart: null,
     activeEnd: null,
   });
+  await expect(page.getByLabel("Start date", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
   await lines.getByRole("button", { name: "Remove Activation date filter" }).click();
   await expect
     .poll(() => values(page, "Lines filters values"))
@@ -170,6 +172,7 @@ test("grouped tags enforce mutually exclusive values and custom companies retain
   await expect
     .poll(() => values(page, "Lines filters values"))
     .toMatchObject({ tagId: null, hasTag: "without" });
+  await page.keyboard.press("Escape");
   await lines.getByRole("button", { name: "Open filters" }).click();
   await page.getByRole("menuitem", { name: "Companies", exact: true }).click();
   await page.getByRole("checkbox", { name: "Company One" }).check();
@@ -203,6 +206,8 @@ test("empty number ranges disappear and invalid ranges explain the error", async
   await expect(page.getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
   await page.getByLabel("Maximum", { exact: true }).fill("");
   await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.getByLabel("Minimum", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(lines.getByRole("button", { name: "Edit Member count filter" })).toContainText(
     "5 – Any",
   );
@@ -223,6 +228,7 @@ test("custom editor Apply keeps its latest immediate changes", async ({ page }) 
   await page.getByRole("checkbox", { name: "Company One" }).check();
   await page.getByRole("checkbox", { name: "Company Two" }).check();
   await page.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(page.getByRole("checkbox", { name: "Company Two" })).toBeVisible();
   await expect
     .poll(async () => (await values(page, "Lines filters values")).vendorCompanyId)
     .toEqual(["one", "two"]);
@@ -339,4 +345,59 @@ test("chip summaries truncate without losing selected values or accessible descr
   await expect(chip.locator("span.truncate")).toHaveCSS("text-overflow", "ellipsis");
   await expect(chip).toHaveAccessibleDescription(imei.join(", "));
   await expect.poll(async () => (await values(page)).owner).toEqual(owners);
+});
+
+test("single and text filters can be applied without reopening the filter menu", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await open(page, "Status");
+  const todo = page.getByRole("menuitemradio", { name: "Todo", exact: true });
+  await todo.click();
+  await expect(todo).toBeChecked();
+  await todo.press("ArrowLeft");
+  await page.getByRole("menuitem", { name: "Title", exact: true }).click();
+  await page.getByRole("textbox", { name: "Title contains" }).fill("keyboard");
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Title contains" })).toBeVisible();
+  await expect.poll(() => new URL(page.url()).searchParams.get("title")).toBe("keyboard");
+  expect(new URL(page.url()).searchParams.get("status")).toBe("todo");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Open filters" })).toBeFocused();
+});
+
+test("closing after applying is configurable for tokens and multiselects", async ({ page }) => {
+  await page.goto("/docs/advanced");
+  await page.getByRole("checkbox", { name: "Close menu after applying" }).check();
+  await open(page, "IMEI");
+  await page.getByRole("textbox", { name: "IMEI", exact: true }).fill("123456789012345");
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "IMEI", exact: true })).toHaveCount(0);
+  await open(page, "Owner");
+  await page.getByRole("menuitemcheckbox", { name: "Alex Rivera", exact: true }).click();
+  await expect(page.getByRole("searchbox", { name: "Search owner" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Edit Owner filter" })).toContainText(
+    "Alex Rivera",
+  );
+});
+
+test("suggestions keep their positions when applied and return when removed", async ({ page }) => {
+  await page.goto("/");
+  const status = page.getByRole("button", { name: "Apply Status filter" });
+  const assignee = page.getByRole("button", { name: "Apply Assignee filter" });
+  const before = await assignee.boundingBox();
+  await status.click();
+  await expect(
+    page.getByRole("button", { name: "Apply Assignee filter", includeHidden: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  expect((await assignee.boundingBox())?.y).toBe(before?.y);
+  await assignee.click();
+  await expect(page.getByRole("menuitemcheckbox", { name: "Mendy", exact: true })).toBeChecked();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Remove Status filter" }).click();
+  await expect(status).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit Assignee filter" })).toContainText("Mendy");
+  await page.getByRole("button", { name: "Clear all" }).click();
+  await expect(page.locator('[data-slot="filter-suggestion"]')).toHaveCount(2);
 });

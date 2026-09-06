@@ -81,6 +81,7 @@ export interface FieldConfig<V> {
   hidden?: boolean;
   disabled?: boolean;
   removable?: boolean;
+  closeMenuOnApply?: boolean;
   editorLabel?: string;
   searchLabel?: string;
   placeholder?: string;
@@ -129,6 +130,7 @@ export interface RuntimeField {
   hidden?: boolean;
   disabled?: boolean;
   removable?: boolean;
+  closeMenuOnApply?: boolean;
   editorLabel?: string;
   searchLabel?: string;
   placeholder?: string;

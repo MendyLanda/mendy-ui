@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { NuqsAdapter } from "nuqs/adapters/react";
 import { defineFilters, filter, remoteOptions } from "@/registry/new-york/filter-definition";
 import { FilterBar } from "@/registry/new-york/filter-bar";
@@ -40,6 +40,7 @@ export function AdvancedFiltersDemo() {
 }
 function RemoteFilters() {
   const failNext = useRef(false);
+  const [closeMenuOnApply, setCloseMenuOnApply] = useState(false);
   const source = remoteOptions({
     scope: "example-people",
     params: {},
@@ -101,7 +102,19 @@ function RemoteFilters() {
   });
   return (
     <section aria-label="Dynamic filters example" className="space-y-3 rounded-md border p-3">
-      <FilterBar filters={filters} searchLabel="Search references" />
+      <FilterBar
+        filters={filters}
+        searchLabel="Search references"
+        closeMenuOnApply={closeMenuOnApply}
+      />
+      <label className="flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={closeMenuOnApply}
+          onChange={(event) => setCloseMenuOnApply(event.target.checked)}
+        />
+        Close menu after applying
+      </label>
       <p className="text-xs text-muted-foreground">
         Owner options load two at a time. Paste a 15-digit IMEI, a 19–20-digit ICCID, or #123 to try
         recognition.

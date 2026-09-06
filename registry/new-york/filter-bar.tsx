@@ -38,6 +38,7 @@ export interface FilterMenuGroup {
 interface RootContext {
   filters: FilterController;
   summary: SummaryPolicy;
+  closeMenuOnApply: boolean;
   suggestions: "when-empty" | "always" | "never";
   groups: FilterMenuGroup[];
   disabled: boolean;
@@ -56,6 +57,8 @@ function useRoot() {
 export interface FilterRootProps {
   filters: FilterController;
   summary?: SummaryPolicy;
+  /** Keep the filter menu open for applying more filters by default. */
+  closeMenuOnApply?: boolean;
   suggestions?: "when-empty" | "always" | "never";
   groups?: FilterMenuGroup[];
   disabled?: boolean;
@@ -65,7 +68,8 @@ export interface FilterRootProps {
 export function FilterRoot({
   filters,
   summary = defaultSummary,
-  suggestions = "when-empty",
+  suggestions = "always",
+  closeMenuOnApply = false,
   groups = defaultGroups,
   disabled = false,
   className,
@@ -75,8 +79,18 @@ export function FilterRoot({
   const [ambiguous, setAmbiguous] = useState<PasteAmbiguity[]>([]);
   const trigger = useRef<HTMLButtonElement>(null);
   const context = useMemo(
-    () => ({ filters, summary, suggestions, groups, disabled, trigger, ambiguous, setAmbiguous }),
-    [filters, summary, suggestions, groups, disabled, ambiguous],
+    () => ({
+      filters,
+      summary,
+      suggestions,
+      closeMenuOnApply,
+      groups,
+      disabled,
+      trigger,
+      ambiguous,
+      setAmbiguous,
+    }),
+    [filters, summary, suggestions, closeMenuOnApply, groups, disabled, ambiguous],
   );
   return (
     <FilterOptionCache.Provider value={cache}>
@@ -546,7 +560,7 @@ function FieldEditor({
   close(): void;
   location: "menu" | "chip";
 }) {
-  const { filters, trigger } = useRoot();
+  const { filters, trigger, closeMenuOnApply } = useRoot();
   const { field, value } = entry;
   const input = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const customRoot = useRef<HTMLDivElement>(null);
@@ -586,7 +600,11 @@ function FieldEditor({
     setError(problem);
     if (!problem) {
       setDraft(field.normalize(next));
-      if (shouldClose || !field.isActive(field.normalize(next))) close();
+      const dismiss =
+        location === "menu"
+          ? (field.closeMenuOnApply ?? closeMenuOnApply)
+          : shouldClose || !field.isActive(field.normalize(next));
+      if (dismiss) close();
     }
     if (!problem && !field.isActive(field.normalize(next)) && location === "chip")
       requestAnimationFrame(() => trigger.current?.focus());

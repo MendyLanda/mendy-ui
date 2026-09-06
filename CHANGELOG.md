@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep the filter menu open after applying by default; add `closeMenuOnApply` on the bar and individual fields.
+- Keep unapplied suggestions visible when another filter is applied. Removing a suggested filter restores its shortcut.
+
 - Add the complete filter system: typed definitions, controlled and local state, nuqs/session persistence, dynamic options, paste recognition, suggested filters, composite bindings, custom editors, and summary policies.
 - Make the full system the default installation. Existing `filters` primitives remain available.
 - Add dynamic-data and SimCall-style controlled examples.

@@ -69,7 +69,9 @@ export function IssueFilters() {
 
 Use a scope that includes the organization or user when remembering scoped data, for example `issues:${organizationId}:${userId}`. Session restoration only runs when the URL has no managed filter parameters. Explicit URL values take precedence.
 
-Opening an editor does not change the URL. Choosing a value applies it. Text drafts apply through the Apply button or Enter. Suggested filters have dashed borders; clicking a suggestion with a preset applies it and keeps its editor open.
+Opening an editor does not change the URL. Choosing a value applies it. Text drafts apply through the Apply button or Enter. Suggested filters have dashed borders; clicking a suggestion with a preset applies it and keeps its editor open. Other suggestions stay visible.
+
+The filter menu stays open after applying so you can add several filters. Use `<FilterBar closeMenuOnApply />` to close it after each successful change.
 
 ## Local or existing state
 

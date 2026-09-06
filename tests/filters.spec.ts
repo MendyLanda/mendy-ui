@@ -86,7 +86,7 @@ test("required filters remain editable without a remove button", async ({ page }
 
 test("add, combine, and clear filters", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Add filter" }).click();
+  await page.getByRole("button", { name: "Open filters" }).click();
   await page.getByRole("menuitem", { name: "Title", exact: true }).click();
   await page.getByRole("button", { name: "Edit Title filter" }).click();
   await page.getByRole("textbox", { name: "Title contains" }).fill("keyboard");
@@ -157,4 +157,30 @@ test("no serious accessibility violations in light, dark, and open editors", asy
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
   expect(result.violations).toEqual([]);
+});
+
+test("toolbar search combines with filters and clears without resetting selections", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const search = page.getByRole("searchbox", { name: "Search issues" });
+  await search.fill("keyboard");
+  await expect(page.getByRole("status").filter({ hasText: "1 of 8 issues" })).toBeVisible();
+  await page.getByRole("button", { name: "Edit Status filter" }).click();
+  await page.getByRole("menuitemradio", { name: "Done", exact: true }).click();
+  await expect(page.getByText("No matching issues", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Clear search", exact: true }).click();
+  await expect(search).toHaveValue("");
+  await expect(search).toBeFocused();
+  await expect(page.getByRole("button", { name: "Edit Status filter" })).toContainText("Done");
+  await expect(page.getByRole("status").filter({ hasText: "2 of 8 issues" })).toBeVisible();
+  await search.fill("UI-039");
+  await page.getByRole("button", { name: "Open filters" }).click();
+  await page.getByRole("menuitem", { name: "Priority", exact: true }).click();
+  await expect(search).toHaveValue("UI-039");
+  await expect(page.getByRole("button", { name: "Edit Priority filter" })).toBeVisible();
+  await page.getByRole("button", { name: "Clear all" }).click();
+  await expect(search).toHaveValue("");
+  await expect(page.getByRole("status").filter({ hasText: "8 of 8 issues" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open filters" })).toBeFocused();
 });

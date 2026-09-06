@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Circle, CircleCheck, Clock3, Plus } from "lucide-react";
+import { Circle, CircleCheck, Clock3, ListFilter, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,6 +106,8 @@ function StatusIcon({ status }: { status: string }) {
 
 export function FiltersDemo() {
   const addFilterRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
   const [active, setActive] = useState<FilterKey[]>(["status", "assignee"]);
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
@@ -113,6 +116,7 @@ export function FiltersDemo() {
   const [titleOpen, setTitleOpen] = useState(false);
   const visible = issues.filter(
     (issue) =>
+      `${issue.id} ${issue.title}`.toLowerCase().includes(query.trim().toLowerCase()) &&
       (!active.includes("status") || !status || issue.status === status) &&
       (!active.includes("priority") || !priority || issue.priority === priority) &&
       (!active.includes("assignee") || !assignees.length || assignees.includes(issue.assignee)) &&
@@ -136,6 +140,64 @@ export function FiltersDemo() {
   return (
     <section className="rounded-md border" aria-label="Interactive issue filters">
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
+        <DropdownMenu>
+          <div className="relative w-full shrink-0 sm:w-[350px]">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 size-[17px] -translate-y-1/2"
+              aria-hidden="true"
+            />
+            <Input
+              ref={searchRef}
+              type="search"
+              aria-label="Search issues"
+              placeholder="Search or filter"
+              className={`w-full rounded-none pl-9 text-sm [&::-webkit-search-cancel-button]:appearance-none ${query ? "pr-16" : "pr-9"}`}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              autoComplete="off"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+            {query && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                className="absolute right-8 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm opacity-50 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                onClick={() => {
+                  setQuery("");
+                  searchRef.current?.focus();
+                }}
+              >
+                <X className="size-[15px]" aria-hidden="true" />
+              </button>
+            )}
+            <DropdownMenuTrigger asChild>
+              <button
+                ref={addFilterRef}
+                type="button"
+                aria-label="Open filters"
+                className={`absolute right-3 top-1/2 -translate-y-1/2 rounded-sm transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:opacity-100 ${active.length ? "opacity-100" : "opacity-50"}`}
+              >
+                <ListFilter className="size-[17px]" aria-hidden="true" />
+              </button>
+            </DropdownMenuTrigger>
+          </div>
+          <DropdownMenuContent align="end">
+            {remaining.length ? (
+              remaining.map((key) => (
+                <DropdownMenuItem
+                  key={key}
+                  onSelect={() => setActive((current) => [...current, key])}
+                >
+                  {filterNames[key]}
+                </DropdownMenuItem>
+              ))
+            ) : (
+              <DropdownMenuItem disabled>All filters added</DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
         {active.includes("status") && (
           <AppliedFilter
             label="Status"
@@ -211,37 +273,13 @@ export function FiltersDemo() {
             <span className="max-w-32 truncate">{title || "Any"}</span>
           </AppliedFilter>
         )}
-        {remaining.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                ref={addFilterRef}
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground"
-              >
-                <Plus className="size-3.5" />
-                Add filter
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {remaining.map((key) => (
-                <DropdownMenuItem
-                  key={key}
-                  onSelect={() => setActive((current) => [...current, key])}
-                >
-                  {filterNames[key]}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-        {active.length > 0 && (
+        {(active.length > 0 || query) && (
           <Button
             variant="ghost"
             size="sm"
             className="h-9 rounded-none px-2 font-normal text-muted-foreground underline hover:bg-transparent"
             onClick={() => {
+              setQuery("");
               setActive([]);
               setStatus("");
               setPriority("");

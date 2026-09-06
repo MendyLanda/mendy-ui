@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add SimCall's search field and embedded filter button to the table demo.
+- Match the selection editor's search row to SimCall's dropdown.
+
 - Restore the flat filter chips and compact styling used in SimCall.
 - Use Geist and the original theme colors in the demos.
 - Simplify the site and describe it as a personal component collection.

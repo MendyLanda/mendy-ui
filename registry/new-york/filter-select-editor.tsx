@@ -2,7 +2,7 @@
 
 import type { KeyboardEvent, ReactNode } from "react";
 import { useId, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 import { FilterCheckboxItem } from "@/registry/new-york/filters";
 
@@ -46,15 +46,21 @@ function SearchableOptions({
   }
 
   return (
-    <div className="w-64 max-w-full p-1" data-slot="filter-options">
+    <div className="w-64 max-w-full" data-slot="filter-options">
       {searchable && (
-        <div className="border-b p-2 mb-1">
+        <div className="flex items-center border-b focus-within:ring-1 focus-within:ring-inset focus-within:ring-ring">
+          <Search
+            className="mx-2 size-4 shrink-0 opacity-50"
+            strokeWidth={1.5}
+            aria-hidden="true"
+          />
           <label htmlFor={id} className="sr-only">
             {label}
           </label>
-          <Input
+          <input
             id={id}
             type="search"
+            className="flex h-10 min-w-0 w-full rounded-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none"
             placeholder={searchPlaceholder ?? label}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -63,7 +69,7 @@ function SearchableOptions({
         </div>
       )}
       {filtered.length ? (
-        <div role="menu" aria-label={label}>
+        <div role="menu" aria-label={label} className="p-1">
           {children(filtered)}
         </div>
       ) : (

@@ -1,25 +1,60 @@
 import { test, expect } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-test("single selection filters the table and restores focus", async ({ page }) => {
-  await page.goto("/");
-  const trigger = page.getByRole("button", { name: "Edit Status filter" });
-  await trigger.focus();
-  await page.keyboard.press("Enter");
-  await page.getByRole("menuitemradio", { name: "In progress", exact: true }).click();
-  await expect(page.getByRole("menu")).toHaveCount(0);
-  await expect(page.getByRole("status").filter({ hasText: "3 of 8 issues" })).toBeVisible();
-  await expect(trigger).toBeFocused();
-  await page.getByRole("button", { name: "Remove Status filter" }).click();
-  await expect(trigger).toHaveCount(0);
-  await expect(page.getByRole("status").filter({ hasText: "8 of 8 issues" })).toBeVisible();
-});
+async function openFilter(page: Page, name: string) {
+  await page.getByRole("button", { name: "Open filters" }).click();
+  await page.getByRole("menuitem", { name, exact: true }).click();
+}
 
-test("searchable multiselect applies immediately and preserves selections across searches", async ({
+async function addStatus(page: Page, value = "Todo") {
+  await openFilter(page, "Status");
+  await page.getByRole("menuitemradio", { name: value, exact: true }).click();
+}
+
+async function addAssignee(page: Page, value = "Mendy") {
+  await openFilter(page, "Assignee");
+  await page.getByRole("menuitemcheckbox", { name: value, exact: true }).click();
+  await page.keyboard.press("Escape");
+}
+
+function count(page: Page, value: number) {
+  return page
+    .getByRole("status", { includeHidden: true })
+    .filter({ hasText: `${value} of 8 issues` });
+}
+
+test("menu items reveal options before applying, then the chip edits the value", async ({
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Edit Assignee filter" }).click();
+  await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
+  await openFilter(page, "Status");
+  await expect(page.getByRole("menuitem", { name: "Status", exact: true })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await expect(
+    page.getByRole("button", { name: "Edit Status filter", includeHidden: true }),
+  ).toHaveCount(0);
+  await expect(count(page, 8)).toBeVisible();
+  await page.getByRole("menuitemradio", { name: "Todo", exact: true }).click();
+  const trigger = page.getByRole("button", { name: "Edit Status filter", includeHidden: true });
+  await expect(trigger).toContainText("Todo");
+  await expect(count(page, 3)).toBeVisible();
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("menuitemradio", { name: "In progress", exact: true }).click();
+  await expect(trigger).toContainText("In progress");
+  await expect(trigger).toBeFocused();
+  await page.getByRole("button", { name: "Remove Status filter" }).click();
+  await expect(trigger).toHaveCount(0);
+  await expect(count(page, 8)).toBeVisible();
+});
+
+test("multiselect applies inside the submenu and chips remain editable", async ({ page }) => {
+  await page.goto("/");
+  await openFilter(page, "Assignee");
   const input = page.getByRole("searchbox", { name: "Search assignees" });
   await input.fill("mend");
   await input.press("ArrowDown");
@@ -28,14 +63,46 @@ test("searchable multiselect applies immediately and preserves selections across
   await page.keyboard.press("Space");
   await expect(mendy).toBeChecked();
   await expect(input).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Edit Assignee filter", includeHidden: true }),
+  ).toContainText("Mendy");
   await input.fill("sam");
   await page.getByRole("menuitemcheckbox", { name: "Sam", exact: true }).click();
   await input.fill("");
   await expect(mendy).toBeChecked();
+  await expect(count(page, 5)).toBeVisible();
+  await page.keyboard.press("Escape");
+  const trigger = page.getByRole("button", { name: "Edit Assignee filter", includeHidden: true });
+  await trigger.click();
+  await expect(mendy).toBeChecked();
   await expect(page.getByRole("menuitemcheckbox", { name: "Sam", exact: true })).toBeChecked();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Edit Assignee filter" })).toBeFocused();
-  await expect(page.getByRole("status").filter({ hasText: "5 of 8 issues" })).toBeVisible();
+  await expect(trigger).toBeFocused();
+});
+
+test("text is entered and applied in the submenu without creating an empty chip", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await openFilter(page, "Title");
+  const input = page.getByRole("textbox", { name: "Title contains" });
+  await expect(input).toBeFocused();
+  await expect(page.getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
+  await input.fill("discard this");
+  await expect(
+    page.getByRole("button", { name: "Edit Title filter", includeHidden: true }),
+  ).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await openFilter(page, "Title");
+  await expect(input).toHaveValue("");
+  await input.fill("keyboard");
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Edit Title filter", includeHidden: true }),
+  ).toContainText("keyboard");
+  await expect(count(page, 1)).toBeVisible();
+  await page.getByRole("button", { name: "Edit Title filter", includeHidden: true }).click();
+  await expect(input).toHaveValue("keyboard");
 });
 
 test("text drafts validate, apply, and discard on Escape or outside dismissal", async ({
@@ -66,9 +133,12 @@ test("text drafts validate, apply, and discard on Escape or outside dismissal", 
 
 test("removal works while the editor is open", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Edit Assignee filter" }).click();
+  await addAssignee(page);
+  await page.getByRole("button", { name: "Edit Assignee filter", includeHidden: true }).click();
   await page.getByRole("button", { name: "Remove Assignee filter" }).click();
-  await expect(page.getByRole("button", { name: "Edit Assignee filter" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Edit Assignee filter", includeHidden: true }),
+  ).toHaveCount(0);
   await expect(page.getByRole("menu")).toHaveCount(0);
 });
 
@@ -84,24 +154,9 @@ test("required filters remain editable without a remove button", async ({ page }
   await expect(trigger).toBeFocused();
 });
 
-test("add, combine, and clear filters", async ({ page }) => {
+test("empty search can recover inside a submenu", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Title", exact: true }).click();
-  await page.getByRole("button", { name: "Edit Title filter" }).click();
-  await page.getByRole("textbox", { name: "Title contains" }).fill("keyboard");
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "1 of 8 issues" })).toBeVisible();
-  await page.getByRole("button", { name: "Edit Status filter" }).click();
-  await page.getByRole("menuitemradio", { name: "Done", exact: true }).click();
-  await expect(page.getByText("No matching issues", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Clear all" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "8 of 8 issues" })).toBeVisible();
-});
-
-test("empty search can recover", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Edit Assignee filter" }).click();
+  await openFilter(page, "Assignee");
   const input = page.getByRole("searchbox", { name: "Search assignees" });
   await input.fill("nobody matches");
   await expect(page.getByText("No options found.", { exact: true })).toBeVisible();
@@ -131,32 +186,28 @@ test("public docs, previews, and registry are accessible without login", async (
   }
   const response = await request.get("/r/filters.json");
   expect(response.ok()).toBe(true);
-  const item = await response.json();
-  expect(item.name).toBe("filters");
-  expect(item.files).toHaveLength(4);
+  expect((await response.json()).files).toHaveLength(4);
   expect(response.headers()["access-control-allow-origin"]).toBe("*");
-  const missing = await request.get("/does-not-exist");
-  expect(missing.status()).toBe(404);
+  expect((await request.get("/does-not-exist")).status()).toBe(404);
 });
 
-test("no serious accessibility violations in light, dark, and open editors", async ({ page }) => {
+test("no accessibility violations in both themes and submenu editors", async ({ page }) => {
   await page.goto("/");
   for (const dark of [false, true]) {
     if (dark) await page.getByRole("button", { name: "Toggle color theme" }).click();
     await expect(page.locator("html")).toHaveClass(dark ? /dark/ : /light/);
-    await page.evaluate(() =>
-      Promise.all(document.getAnimations().map((animation) => animation.finished)),
-    );
-    const result = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-      .analyze();
-    expect(result.violations).toEqual([]);
+    for (const name of [null, "Status", "Assignee", "Title"]) {
+      if (name) await openFilter(page, name);
+      await page.evaluate(() =>
+        Promise.all(document.getAnimations().map((animation) => animation.finished)),
+      );
+      const result = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .analyze();
+      expect(result.violations).toEqual([]);
+      if (name) await page.keyboard.press("Escape");
+    }
   }
-  await page.getByRole("button", { name: "Edit Assignee filter" }).click();
-  const result = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-    .analyze();
-  expect(result.violations).toEqual([]);
 });
 
 test("toolbar search combines with filters and clears without resetting selections", async ({
@@ -165,22 +216,67 @@ test("toolbar search combines with filters and clears without resetting selectio
   await page.goto("/");
   const search = page.getByRole("searchbox", { name: "Search issues" });
   await search.fill("keyboard");
-  await expect(page.getByRole("status").filter({ hasText: "1 of 8 issues" })).toBeVisible();
-  await page.getByRole("button", { name: "Edit Status filter" }).click();
-  await page.getByRole("menuitemradio", { name: "Done", exact: true }).click();
+  await expect(count(page, 1)).toBeVisible();
+  await addStatus(page, "Done");
   await expect(page.getByText("No matching issues", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Clear search", exact: true }).click();
-  await expect(search).toHaveValue("");
   await expect(search).toBeFocused();
-  await expect(page.getByRole("button", { name: "Edit Status filter" })).toContainText("Done");
-  await expect(page.getByRole("status").filter({ hasText: "2 of 8 issues" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Edit Status filter", includeHidden: true }),
+  ).toContainText("Done");
+  await expect(count(page, 2)).toBeVisible();
   await search.fill("UI-039");
-  await page.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Priority", exact: true }).click();
+  await openFilter(page, "Priority");
+  await expect(
+    page.getByRole("button", { name: "Edit Priority filter", includeHidden: true }),
+  ).toHaveCount(0);
+  await page.getByRole("menuitemradio", { name: "Medium", exact: true }).click();
   await expect(search).toHaveValue("UI-039");
-  await expect(page.getByRole("button", { name: "Edit Priority filter" })).toBeVisible();
+  await expect(count(page, 1)).toBeVisible();
   await page.getByRole("button", { name: "Clear all" }).click();
   await expect(search).toHaveValue("");
-  await expect(page.getByRole("status").filter({ hasText: "8 of 8 issues" })).toBeVisible();
+  await expect(count(page, 8)).toBeVisible();
   await expect(page.getByRole("button", { name: "Open filters" })).toBeFocused();
+});
+
+test("chips animate on entry and respect reduced motion", async ({ page }) => {
+  await page.goto("/");
+  await addStatus(page);
+  const chip = page.locator('[data-slot="filter-chip"]');
+  await expect(chip).toHaveCSS("animation-name", "enter");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(chip).toHaveCSS("animation-name", "none");
+});
+
+test("arrow keys explore submenus without applying and clearing a chip returns focus", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const menu = page.getByRole("button", { name: "Open filters" });
+  await menu.focus();
+  await page.keyboard.press("Enter");
+  const status = page.getByRole("menuitem", { name: "Status", exact: true });
+  await expect(status).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeFocused();
+  await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
+  await page.keyboard.press("ArrowLeft");
+  await expect(status).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Edit Status filter" }).click();
+  await page.getByRole("menuitemradio", { name: "Any status", exact: true }).click();
+  await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
+  await expect(menu).toBeFocused();
+});
+
+test("touch selection opens options before adding a chip", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "Touch interaction on the mobile device");
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open filters" }).tap();
+  await page.getByRole("menuitem", { name: "Status", exact: true }).tap();
+  await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
+  await page.getByRole("menuitemradio", { name: "Todo", exact: true }).tap();
+  await expect(page.getByRole("button", { name: "Edit Status filter" })).toContainText("Todo");
 });

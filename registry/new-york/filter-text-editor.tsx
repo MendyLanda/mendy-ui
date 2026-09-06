@@ -29,7 +29,9 @@ export function FilterTextEditor({
   const error = validate?.(draft);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    // Let a parent submenu finish setting up its focus scope first.
+    const frame = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   return (

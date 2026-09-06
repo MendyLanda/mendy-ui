@@ -1,6 +1,7 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { XIcon } from "lucide-react";
 
@@ -30,7 +31,7 @@ export function FilterChip({ className, ...props }: FilterChipProps) {
     <div
       data-slot="filter-chip"
       className={cn(
-        "inline-flex h-9 max-w-full items-center bg-secondary text-sm text-muted-foreground",
+        "inline-flex h-9 max-w-full items-center bg-secondary text-sm text-muted-foreground motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2.5 motion-safe:duration-200 motion-safe:fill-mode-backwards",
         className,
       )}
       {...props}
@@ -161,21 +162,88 @@ export function AppliedFilter({
 export type FilterMenuItemProps = ComponentProps<typeof DropdownMenuSub> & {
   label: ReactNode;
   icon?: ReactNode;
+  contentProps?: ComponentProps<typeof DropdownMenuSubContent>;
 };
 
-export function FilterMenuItem({ label, icon, children, ...props }: FilterMenuItemProps) {
+export function FilterMenuItem({
+  label,
+  icon,
+  children,
+  contentProps,
+  open,
+  defaultOpen,
+  onOpenChange,
+  ...props
+}: FilterMenuItemProps) {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen ?? false);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const [sideOffset, setSideOffset] = useState(14);
+  const isOpen = open ?? internalOpen;
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const update = () => {
+      // Overlap the parent menu when there isn't room for two panels side by side.
+      setSideOffset(window.innerWidth < 640 ? -trigger.getBoundingClientRect().width : 14);
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(trigger);
+    window.addEventListener("resize", update);
+    update();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
   return (
-    <DropdownMenuSub {...props}>
-      <DropdownMenuSubTrigger>
+    <DropdownMenuSub
+      {...props}
+      open={isOpen}
+      onOpenChange={(nextOpen) => {
+        setInternalOpen(nextOpen);
+        onOpenChange?.(nextOpen);
+      }}
+    >
+      <DropdownMenuSubTrigger
+        ref={triggerRef}
+        aria-haspopup={contentProps?.role === "dialog" ? "dialog" : "menu"}
+        onKeyDown={(event) => {
+          const forward =
+            getComputedStyle(event.currentTarget).direction === "rtl" ? "ArrowLeft" : "ArrowRight";
+          if (!isOpen && [forward, "Enter", " "].includes(event.key)) {
+            const contentId = event.currentTarget.getAttribute("aria-controls");
+            // A submenu reopened during its exit animation is still inert until
+            // React commits the open state. Restore keyboard entry after that commit.
+            requestAnimationFrame(() => {
+              if (contentId) document.getElementById(contentId)?.focus();
+            });
+          }
+        }}
+      >
         {icon}
         <span>{label}</span>
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
         <DropdownMenuSubContent
           loop
-          sideOffset={14}
+          sideOffset={sideOffset}
           alignOffset={-4}
-          className="max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto p-0"
+          {...contentProps}
+          onFocusOutside={(event) => {
+            contentProps?.onFocusOutside?.(event);
+            // On narrow screens, leaving the row can focus its parent menu while
+            // the pointer crosses into the overlapping submenu.
+            if (event.target === triggerRef.current?.closest("[data-radix-menu-content]")) {
+              event.preventDefault();
+            }
+          }}
+          inert={!isOpen || contentProps?.inert}
+          aria-hidden={!isOpen || contentProps?.["aria-hidden"]}
+          {...(contentProps?.["aria-label"] ? { "aria-labelledby": undefined } : {})}
+          className={cn(
+            "max-h-[var(--radix-dropdown-menu-content-available-height)] max-w-[calc(100vw-2rem)] overflow-y-auto p-0 motion-reduce:animate-none",
+            contentProps?.className,
+          )}
         >
           {children}
         </DropdownMenuSubContent>

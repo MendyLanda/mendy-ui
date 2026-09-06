@@ -5,7 +5,7 @@ description: Filter chips with text, single-select, and multi-select editors.
 
 <FiltersDemo />
 
-The search field matches issue titles and IDs. The button inside it opens the filter menu. Search and applied filters work together.
+The search field matches issue titles and IDs. Click the filter icon, then a row with an arrow to open its options. Choosing a value adds a chip. Opening a row alone changes nothing. Click a chip to edit its value later.
 
 ## Installation
 
@@ -16,6 +16,7 @@ The search field matches issue titles and IDs. The button inside it opens the fi
 `AppliedFilter` combines a chip, an edit trigger, an editor, and an optional remove button. Pass the current summary as children. Pass an editor as `editor`, and handle changes in your application state.
 
 - Editing and removal are separate buttons with separate accessible labels.
+- New chips slide up and fade in. Reduced-motion preferences turn this off.
 - Single selection applies immediately and closes the editor.
 - Multiple selection applies immediately and keeps the editor open.
 - Text stays in a local draft until Apply. Close without applying to discard it.
@@ -29,7 +30,7 @@ Use `FilterSelectEditor` for one option, `FilterMultiSelectEditor` for several o
 
 ## Custom editors
 
-Use `FilterChip`, `FilterEditor`, `FilterEditorTrigger`, `FilterEditorContent`, and `FilterRemove` to build a custom layout. Use `FilterMenuItem` for an options submenu and `FilterCheckboxItem` to keep it open after selection. Wrap checkbox items in a labeled `role="menu"` container. Put form fields in `FilterEditorContent`, which uses `role="dialog"`.
+Use `FilterChip`, `FilterEditor`, `FilterEditorTrigger`, `FilterEditorContent`, and `FilterRemove` to build a custom layout. Use `FilterMenuItem` for an options submenu and `FilterCheckboxItem` to keep it open after selection. For searchable or text editors in a submenu, pass `contentProps={{ role: "dialog", "aria-label": "Filter options", "aria-orientation": undefined }}`. Built-in selection editors supply the labeled menu inside that dialog.
 
 The core component does not depend on a table library, a router, or an API client. Connect `onValueChange`, `onValuesChange`, and `onApply` to your state or URL persistence layer.
 

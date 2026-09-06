@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Restore arrow submenus that apply values before creating chips.
+- Restore the chip entry animation and respect reduced motion.
+
 - Add SimCall's search field and embedded filter button to the table demo.
 - Match the selection editor's search row to SimCall's dropdown.
 

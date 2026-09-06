@@ -55,14 +55,14 @@ Both accept `label`, `options`, `searchable`, `searchPlaceholder`, and `emptyMes
 | `FilterEditorTrigger` | shadcn DropdownMenuTrigger props, including `asChild`.                           |
 | `FilterEditorContent` | shadcn DropdownMenuContent props; a nonmodal dialog aligned to start by default. |
 | `FilterRemove`        | Button props plus a required `aria-label`.                                       |
-| `FilterMenuItem`      | DropdownMenuSub props plus `label` and optional `icon`.                          |
+| `FilterMenuItem`      | DropdownMenuSub props plus `label`, optional `icon`, and submenu `contentProps`. |
 | `FilterCheckboxItem`  | DropdownMenuCheckboxItem props; prevents dismissal after selection.              |
 
 ## Parsing lists
 
 `parseFilterValues` from `@/components/ui/filter-utils` splits a string on commas, newlines, and tabs, trims each part, drops empty entries, and removes exact duplicates. It preserves order and case. It is not a CSV parser and does not perform domain-specific validation.
 
-The editor popup uses dialog semantics so it can contain form fields. Built-in selection editors place their choices in a labeled menu inside it. When composing `FilterCheckboxItem` directly, wrap the options in a labeled `role="menu"` element. `FilterMenuItem` creates a submenu for menu items; use the top-level editor for arbitrary form fields.
+The editor popup uses dialog semantics so it can contain form fields. Built-in selection editors place their choices in a labeled menu inside it. When composing `FilterCheckboxItem` directly, wrap the options in a labeled `role="menu"` element. `FilterMenuItem` accepts `contentProps` for submenu props. For a submenu containing form fields, pass `role="dialog"`, an `aria-label`, and `aria-orientation={undefined}` through `contentProps`. The trigger then announces that it opens a dialog.
 
 ## Styling and localization
 

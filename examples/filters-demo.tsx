@@ -7,10 +7,9 @@ import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AppliedFilter } from "@/registry/new-york/filters";
+import { AppliedFilter, FilterMenuItem } from "@/registry/new-york/filters";
 import { FilterTextEditor } from "@/registry/new-york/filter-text-editor";
 import {
   FilterSelectEditor,
@@ -108,12 +107,22 @@ export function FiltersDemo() {
   const addFilterRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
-  const [active, setActive] = useState<FilterKey[]>(["status", "assignee"]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [titleDraftKey, setTitleDraftKey] = useState(0);
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [assignees, setAssignees] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [titleOpen, setTitleOpen] = useState(false);
+  const active = (Object.keys(filterNames) as FilterKey[]).filter((key) =>
+    key === "status"
+      ? Boolean(status)
+      : key === "priority"
+        ? Boolean(priority)
+        : key === "assignee"
+          ? assignees.length > 0
+          : Boolean(title),
+  );
   const visible = issues.filter(
     (issue) =>
       `${issue.id} ${issue.title}`.toLowerCase().includes(query.trim().toLowerCase()) &&
@@ -123,7 +132,6 @@ export function FiltersDemo() {
       (!active.includes("title") || issue.title.toLowerCase().includes(title.toLowerCase())),
   );
   function remove(key: FilterKey) {
-    setActive((current) => current.filter((item) => item !== key));
     if (key === "status") setStatus("");
     if (key === "priority") setPriority("");
     if (key === "assignee") setAssignees([]);
@@ -133,14 +141,11 @@ export function FiltersDemo() {
     }
     requestAnimationFrame(() => addFilterRef.current?.focus());
   }
-  const remaining = (Object.keys(filterNames) as FilterKey[]).filter(
-    (key) => !active.includes(key),
-  );
 
   return (
     <section className="rounded-md border" aria-label="Interactive issue filters">
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
-        <DropdownMenu>
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <div className="relative w-full shrink-0 sm:w-[350px]">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 size-[17px] -translate-y-1/2"
@@ -183,30 +188,113 @@ export function FiltersDemo() {
               </button>
             </DropdownMenuTrigger>
           </div>
-          <DropdownMenuContent align="end">
-            {remaining.length ? (
-              remaining.map((key) => (
-                <DropdownMenuItem
-                  key={key}
-                  onSelect={() => setActive((current) => [...current, key])}
-                >
-                  {filterNames[key]}
-                </DropdownMenuItem>
-              ))
-            ) : (
-              <DropdownMenuItem disabled>All filters added</DropdownMenuItem>
-            )}
+          <DropdownMenuContent
+            inert={!menuOpen}
+            aria-hidden={!menuOpen || undefined}
+            onCloseAutoFocus={(event) => {
+              const focused = document.activeElement;
+              if (
+                event.target instanceof HTMLElement &&
+                focused &&
+                focused !== document.body &&
+                !event.target.contains(focused)
+              )
+                event.preventDefault();
+            }}
+            align="end"
+            sideOffset={12}
+            alignOffset={-12}
+            className="w-[min(350px,calc(100vw-2rem))]"
+            loop
+          >
+            <FilterMenuItem
+              label="Status"
+              contentProps={{
+                role: "dialog",
+                "aria-label": "Choose status",
+                "aria-orientation": undefined,
+                "aria-hidden": !menuOpen || undefined,
+                inert: !menuOpen,
+              }}
+            >
+              <FilterSelectEditor
+                label="Status"
+                value={status}
+                onValueChange={setStatus}
+                options={statuses}
+              />
+            </FilterMenuItem>
+            <FilterMenuItem
+              label="Priority"
+              contentProps={{
+                role: "dialog",
+                "aria-label": "Choose priority",
+                "aria-orientation": undefined,
+                "aria-hidden": !menuOpen || undefined,
+                inert: !menuOpen,
+              }}
+            >
+              <FilterSelectEditor
+                label="Priority"
+                value={priority}
+                onValueChange={setPriority}
+                options={priorities}
+              />
+            </FilterMenuItem>
+            <FilterMenuItem
+              label="Assignee"
+              contentProps={{
+                role: "dialog",
+                "aria-label": "Choose assignees",
+                "aria-orientation": undefined,
+                "aria-hidden": !menuOpen || undefined,
+                inert: !menuOpen,
+              }}
+            >
+              <FilterMultiSelectEditor
+                label="Search assignees"
+                searchable
+                values={assignees}
+                onValuesChange={setAssignees}
+                options={people}
+              />
+            </FilterMenuItem>
+            <FilterMenuItem
+              label="Title"
+              onOpenChange={(open) => {
+                if (open) setTitleDraftKey((key) => key + 1);
+              }}
+              contentProps={{
+                role: "dialog",
+                "aria-label": "Set title filter",
+                "aria-orientation": undefined,
+                "aria-hidden": !menuOpen || undefined,
+                inert: !menuOpen,
+              }}
+            >
+              <FilterTextEditor
+                key={titleDraftKey}
+                label="Title contains"
+                defaultValue={title}
+                validate={(value) => (value.trim() ? undefined : "Enter a title to search for.")}
+                onApply={(value) => {
+                  setTitle(value.trim());
+                  setMenuOpen(false);
+                }}
+              />
+            </FilterMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         {active.includes("status") && (
           <AppliedFilter
             label="Status"
+            style={{ animationDelay: `${active.indexOf("status") * 60}ms` }}
             onRemove={() => remove("status")}
             editor={
               <FilterSelectEditor
                 label="Status"
                 value={status}
-                onValueChange={setStatus}
+                onValueChange={(value) => (value ? setStatus(value) : remove("status"))}
                 options={[{ value: "", label: "Any status" }, ...statuses]}
               />
             }
@@ -218,12 +306,13 @@ export function FiltersDemo() {
         {active.includes("priority") && (
           <AppliedFilter
             label="Priority"
+            style={{ animationDelay: `${active.indexOf("priority") * 60}ms` }}
             onRemove={() => remove("priority")}
             editor={
               <FilterSelectEditor
                 label="Priority"
                 value={priority}
-                onValueChange={setPriority}
+                onValueChange={(value) => (value ? setPriority(value) : remove("priority"))}
                 options={[{ value: "", label: "Any priority" }, ...priorities]}
               />
             }
@@ -235,13 +324,16 @@ export function FiltersDemo() {
         {active.includes("assignee") && (
           <AppliedFilter
             label="Assignee"
+            style={{ animationDelay: `${active.indexOf("assignee") * 60}ms` }}
             onRemove={() => remove("assignee")}
             editor={
               <FilterMultiSelectEditor
                 label="Search assignees"
                 searchable
                 values={assignees}
-                onValuesChange={setAssignees}
+                onValuesChange={(values) =>
+                  values.length ? setAssignees(values) : remove("assignee")
+                }
                 options={people}
               />
             }
@@ -254,6 +346,7 @@ export function FiltersDemo() {
         )}
         {active.includes("title") && (
           <AppliedFilter
+            style={{ animationDelay: `${active.indexOf("title") * 60}ms` }}
             label="Title"
             open={titleOpen}
             onOpenChange={setTitleOpen}
@@ -263,7 +356,8 @@ export function FiltersDemo() {
                 label="Title contains"
                 defaultValue={title}
                 onApply={(value) => {
-                  setTitle(value.trim());
+                  if (value.trim()) setTitle(value.trim());
+                  else remove("title");
                   setTitleOpen(false);
                 }}
               />
@@ -280,7 +374,6 @@ export function FiltersDemo() {
             className="h-9 rounded-none px-2 font-normal text-muted-foreground underline hover:bg-transparent"
             onClick={() => {
               setQuery("");
-              setActive([]);
               setStatus("");
               setPriority("");
               setAssignees([]);

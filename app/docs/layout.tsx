@@ -8,6 +8,8 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
     "/docs/installation",
     "/docs/components/filters",
     "/docs/examples",
+    "/docs/advanced",
+    "/docs/system",
     "/docs/api",
   ];
   const pages = source

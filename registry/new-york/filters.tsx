@@ -109,6 +109,7 @@ export type AppliedFilterProps = FilterChipProps & {
   editLabel?: string;
   removeLabel?: string;
   contentProps?: FilterEditorContentProps;
+  triggerProps?: FilterEditorTriggerProps;
 };
 
 /** Editing and removal are independent. Values remain owned by the caller. */
@@ -122,6 +123,7 @@ export function AppliedFilter({
   editLabel = `Edit ${label} filter`,
   removeLabel = `Remove ${label} filter`,
   contentProps,
+  triggerProps,
   children,
   ...props
 }: AppliedFilterProps) {
@@ -132,7 +134,11 @@ export function AppliedFilter({
           <FilterEditorTrigger
             disabled={disabled}
             aria-label={editLabel}
-            onClick={(event) => event.stopPropagation()}
+            {...triggerProps}
+            onClick={(event) => {
+              event.stopPropagation();
+              triggerProps?.onClick?.(event);
+            }}
           >
             {children}
           </FilterEditorTrigger>

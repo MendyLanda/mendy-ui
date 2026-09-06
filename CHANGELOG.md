@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add the complete filter system: typed definitions, controlled and local state, nuqs/session persistence, dynamic options, paste recognition, suggested filters, composite bindings, custom editors, and summary policies.
+- Make the full system the default installation. Existing `filters` primitives remain available.
+- Add dynamic-data and SimCall-style controlled examples.
+
 - Restore arrow submenus that apply values before creating chips.
 - Restore the chip entry animation and respect reduced motion.
 

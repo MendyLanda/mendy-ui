@@ -1,0 +1,26 @@
+---
+title: Dynamic and custom filters
+description: Remote options, paste recognition, session persistence, and existing application state.
+---
+
+## Remote options and paste
+
+<AdvancedFiltersDemo />
+
+This example searches a simulated asynchronous data source, loads more options, and resolves selected IDs separately. Open a link with `?owner=["sam"]` to see label resolution without opening the menu. The example remembers filters in this browser session when there are no explicit filters in the URL.
+
+IMEI and ICCID recognition here uses length-based examples. Supply your application's actual validators for production identifiers. `#123` deliberately matches two fields so you can choose its destination. Unrecognized text stays in search.
+
+Large selections remain applied and are saved in this browser session. The notice explains when the URL cannot reproduce the full selection in another browser.
+
+<ComponentSource name="advanced-filters-demo" />
+
+## Existing state and custom editors
+
+<SimCallFiltersDemo />
+
+Both sets use the same definitions with independent local state. The example preserves separate state fields for activation dates, combines related controls in the Status and Tags menus, and uses a custom company editor and summary. Changing Carrier updates the available plans while retaining existing selections.
+
+The actual SimCall integration can pass its existing persistence callback to `useControlledFilters`. A sourcing draft can use the same definitions with a local patch callback. Neither has to change the application's backend query shape.
+
+<ComponentSource name="simcall-filters-demo" />

@@ -5,10 +5,10 @@ My personal collection of components I like to use. Built with React and shadcn/
 [Documentation and demos](https://ui.mendylanda.com) · [Filters](https://ui.mendylanda.com/docs/components/filters)
 
 ```sh
-npx shadcn@latest add https://ui.mendylanda.com/r/filters.json
+npx shadcn@latest add https://ui.mendylanda.com/r/filter-system.json
 ```
 
-The first component is Filters. It includes text, single-select, multi-select, and custom editors. Your app stores the values and filters its data. The demos use React 19, Tailwind CSS 4, and Radix-based shadcn.
+Filters includes typed definitions, URL and session persistence, remote options, paste recognition, suggestions, and custom editors. Use the built-in state hooks or bind the UI to your existing state and queries. Your app filters its data. The demos use React 19, Tailwind CSS 4, and Radix-based shadcn.
 
 ## Development
 
@@ -27,13 +27,14 @@ pnpm format
 pnpm build
 pnpm typecheck
 pnpm exec playwright install chromium
+pnpm test:unit
 pnpm test
 pnpm verify:consumers https://ui.mendylanda.com --demo
 ```
 
 `pnpm build` generates registry JSON in `public/r` and a static site in `out`. The docs setup is adapted from startercn and uses Fumadocs MDX and Shiki. No server or database is needed at runtime.
 
-The consumer check creates fresh Next.js and Vite apps in your temporary directory, installs through the shadcn CLI, and builds them. Pass a local preview origin to test unpublished filter changes; `--demo` also checks the demo block and its public registry dependency.
+The consumer check creates fresh Next.js and Vite apps in your temporary directory, installs through the shadcn CLI, and builds them. Pass a local preview origin to test unpublished filter changes; `--demo` also checks the complete filter system and demo. Dependencies from this registry resolve against the supplied preview origin.
 
 ## Deployment
 

@@ -5,10 +5,14 @@ import { InstallCommand } from "@/components/install-command";
 import { FiltersDemo } from "@/examples/filters-demo";
 import { TextFilterDemo } from "@/examples/text-filter-demo";
 import { CustomFilterDemo } from "@/examples/custom-filter-demo";
+import { AdvancedFiltersDemo } from "@/examples/advanced-filters-demo";
+import { SimCallFiltersDemo } from "@/examples/simcall-filters-demo";
 import { cn } from "@/lib/utils";
 
 // Typography and highlighted-code rendering adapted from startercn.
 export const mdxComponents = {
+  AdvancedFiltersDemo,
+  SimCallFiltersDemo,
   ComponentSource,
   InstallCommand,
   FiltersDemo,

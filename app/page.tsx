@@ -14,7 +14,7 @@ export default function HomePage() {
           Filters
         </h2>
         <p className="mt-1 max-w-prose text-sm text-muted-foreground">
-          Filter chips with text, single-select, and multi-select editors.
+          Search, filter menus, and editable chips. Define your filters and connect your data.
         </p>
         <div className="mt-4">
           <FiltersDemo />
@@ -27,7 +27,7 @@ export default function HomePage() {
             Docs
           </Link>
           <a
-            href={`${SITE.github}/blob/main/registry/new-york/filters.tsx`}
+            href={`${SITE.github}/blob/main/registry/new-york/filter-bar.tsx`}
             className="underline underline-offset-4"
           >
             Source

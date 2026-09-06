@@ -1,0 +1,138 @@
+---
+title: Filter system reference
+description: Definitions, dynamic options, persistence, and controlled state.
+---
+
+## Definitions and types
+
+Import `defineFilters`, `filter`, `bindFilters`, `remoteOptions`, `externalOptions`, and `jsonCodec` from `@/components/ui/filter-definition`.
+
+`defineFilters` preserves each field's value type. `FilterValues<typeof definitions>` extracts the state type. String literal options infer literal unions. Use `select` and `multiSelect` for known choices; their default URL codecs reject values outside a static options array. Use `options` for dynamically fetched IDs that may be absent from the current page. All built-in fields use `null` as their default cleared value; `defaultValue` and `clearValue` can override that. Zero and false are active values. An empty array is inactive unless you override `isActive`.
+
+| Factory              | Value                                                            |
+| -------------------- | ---------------------------------------------------------------- |
+| `filter.select`      | One option value or null                                         |
+| `filter.multiSelect` | An array of option values or null                                |
+| `filter.options`     | String IDs from arbitrary data records, or null                  |
+| `filter.text`        | Trimmed text or null                                             |
+| `filter.tokens`      | A deduplicated string array or null                              |
+| `filter.numberRange` | `[minimum, maximum]` or null; either endpoint can be null        |
+| `filter.dateRange`   | `{ from, to }` or null, with ISO date strings or null endpoints  |
+| `filter.custom`      | Your value type, with a required codec, default, and clear value |
+
+Shared settings include `label`, `defaultValue`, `clearValue`, `isActive`, `normalize`, `validate`, `codec`, `urlKey`, `suggestion`, `summary`, `renderSummary`, `renderEditor`, `hidden`, `disabled`, and `removable`. `searchLabel`, `editorLabel`, and `placeholder` customize editor labels. Application validation remains necessary at the API boundary.
+
+`validate` returns an error string or undefined. Normalization runs before validation. Removing and clearing use the declared clear value. A custom codec parses and serializes the field's value; JSON codecs can use `jsonCodec` with a type guard.
+
+## Suggestions and summaries
+
+`suggestion: { value, label?, loading?, disabled? }` creates an unapplied shortcut. A valid preset applies on click and keeps the editor open. A suggestion without a value opens the editor without applying anything.
+
+`FilterBar` shows suggestions when no visible applied filters remain. Set `suggestions="always"` to keep unapplied suggestions visible alongside applied chips, or `suggestions="never"` to hide them.
+
+Set a global `summary` on the bar and override it on individual definitions:
+
+- `{ mode: "count", limit: 3 }` shows three values and an additional count.
+- `{ mode: "ellipsis", maxWidth: 180 }` truncates the displayed text to a width.
+- `{ mode: "all" }` shows every value and allows wrapping.
+
+The full values remain selected and available in the editor. `renderSummary(value, choices)` supports domain summaries, such as displaying a vendor name when all its companies are selected. Resolved choices include their original record as `data`.
+
+## Existing query hooks
+
+Pass query results as `options`, with `loading`, `error`, and `retry`. Use `filter.options` with `getValue` and `getLabel` for arbitrary records.
+
+For external search or pagination, use `externalOptions({ items, selectedItems, loading, error, retry, query, onQueryChange, hasMore, loadMore })`. `selectedItems` resolves IDs that are outside the current page. When `onQueryChange` is supplied, the component displays the provided results without applying another local search filter.
+
+The application continues owning its query hooks. A carrier-dependent query reads the current carrier IDs directly. Refreshing choices does not clear selected IDs. Define an explicit state update when a business rule requires clearing dependent values.
+
+## Async option sources
+
+`remoteOptions` accepts:
+
+| Property                                    | Purpose                                                          |
+| ------------------------------------------- | ---------------------------------------------------------------- |
+| `scope`                                     | Cache identity for the organization/user/data source             |
+| `params`                                    | JSON-serializable request inputs, including dependent filters    |
+| `search({ query, cursor, params, signal })` | Return `{ items, cursor? }`                                      |
+| `resolve({ ids, params, signal })`          | Return records for selected IDs, independent of the current page |
+| `getValue`, `getLabel`                      | Map records to stable string IDs and labels                      |
+| `debounceMs`                                | Search delay; defaults to 200 ms                                 |
+
+Requests are shared within a filter bar, canceled when unused, and cached briefly. Changing scope or request parameters changes request identity. Stale results do not replace the current query. Missing selected records remain removable and display as unavailable once resolution succeeds. A failed lookup preserves the selection and offers retry.
+
+Use stable IDs and JSON-serializable parameters. Do not put credentials in scope or parameters. Authorization belongs to your data-fetching layer.
+
+## Paste
+
+Add `recognize(token)` to a definition. Return a typed value when recognized, or undefined when the token belongs elsewhere. `pastePriority` resolves overlapping recognizers when one should win. Equal-priority matches ask the user to choose.
+
+The search field splits pasted input on commas, tabs, and newlines. It normalizes, validates, and deduplicates recognized values. Arrays merge with the existing selection; `merge` overrides that behavior. Unmatched and ambiguous values remain in search. Shift-paste bypasses recognition.
+
+Text entered directly into an individual token editor belongs to that field. It uses the same normalization and validation when applied.
+
+## State and URL persistence
+
+`useFilters(definitions, { defaultValues?, defaultSearch?, onChange? })` owns local state.
+
+`useUrlFilters(definitions, options)` uses nuqs. Options:
+
+| Option               | Default / behavior                                                     |
+| -------------------- | ---------------------------------------------------------------------- |
+| `scope`              | Required persistence scope                                             |
+| `searchKey`          | `q`                                                                    |
+| `markerKey`          | `_filters`; change it when multiple bars share a page                  |
+| `remember`           | Off, or `"session"`                                                    |
+| `maxUrlLength`       | 2000 characters for the encoded URL                                    |
+| `history`            | `"replace"`; opt into `"push"` when browser history should track edits |
+| `shallow`            | true; false enables the router's server-update behavior                |
+| `onPersistenceError` | Optional storage/URL failure callback                                  |
+
+Use different URL keys for multiple independent bars. Duplicate keys within a definition set are rejected. Unrelated URL parameters are preserved. Arrays and ranges use JSON, strings remain readable, and explicit null is encoded separately from an absent default. Use `urlKey` and `codec` to preserve existing parameter conventions.
+
+Applied changes update the URL; drafts and open menus do not. Nuqs handles browser navigation. Remembered values restore only when no managed URL parameters exist. Clearing removes remembered state. Storage access failures are reported without discarding the current in-memory overflow selection.
+
+If a selection exceeds the URL budget, the full values are saved in session storage and the URL contains a session reference. Recent references are retained for navigation. `shareable` becomes false and `persistenceMessage` explains the limitation. Opening that reference in a different session reports that the values are unavailable. `createLink(base)` returns null when the complete current selection cannot be represented by the URL.
+
+The pure `encodeFilters` and `decodeFilters` functions from `filter-state` can be used with server-readable definitions. Keep those definitions free of client-only imports when using them on a server.
+
+## Binding existing state
+
+```tsx
+const line = bindFilters<LineFilters>();
+const definitions = {
+  carrier: line.field(
+    "carrierId",
+    filter.options({
+      label: "Carrier",
+      options: carriers,
+      getValue: (carrier) => carrier.id,
+      getLabel: (carrier) => carrier.name,
+    }),
+  ),
+};
+
+const filters = useControlledFilters({
+  definitions,
+  value: existingFilters,
+  onPatch: (updates) => setExistingFilters(updates),
+  search: {
+    read: (value) => value.q?.join(", ") ?? "",
+    write: (text) => ({ q: text ? text.split(",").map((v) => v.trim()) : null }),
+  },
+});
+```
+
+`onPatch` receives one typed patch per operation, plus metadata identifying edit, removal, clear, paste, suggestion, or search. Fields outside the definitions are preserved. A binding's optional `update(value, current)` can update related fields atomically.
+
+`line.composite(keys, { field, read, write })` maps one editor to several state keys. Its write function returns the complete mapped fields so applying or removing a date range updates both endpoints together. The editor receives the field's typed value; the mapping receives the selected state keys.
+
+An existing state's field type must match its definition. Use `filter.options` for general string IDs, and literal option types for existing enums. Optional state fields read as the definition's default when undefined.
+
+## Custom editors and layout
+
+`renderEditor` receives typed `value`, `setValue`, `draft`, `setDraft`, `apply`, and `close`. `setValue` applies immediately and updates the draft; clearing the value closes its editor. Otherwise it stays open. `setDraft` changes only the local draft; `apply()` commits the draft and closes. Closing an editor discards an unfinished draft.
+
+Group related fields under one menu with `groups={[{ id: "status-menu", label: "Status", fields: ["status", "pendingPort", "pendingSwap"] }]}`. Grouping does not change state ownership or chip removal.
+
+For another layout, compose `FilterRoot`, `FilterSearch` or `FilterMenu`, `FilterList`, `FilterClear`, and `FilterFeedback`. They share the same controller and behavior as `FilterBar`. Custom editors and summaries can use your own markup; underlying primitives use the application's shadcn tokens.

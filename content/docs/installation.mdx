@@ -1,67 +1,99 @@
 ---
 title: Installation
-description: Add the source to an existing shadcn application.
+description: Install the complete filter system in a shadcn application.
 ---
 
-## Prepare your app
+## Install
 
-Use a React 19 application with Tailwind CSS 4 and a Radix-based shadcn setup. Follow the official [shadcn installation instructions](https://ui.shadcn.com/docs/installation) if you do not yet have a `components.json` file.
-
-## Install filters
-
-Run this command from your application's root:
+Use React 19, TypeScript, Tailwind CSS 4, and Radix-based shadcn components. Run this in your application:
 
 <InstallCommand />
 
-The CLI installs the filter source files, Lucide icons, and the standard Button, Dropdown Menu, Input, and Textarea dependencies. Import paths follow your `components.json` aliases.
+This installs the typed definitions, filter bar, local and controlled state hooks, dynamic option support, and nuqs persistence, together with the underlying filter components. Imports follow your `components.json` aliases.
 
-Review any prompts about existing UI files. You should not need to overwrite customized primitives if they keep the standard Radix-based shadcn APIs.
+## Set up the URL adapter
 
-## Use a filter
+For Next.js App Router, wrap your app in `NuqsAdapter` from `nuqs/adapters/next/app`. For Vite, use `nuqs/adapters/react`. Follow the [nuqs adapter instructions](https://nuqs.dev/docs/adapters) for other supported routers. Statically rendered Next.js pages using URL hooks need a Suspense boundary around the filter component.
 
 ```tsx
-"use client";
+import type { ReactNode } from "react";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
-import { useState } from "react";
-import { AppliedFilter } from "@/components/ui/filters";
-import { FilterSelectEditor } from "@/components/ui/filter-select-editor";
-
-export function StatusFilter() {
-  const [status, setStatus] = useState("open");
+export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <AppliedFilter
-      label="Status"
-      onRemove={() => setStatus("")}
-      editor={
-        <FilterSelectEditor
-          label="Status"
-          value={status}
-          onValueChange={setStatus}
-          options={[
-            { value: "", label: "Any" },
-            { value: "open", label: "Open" },
-            { value: "closed", label: "Closed" },
-          ]}
-        />
-      }
-    >
-      Status: {status || "Any"}
-    </AppliedFilter>
+    <html lang="en">
+      <body>
+        <NuqsAdapter>{children}</NuqsAdapter>
+      </body>
+    </html>
   );
 }
 ```
 
-`onRemove` reports the user's intent. The example clears the value; conditionally render the component if you want removal to hide the chip too.
+## Define your filters
 
-## Install the complete demo
+```tsx
+"use client";
+
+import { defineFilters, filter } from "@/components/ui/filter-definition";
+import { FilterBar } from "@/components/ui/filter-bar";
+import { useUrlFilters } from "@/components/ui/use-url-filters";
+
+const definitions = defineFilters({
+  status: filter.select({
+    label: "Status",
+    options: [
+      { value: "open", label: "Open" },
+      { value: "closed", label: "Closed" },
+    ],
+    suggestion: { value: "open" },
+  }),
+  owner: filter.multiSelect({
+    label: "Owner",
+    options: [{ value: "mendy", label: "Mendy" }],
+    searchable: true,
+  }),
+});
+
+export function IssueFilters() {
+  const filters = useUrlFilters(definitions, {
+    scope: "issues",
+    remember: "session",
+  });
+
+  // filters.values.status is "open" | "closed" | null.
+  // Use filters.values and filters.search in your data query.
+  return <FilterBar filters={filters} />;
+}
+```
+
+Use a scope that includes the organization or user when remembering scoped data, for example `issues:${organizationId}:${userId}`. Session restoration only runs when the URL has no managed filter parameters. Explicit URL values take precedence.
+
+Opening an editor does not change the URL. Choosing a value applies it. Text drafts apply through the Apply button or Enter. Suggested filters have dashed borders; clicking a suggestion with a preset applies it and keeps its editor open.
+
+## Local or existing state
+
+Use `useFilters(definitions)` when the values should stay local. It returns the same filter-bar controller, including `values`, `search`, and the typed `set` method.
+
+Use `bindFilters<YourState>()` and `useControlledFilters` to connect existing query or persistence hooks. See [dynamic and custom filters](/docs/advanced) and the [system reference](/docs/system).
+
+## Install complete examples
 
 <InstallCommand item="filters-demo" />
 
-Import `FiltersDemo` from the generated component file. It includes a small local dataset and demonstrates adding, editing, removing, and combining filters. The dataset and matching logic are example application code.
+<InstallCommand item="advanced-filters-demo" />
+
+<InstallCommand item="simcall-filters-demo" />
+
+The issue and remote demos include their own React nuqs adapter so it can run in Next.js or Vite. Your app should normally provide the adapter once at its root. The example dataset and matching logic belong to the app.
+
+## Low-level components
+
+<InstallCommand item="filters" />
+
+Use this smaller item when you only need editable chips and the editor components. The complete system builds on the same implementation.
 
 ## Optional namespace
-
-Add this entry to the `registries` object in your `components.json`:
 
 ```json
 {
@@ -71,8 +103,8 @@ Add this entry to the `registries` object in your `components.json`:
 }
 ```
 
-You can then run `npx shadcn@latest add @mendy-ui/filters`. This is a locally configured namespace; it does not require an entry in the official shadcn directory.
+Then install with `npx shadcn@latest add @mendy-ui/filter-system`.
 
-## Updates
+## Updating an installation
 
-The installed files belong to your app. Reinstalling is an explicit source update: commit your local work first and review the resulting diff. The registry does not provide automatic npm-style upgrades.
+Installed source belongs to your app. Commit local changes before reinstalling, then review the diff. Keep your application definitions in a separate file so future component changes are easier to merge. Review the [changelog](https://github.com/MendyLanda/mendy-ui/blob/main/CHANGELOG.md) for behavior and migration notes.

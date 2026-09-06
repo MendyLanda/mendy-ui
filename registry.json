@@ -31,14 +31,72 @@
       ]
     },
     {
+      "name": "filter-system",
+      "type": "registry:ui",
+      "title": "Filter system",
+      "description": "Typed filter definitions with URL and session persistence, dynamic options, suggestions, paste recognition, and custom editors.",
+      "dependencies": ["nuqs"],
+      "registryDependencies": ["https://ui.mendylanda.com/r/filters.json"],
+      "files": [
+        {
+          "path": "registry/new-york/filter-definition.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "registry/new-york/filter-state.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "registry/new-york/use-filters.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "registry/new-york/use-url-filters.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "registry/new-york/use-filter-options.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "registry/new-york/filter-bar.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "filters-demo",
       "type": "registry:block",
       "title": "Filters demo",
       "description": "Interactive issue table with adding, editing, removing, and combining filters.",
-      "registryDependencies": ["https://ui.mendylanda.com/r/filters.json"],
+      "registryDependencies": ["https://ui.mendylanda.com/r/filter-system.json"],
       "files": [
         {
           "path": "examples/filters-demo.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "advanced-filters-demo",
+      "type": "registry:block",
+      "title": "Dynamic filters example",
+      "registryDependencies": ["https://ui.mendylanda.com/r/filter-system.json"],
+      "files": [
+        {
+          "path": "examples/advanced-filters-demo.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "simcall-filters-demo",
+      "type": "registry:block",
+      "title": "Existing state filters example",
+      "registryDependencies": ["https://ui.mendylanda.com/r/filter-system.json"],
+      "files": [
+        {
+          "path": "examples/simcall-filters-demo.tsx",
           "type": "registry:component"
         }
       ]

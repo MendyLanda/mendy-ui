@@ -184,7 +184,12 @@ export function FilterMenuItem({
     if (!trigger) return;
     const update = () => {
       // Overlap the parent menu when there isn't room for two panels side by side.
-      setSideOffset(window.innerWidth < 640 ? -trigger.getBoundingClientRect().width : 14);
+      const contentId = trigger.getAttribute("aria-controls");
+      const content = contentId ? document.getElementById(contentId) : null;
+      if (!content) return;
+      const bounds = trigger.getBoundingClientRect();
+      const available = Math.max(bounds.left, window.innerWidth - bounds.right);
+      setSideOffset(available < content.offsetWidth + 14 ? -bounds.width : 14);
     };
     const observer = new ResizeObserver(update);
     observer.observe(trigger);
@@ -194,7 +199,7 @@ export function FilterMenuItem({
       observer.disconnect();
       window.removeEventListener("resize", update);
     };
-  }, []);
+  }, [isOpen]);
   return (
     <DropdownMenuSub
       {...props}
@@ -215,7 +220,9 @@ export function FilterMenuItem({
             // A submenu reopened during its exit animation is still inert until
             // React commits the open state. Restore keyboard entry after that commit.
             requestAnimationFrame(() => {
-              if (contentId) document.getElementById(contentId)?.focus();
+              const content = contentId ? document.getElementById(contentId) : null;
+              const input = content?.querySelector<HTMLElement>('input[type="search"], textarea');
+              (input ?? content)?.focus();
             });
           }
         }}

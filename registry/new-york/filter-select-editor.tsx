@@ -1,7 +1,7 @@
 "use client";
 
 import type { KeyboardEvent, ReactNode } from "react";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 import { FilterCheckboxItem } from "@/registry/new-york/filters";
@@ -29,6 +29,12 @@ function SearchableOptions({
   children,
 }: SharedProps & { children: (options: readonly FilterOption[]) => ReactNode }) {
   const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!searchable) return;
+    const frame = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [searchable]);
   const id = useId();
   const filtered = options.filter((option) =>
     option.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
@@ -46,7 +52,13 @@ function SearchableOptions({
   }
 
   return (
-    <div className="w-64 max-w-full" data-slot="filter-options">
+    <div
+      className="w-64 max-w-full"
+      data-slot="filter-options"
+      onKeyDown={(event) => {
+        if (event.key === "Tab") event.stopPropagation();
+      }}
+    >
       {searchable && (
         <div className="flex items-center border-b focus-within:ring-1 focus-within:ring-inset focus-within:ring-ring">
           <Search
@@ -58,6 +70,7 @@ function SearchableOptions({
             {label}
           </label>
           <input
+            ref={inputRef}
             id={id}
             type="search"
             className="flex h-10 min-w-0 w-full rounded-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none"

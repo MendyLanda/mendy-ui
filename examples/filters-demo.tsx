@@ -288,7 +288,6 @@ export function FiltersDemo() {
         {active.includes("status") && (
           <AppliedFilter
             label="Status"
-            style={{ animationDelay: `${active.indexOf("status") * 60}ms` }}
             onRemove={() => remove("status")}
             editor={
               <FilterSelectEditor
@@ -306,7 +305,6 @@ export function FiltersDemo() {
         {active.includes("priority") && (
           <AppliedFilter
             label="Priority"
-            style={{ animationDelay: `${active.indexOf("priority") * 60}ms` }}
             onRemove={() => remove("priority")}
             editor={
               <FilterSelectEditor
@@ -324,7 +322,6 @@ export function FiltersDemo() {
         {active.includes("assignee") && (
           <AppliedFilter
             label="Assignee"
-            style={{ animationDelay: `${active.indexOf("assignee") * 60}ms` }}
             onRemove={() => remove("assignee")}
             editor={
               <FilterMultiSelectEditor
@@ -346,7 +343,6 @@ export function FiltersDemo() {
         )}
         {active.includes("title") && (
           <AppliedFilter
-            style={{ animationDelay: `${active.indexOf("title") * 60}ms` }}
             label="Title"
             open={titleOpen}
             onOpenChange={setTitleOpen}

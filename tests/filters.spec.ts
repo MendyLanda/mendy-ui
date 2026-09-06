@@ -56,6 +56,7 @@ test("multiselect applies inside the submenu and chips remain editable", async (
   await page.goto("/");
   await openFilter(page, "Assignee");
   const input = page.getByRole("searchbox", { name: "Search assignees" });
+  await expect(input).toBeFocused();
   await input.fill("mend");
   await input.press("ArrowDown");
   const mendy = page.getByRole("menuitemcheckbox", { name: "Mendy", exact: true });
@@ -96,7 +97,9 @@ test("text is entered and applied in the submenu without creating an empty chip"
   await openFilter(page, "Title");
   await expect(input).toHaveValue("");
   await input.fill("keyboard");
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await input.press("Tab");
+  await expect(page.getByRole("button", { name: "Apply", exact: true })).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(
     page.getByRole("button", { name: "Edit Title filter", includeHidden: true }),
   ).toContainText("keyboard");
@@ -126,7 +129,12 @@ test("text drafts validate, apply, and discard on Escape or outside dismissal", 
   await trigger.click();
   await expect(input).toHaveValue("design, frontend");
   await input.fill("one, two\none\tthree");
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await input.press("Tab");
+  await expect(page.getByRole("button", { name: "Apply", exact: true })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(input).toBeFocused();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
   await expect(trigger).toContainText("one, two, three");
   await expect(input).toHaveCount(0);
 });
@@ -279,4 +287,21 @@ test("touch selection opens options before adding a chip", async ({ page, isMobi
   await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
   await page.getByRole("menuitemradio", { name: "Todo", exact: true }).tap();
   await expect(page.getByRole("button", { name: "Edit Status filter" })).toContainText("Todo");
+});
+
+test("text submenu fits narrow and intermediate viewport widths", async ({ page }) => {
+  for (const width of [320, 640, 700, 768]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    await openFilter(page, "Title");
+    await page.evaluate(() =>
+      Promise.all(document.getAnimations().map((animation) => animation.finished)),
+    );
+    const bounds = await page.getByRole("dialog", { name: "Set title filter" }).boundingBox();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+    await page.getByRole("textbox", { name: "Title contains" }).fill("keyboard");
+    await page.getByRole("button", { name: "Apply", exact: true }).click();
+    await expect(count(page, 1)).toBeVisible();
+  }
 });

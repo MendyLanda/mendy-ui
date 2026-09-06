@@ -35,7 +35,12 @@ export function FilterTextEditor({
   }, []);
 
   return (
-    <div className="w-72 space-y-2 p-3">
+    <div
+      className="w-72 max-w-full space-y-2 p-3"
+      onKeyDown={(event) => {
+        if (event.key === "Tab") event.stopPropagation();
+      }}
+    >
       <label htmlFor={id} className="text-sm font-medium">
         {label}
       </label>

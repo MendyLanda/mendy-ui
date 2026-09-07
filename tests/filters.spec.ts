@@ -59,14 +59,7 @@ test("appearance controls preview corner radius across demos and color themes", 
   await page.getByRole("button", { name: "Toggle color theme" }).click();
   await expect(search).toHaveCSS("border-radius", "0px");
   await appearance.click();
-  await page.evaluate(() =>
-    Promise.allSettled(
-      document
-        .getAnimations()
-        .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
-        .map((animation) => animation.finished),
-    ),
-  );
+  await expect(page.getByRole("menu")).toHaveCSS("opacity", "1");
   const audit = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();

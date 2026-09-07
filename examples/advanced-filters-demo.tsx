@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { NuqsAdapter } from "nuqs/adapters/react";
 import { defineFilters, filter, remoteOptions } from "@/registry/new-york/filter-definition";
 import { FilterBar } from "@/registry/new-york/filter-bar";
 import { useUrlFilters } from "@/registry/new-york/use-url-filters";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 const people = [
@@ -40,6 +42,7 @@ export function AdvancedFiltersDemo() {
 }
 function RemoteFilters() {
   const failNext = useRef(false);
+  const closeId = useId();
   const [closeMenuOnApply, setCloseMenuOnApply] = useState(false);
   const source = remoteOptions({
     scope: "example-people",
@@ -74,21 +77,26 @@ function RemoteFilters() {
       suggestion: { value: ["mendy"] },
       summary: { mode: "count", limit: 2 },
     }),
-    imei: filter.tokens({
-      label: "IMEI",
-      recognize: (token) => (/^\d{15}$/.test(token) ? [token] : undefined),
+    created: filter.dateRange({ label: "Created date" }),
+    issueId: filter.tokens({
+      label: "Issue ID",
+      menu: false,
+      recognize: (token) => (/^ISSUE-\d+$/i.test(token) ? [token.toUpperCase()] : undefined),
       summary: { mode: "ellipsis", maxWidth: 160 },
     }),
-    iccid: filter.tokens({
-      label: "ICCID",
-      recognize: (token) => (/^\d{19,20}$/.test(token) ? [token] : undefined),
+    email: filter.tokens({
+      label: "Email",
+      menu: false,
+      recognize: (token) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(token) ? [token] : undefined),
     }),
     ticket: filter.tokens({
       label: "Ticket",
+      menu: false,
       recognize: (token) => (/^#\d+$/.test(token) ? [token] : undefined),
     }),
     reference: filter.tokens({
       label: "Reference",
+      menu: false,
       recognize: (token) => (/^#\d+$/.test(token) ? [token] : undefined),
     }),
   });
@@ -107,17 +115,20 @@ function RemoteFilters() {
         searchLabel="Search references"
         closeMenuOnApply={closeMenuOnApply}
       />
-      <label className="flex items-center gap-2 text-xs">
-        <input
-          type="checkbox"
+      <div className="flex items-center gap-2">
+        <Checkbox
+          className="rounded-sm"
+          id={closeId}
           checked={closeMenuOnApply}
-          onChange={(event) => setCloseMenuOnApply(event.target.checked)}
+          onCheckedChange={(checked) => setCloseMenuOnApply(checked === true)}
         />
-        Close menu after applying
-      </label>
+        <Label htmlFor={closeId} className="text-xs">
+          Close menu after applying
+        </Label>
+      </div>
       <p className="text-xs text-muted-foreground">
-        Owner options load two at a time. Paste a 15-digit IMEI, a 19–20-digit ICCID, or #123 to try
-        recognition.
+        Owner options load two at a time. Paste ISSUE-123 or alex@example.com, or type them and
+        press Enter. Try #123 to choose between two matching filters.
       </p>
       <Button
         variant="outline"

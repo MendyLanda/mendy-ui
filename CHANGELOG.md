@@ -1,5 +1,12 @@
 # Changelog
 
+## Theme controls and recognized input
+
+- Chips and controls follow the theme radius. Checkboxes, buttons, inputs, and calendars use shadcn.
+- Date ranges use a calendar with single-day selection and an explicit Apply action.
+- `menu: false` hides an entry while keeping recognition and chip editing. Enter recognizes typed input, just like paste.
+- Public examples use issue IDs, email addresses, projects, and teams. The existing-state example is now `project-filters-demo`.
+
 ## Unreleased
 
 - Keep the filter menu open after applying by default; add `closeMenuOnApply` on the bar and individual fields.

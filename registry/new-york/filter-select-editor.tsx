@@ -2,6 +2,8 @@
 
 import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useId, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Search } from "lucide-react";
 import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 import { FilterCheckboxItem } from "@/registry/new-york/filters";
@@ -60,20 +62,20 @@ function SearchableOptions({
       }}
     >
       {searchable && (
-        <div className="flex items-center border-b focus-within:ring-1 focus-within:ring-inset focus-within:ring-ring">
+        <div className="relative border-b p-2">
           <Search
-            className="mx-2 size-4 shrink-0 opacity-50"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 opacity-50"
             strokeWidth={1.5}
             aria-hidden="true"
           />
-          <label htmlFor={id} className="sr-only">
+          <Label htmlFor={id} className="sr-only">
             {label}
-          </label>
-          <input
+          </Label>
+          <Input
             ref={inputRef}
             id={id}
             type="search"
-            className="flex h-10 min-w-0 w-full rounded-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none"
+            className="pl-8 [&::-webkit-search-cancel-button]:appearance-none"
             placeholder={searchPlaceholder ?? label}
             value={query}
             onChange={(event) => setQuery(event.target.value)}

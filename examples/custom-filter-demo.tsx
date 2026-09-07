@@ -1,5 +1,7 @@
 "use client";
 import { useId, useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { AppliedFilter } from "@/registry/new-york/filters";
 
 export function CustomFilterDemo() {
@@ -11,19 +13,18 @@ export function CustomFilterDemo() {
         label="Visibility"
         editor={
           <div className="w-64 p-4">
-            <label htmlFor={id} className="flex cursor-pointer items-center gap-3 text-sm">
-              <input
+            <Label htmlFor={id} className="flex cursor-pointer items-center gap-3 text-sm">
+              <Checkbox
+                className="rounded-sm"
                 id={id}
-                type="checkbox"
                 checked={archived}
-                onChange={(event) => setArchived(event.target.checked)}
+                onCheckedChange={(checked) => setArchived(checked === true)}
                 onKeyDown={(event) => {
                   if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
                 }}
-                className="size-4 accent-emerald-700"
               />
               Include archived items
-            </label>
+            </Label>
           </div>
         }
       >

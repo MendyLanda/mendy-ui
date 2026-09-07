@@ -10,7 +10,7 @@
       "description": "Composable applied filters with text, single-select, and searchable multiselect editors.",
       "author": "Mendy Landa",
       "dependencies": ["lucide-react", "class-variance-authority"],
-      "registryDependencies": ["button", "dropdown-menu", "input", "textarea"],
+      "registryDependencies": ["button", "dropdown-menu", "input", "textarea", "label"],
       "files": [
         {
           "path": "registry/new-york/filters.tsx",
@@ -35,8 +35,8 @@
       "type": "registry:ui",
       "title": "Filter system",
       "description": "Typed filter definitions with URL and session persistence, dynamic options, suggestions, paste recognition, and custom editors.",
-      "dependencies": ["nuqs"],
-      "registryDependencies": ["https://ui.mendylanda.com/r/filters.json"],
+      "dependencies": ["nuqs", "react-day-picker"],
+      "registryDependencies": ["https://ui.mendylanda.com/r/filters.json", "calendar", "label"],
       "files": [
         {
           "path": "registry/new-york/filter-definition.ts",
@@ -61,6 +61,10 @@
         {
           "path": "registry/new-york/filter-bar.tsx",
           "type": "registry:ui"
+        },
+        {
+          "path": "registry/new-york/filter-date-editor.tsx",
+          "type": "registry:ui"
         }
       ]
     },
@@ -81,7 +85,11 @@
       "name": "advanced-filters-demo",
       "type": "registry:block",
       "title": "Dynamic filters example",
-      "registryDependencies": ["https://ui.mendylanda.com/r/filter-system.json"],
+      "registryDependencies": [
+        "https://ui.mendylanda.com/r/filter-system.json",
+        "checkbox",
+        "label"
+      ],
       "files": [
         {
           "path": "examples/advanced-filters-demo.tsx",
@@ -90,13 +98,17 @@
       ]
     },
     {
-      "name": "simcall-filters-demo",
+      "name": "project-filters-demo",
       "type": "registry:block",
       "title": "Existing state filters example",
-      "registryDependencies": ["https://ui.mendylanda.com/r/filter-system.json"],
+      "registryDependencies": [
+        "https://ui.mendylanda.com/r/filter-system.json",
+        "checkbox",
+        "label"
+      ],
       "files": [
         {
-          "path": "examples/simcall-filters-demo.tsx",
+          "path": "examples/project-filters-demo.tsx",
           "type": "registry:component"
         }
       ]

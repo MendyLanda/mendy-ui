@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { XIcon } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import {
@@ -31,7 +32,7 @@ export function FilterChip({ className, ...props }: FilterChipProps) {
     <div
       data-slot="filter-chip"
       className={cn(
-        "inline-flex h-9 max-w-full items-center bg-secondary text-sm text-muted-foreground motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2.5 motion-safe:duration-200 motion-safe:fill-mode-backwards",
+        "inline-flex h-9 max-w-full overflow-hidden rounded-md items-center bg-secondary text-sm text-muted-foreground motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2.5 motion-safe:duration-200 motion-safe:fill-mode-backwards",
         className,
       )}
       {...props}
@@ -41,17 +42,21 @@ export function FilterChip({ className, ...props }: FilterChipProps) {
 
 export type FilterEditorTriggerProps = ComponentProps<typeof DropdownMenuTrigger>;
 
-export function FilterEditorTrigger({ className, ...props }: FilterEditorTriggerProps) {
+export function FilterEditorTrigger({ className, asChild, ...props }: FilterEditorTriggerProps) {
   return (
-    <DropdownMenuTrigger
-      data-slot="filter-editor-trigger"
-      aria-haspopup="dialog"
-      className={cn(
-        "flex h-full min-w-0 items-center gap-1.5 px-2 text-left hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=open]:bg-accent data-[state=open]:text-foreground",
-        className,
-      )}
-      {...props}
-    />
+    <DropdownMenuTrigger asChild>
+      <Button
+        asChild={asChild}
+        variant="ghost"
+        data-slot="filter-editor-trigger"
+        aria-haspopup="dialog"
+        className={cn(
+          "flex h-full shrink rounded-none font-normal min-w-0 items-center gap-1.5 px-2 text-left hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=open]:bg-accent data-[state=open]:text-foreground",
+          className,
+        )}
+        {...props}
+      />
+    </DropdownMenuTrigger>
   );
 }
 
@@ -85,17 +90,18 @@ export type FilterRemoveProps = ComponentProps<"button"> & {
 
 export function FilterRemove({ className, children, ...props }: FilterRemoveProps) {
   return (
-    <button
+    <Button
+      variant="ghost"
       type="button"
       data-slot="filter-remove"
       className={cn(
-        "flex h-full w-8 shrink-0 items-center justify-center border-l border-border/50 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+        "flex h-full rounded-none p-0 w-8 shrink-0 items-center justify-center border-l border-border/50 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
         className,
       )}
       {...props}
     >
       {children ?? <XIcon className="size-3.5" aria-hidden="true" />}
-    </button>
+    </Button>
   );
 }
 

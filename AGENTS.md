@@ -2,7 +2,7 @@
 
 This is Mendy Landa's personal collection of components he likes to use. Write in that voice. Describe what each component does and how to install it. Keep the homepage to a short introduction, the component demo, and useful links.
 
-Filters came from SimCall. Preserve the flat, square, borderless chips, solid secondary background, compact spacing, and Geist typography. Compare visual changes with the existing component before changing its appearance. Keep the keyboard, focus, and accessible-label behavior when adjusting styles.
+Use shadcn controls and theme tokens, including theme radius on chips and controls. Joined edges can be square inside a rounded outer boundary. Preserve compact spacing and Geist typography. Public examples use generic issues, projects, and people. Recognized identifiers belong in the main search, with editable chips and no redundant menu entries. Compare visual changes with the existing component before changing its appearance. Keep the keyboard, focus, and accessible-label behavior when adjusting styles.
 
 The registry source is also the demo source. Keep fixes there so installed components and previews agree. The application owns filter values and data matching.
 

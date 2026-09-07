@@ -2,6 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 export function DocsNav({ pages }: { pages: { url: string; title: string }[] }) {
@@ -9,16 +11,16 @@ export function DocsNav({ pages }: { pages: { url: string; title: string }[] }) 
   const [query, setQuery] = useState("");
   return (
     <nav aria-label="Documentation" className="space-y-4">
-      <label className="block">
+      <Label className="block">
         <span className="sr-only">Find a documentation page</span>
-        <input
+        <Input
           type="search"
           placeholder="Find a page…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          className="h-9 w-full rounded-md border bg-transparent px-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="text-xs"
         />
-      </label>
+      </Label>
       <div className="flex flex-wrap gap-1 lg:flex-col">
         {pages
           .filter((page) => page.title.toLowerCase().includes(query.toLowerCase()))

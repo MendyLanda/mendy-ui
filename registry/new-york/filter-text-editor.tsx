@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export interface FilterTextEditorProps {
@@ -41,9 +42,9 @@ export function FilterTextEditor({
         if (event.key === "Tab") event.stopPropagation();
       }}
     >
-      <label htmlFor={id} className="text-sm font-medium">
+      <Label htmlFor={id} className="text-sm font-medium">
         {label}
-      </label>
+      </Label>
       <Textarea
         ref={inputRef}
         id={id}

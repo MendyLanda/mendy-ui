@@ -86,6 +86,11 @@ function StatusIcon({ status }: { status: string }) {
 }
 
 const definitions = defineFilters({
+  issueId: filter.tokens({
+    label: "Issue ID",
+    menu: false,
+    recognize: (token) => (/^UI-\d+$/i.test(token) ? [token.toUpperCase()] : undefined),
+  }),
   status: filter.select({ label: "Status", options: statuses, suggestion: { value: "todo" } }),
   priority: filter.select({ label: "Priority", options: priorities }),
   assignee: filter.multiSelect({
@@ -113,10 +118,11 @@ export function FiltersDemo() {
 
 function IssueFilters() {
   const filters = useUrlFilters(definitions, { scope: "issues" });
-  const { status, priority, assignee, title } = filters.values;
+  const { status, priority, assignee, title, issueId } = filters.values;
   const visible = issues.filter(
     (issue) =>
       `${issue.id} ${issue.title}`.toLowerCase().includes(filters.search.trim().toLowerCase()) &&
+      (!issueId?.length || issueId.includes(issue.id)) &&
       (!status || issue.status === status) &&
       (!priority || issue.priority === priority) &&
       (!assignee?.length || assignee.includes(issue.assignee)) &&
@@ -124,7 +130,12 @@ function IssueFilters() {
   );
   return (
     <section className="rounded-md border" aria-label="Interactive issue filters">
-      <FilterBar filters={filters} searchLabel="Search issues" className="border-b p-3" />
+      <FilterBar
+        filters={filters}
+        searchLabel="Search issues"
+        searchPlaceholder="Search or paste an issue ID"
+        className="border-b p-3"
+      />
       <div
         className="overflow-x-auto"
         tabIndex={0}

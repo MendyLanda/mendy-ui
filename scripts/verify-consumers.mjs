@@ -174,13 +174,15 @@ try {
         `shadcn@${rootPackage.devDependencies.shadcn}`,
         "add",
         `${registry}/r/filters-demo.json`,
+        `${registry}/r/advanced-filters-demo.json`,
+        `${registry}/r/project-filters-demo.json`,
         "--yes",
         "--overwrite",
       ]);
       write(
         dir,
         framework === "next" ? "app/page.tsx" : "src/App.tsx",
-        `import { FiltersDemo } from "${alias}/components/filters-demo";\nexport default function DemoPage() { return <FiltersDemo />; }\n`,
+        `import { FiltersDemo } from "${alias}/components/filters-demo";\nimport { AdvancedFiltersDemo } from "${alias}/components/advanced-filters-demo";\nimport { ProjectFiltersDemo } from "${alias}/components/project-filters-demo";\nexport default function DemoPage() { return <><FiltersDemo /><AdvancedFiltersDemo /><ProjectFiltersDemo /></>; }\n`,
       );
       await run(dir, ["build"]);
       console.log(`PASS: ${framework} demo install and build (${dir})`);

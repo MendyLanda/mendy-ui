@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 async function open(page: Page, name: string) {
   await page.getByRole("button", { name: "Open filters" }).first().click();
@@ -17,6 +18,94 @@ async function paste(page: Page, value: string) {
 async function values(page: Page, label = "Dynamic filter values") {
   return JSON.parse((await page.locator(`pre[aria-label="${label}"]`).textContent()) ?? "{}");
 }
+
+test("recognized input bypasses the menu and can still be edited through its chip", async ({
+  page,
+}) => {
+  await page.goto("/docs/advanced");
+  await page.getByRole("button", { name: "Open filters" }).first().click();
+  for (const name of ["Issue ID", "Email", "Ticket", "Reference"])
+    await expect(page.getByRole("menuitem", { name, exact: true })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  const search = page.getByRole("searchbox", { name: "Search references" });
+  await search.fill("issue-123, alex@example.com, remaining");
+  await search.press("Enter");
+  await expect(search).toHaveValue("remaining");
+  await expect.poll(async () => (await values(page)).issueId).toEqual(["ISSUE-123"]);
+  await expect.poll(async () => (await values(page)).email).toEqual(["alex@example.com"]);
+  await page.getByRole("button", { name: "Edit Issue ID filter" }).click();
+  const editor = page.getByRole("textbox", { name: "Issue ID", exact: true });
+  await expect(editor).toBeFocused();
+  await editor.fill("ISSUE-124, ISSUE-125");
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect.poll(async () => (await values(page)).issueId).toEqual(["ISSUE-124", "ISSUE-125"]);
+  await page.getByRole("button", { name: "Remove Issue ID filter" }).click();
+  await expect.poll(async () => (await values(page)).issueId).toBe(null);
+});
+
+test("the issue table filters recognized IDs entered in search", async ({ page }) => {
+  await page.goto("/");
+  const search = page.getByRole("searchbox", { name: "Search issues" });
+  await search.fill("ui-039");
+  await search.press("Enter");
+  await expect(search).toHaveValue("");
+  await expect(page.getByRole("button", { name: "Edit Issue ID filter" })).toContainText("UI-039");
+  await expect(page.getByRole("status").filter({ hasText: "of 8 issues" })).toContainText(
+    "1 of 8 issues",
+  );
+  await page.reload();
+  await expect(page.getByRole("status").filter({ hasText: "of 8 issues" })).toContainText(
+    "1 of 8 issues",
+  );
+});
+
+test("calendar keyboard navigation, drafts, clearing, and theme radius", async ({ page }) => {
+  await page.goto("/docs/advanced");
+  await page.clock.setFixedTime(new Date("2026-09-07T12:00:00"));
+  for (const dark of [false, true]) {
+    if (dark) await page.getByRole("button", { name: "Toggle color theme" }).click();
+    for (const radius of [0, 12]) {
+      await page.evaluate(
+        (radius) => document.documentElement.style.setProperty("--radius", `${radius}px`),
+        radius,
+      );
+      const search = page.getByRole("searchbox", { name: "Search references" });
+      await expect(search).toHaveCSS("border-radius", `${Math.max(0, radius - 2)}px`);
+      await expect(page.locator('[data-slot="filter-suggestion"]').first()).toHaveCSS(
+        "border-radius",
+        `${Math.max(0, radius - 2)}px`,
+      );
+      await expect(page.getByRole("checkbox", { name: "Close menu after applying" })).toHaveCSS(
+        "border-radius",
+        `${Math.max(0, radius - 4)}px`,
+      );
+      await open(page, "Created date");
+      const calendar = page.locator('[data-slot="calendar"]');
+      const first = calendar.getByRole("button", { name: /Tuesday, September 1st, 2026/ });
+      await first.focus();
+      await first.press("ArrowRight");
+      const second = calendar.getByRole("button", { name: /Wednesday, September 2nd, 2026/ });
+      await expect(second).toBeFocused();
+      await second.press("Enter");
+      await expect.poll(async () => (await values(page)).created).toBe(null);
+      await expect(second).toHaveCSS("border-radius", `${Math.max(0, radius - 2)}px`);
+      const bounds = await calendar.boundingBox();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+      const audit = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .analyze();
+      expect(audit.violations).toEqual([]);
+      await page.getByRole("button", { name: "Apply", exact: true }).click();
+      await expect
+        .poll(async () => (await values(page)).created)
+        .toEqual({ from: "2026-09-02", to: "2026-09-02" });
+      await page.getByRole("button", { name: "Clear date", exact: true }).click();
+      await expect.poll(async () => (await values(page)).created).toBe(null);
+      await page.keyboard.press("Escape");
+    }
+  }
+});
 
 test("suggestions apply and stay open, then URL values survive a reload", async ({ page }) => {
   await page.goto("/?tab=retained");
@@ -79,9 +168,9 @@ test("remote search retries failures and uses the latest query", async ({ page }
 test("paste merges recognized tokens, keeps text, and asks about ambiguity", async ({ page }) => {
   await page.goto("/docs/advanced");
   await page.getByRole("searchbox", { name: "Search references" }).fill("existing");
-  await paste(page, "123456789012345,123456789012345\n89123456789012345678\tremaining\n#123");
-  await expect.poll(async () => (await values(page)).imei).toEqual(["123456789012345"]);
-  await expect.poll(async () => (await values(page)).iccid).toEqual(["89123456789012345678"]);
+  await paste(page, "ISSUE-123,ISSUE-123\nalex@example.com\tremaining\n#123");
+  await expect.poll(async () => (await values(page)).issueId).toEqual(["ISSUE-123"]);
+  await expect.poll(async () => (await values(page)).email).toEqual(["alex@example.com"]);
   await expect(page.getByRole("searchbox", { name: "Search references" })).toHaveValue(
     "existing remaining #123",
   );
@@ -117,14 +206,14 @@ test("large pasted selections survive reload and do not pretend to be shareable"
   context,
 }) => {
   await page.goto("/docs/advanced");
-  const ids = Array.from({ length: 100 }, (_, index) => String(123456789012300 + index));
+  const ids = Array.from({ length: 100 }, (_, index) => `ISSUE-${12300 + index}`);
   await paste(page, ids.join("\n"));
   await expect.poll(() => new URL(page.url()).searchParams.has("_advanced")).toBe(true);
   await expect(
     page.getByText("This selection is saved in this browser session.", { exact: false }),
   ).toBeVisible();
   await page.reload();
-  await expect.poll(async () => (await values(page)).imei).toEqual(ids);
+  await expect.poll(async () => (await values(page)).issueId).toEqual(ids);
   const other = await context.newPage();
   await other.goto(page.url());
   await expect(
@@ -135,54 +224,56 @@ test("large pasted selections survive reload and do not pretend to be shareable"
   await other.close();
 });
 
-test("composite dates update both state keys and sourcing drafts remain independent", async ({
+test("composite dates update both state keys and saved view drafts remain independent", async ({
   page,
 }) => {
   await page.goto("/docs/advanced");
-  const lines = page.getByRole("region", { name: "Lines filters", exact: true });
+  const lines = page.getByRole("region", { name: "Project filters", exact: true });
+  await page.clock.setFixedTime(new Date("2026-09-07T12:00:00"));
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Activation date", exact: true }).click();
-  await page.getByLabel("Start date", { exact: true }).fill("2026-09-01");
-  await page.getByLabel("End date", { exact: true }).fill("2026-09-06");
+  await page.getByRole("menuitem", { name: "Created date", exact: true }).click();
+  const calendar = page.locator('[data-slot="calendar"]');
+  await calendar.getByRole("button", { name: /Tuesday, September 1st, 2026/ }).click();
+  await calendar.getByRole("button", { name: /Sunday, September 6th, 2026/ }).click();
   await page.getByRole("button", { name: "Apply", exact: true }).click();
   await expect
-    .poll(() => values(page, "Lines filters values"))
-    .toMatchObject({ activeStart: "2026-09-01", activeEnd: "2026-09-06" });
-  expect(await values(page, "Sourcing draft values")).toMatchObject({
-    activeStart: null,
-    activeEnd: null,
+    .poll(() => values(page, "Project filters values"))
+    .toMatchObject({ createdAfter: "2026-09-01", createdBefore: "2026-09-06" });
+  expect(await values(page, "Saved view draft values")).toMatchObject({
+    createdAfter: null,
+    createdBefore: null,
   });
-  await expect(page.getByLabel("Start date", { exact: true })).toBeVisible();
+  await expect(calendar).toBeVisible();
   await page.keyboard.press("Escape");
-  await lines.getByRole("button", { name: "Remove Activation date filter" }).click();
+  await lines.getByRole("button", { name: "Remove Created date filter" }).click();
   await expect
-    .poll(() => values(page, "Lines filters values"))
-    .toMatchObject({ activeStart: null, activeEnd: null });
+    .poll(() => values(page, "Project filters values"))
+    .toMatchObject({ createdAfter: null, createdBefore: null });
 });
 
-test("grouped tags enforce mutually exclusive values and custom companies retain their editor", async ({
+test("grouped tags enforce mutually exclusive values and custom members retain their editor", async ({
   page,
 }) => {
   await page.goto("/docs/advanced");
-  const lines = page.getByRole("region", { name: "Lines filters", exact: true });
+  const lines = page.getByRole("region", { name: "Project filters", exact: true });
   await lines.getByRole("button", { name: "Open filters" }).click();
   await page.getByRole("menuitem", { name: "Tags", exact: true }).click();
   await page.getByRole("menuitemcheckbox", { name: "Priority", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "No tags", exact: true }).click();
   await expect
-    .poll(() => values(page, "Lines filters values"))
+    .poll(() => values(page, "Project filters values"))
     .toMatchObject({ tagId: null, hasTag: "without" });
   await page.keyboard.press("Escape");
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Companies", exact: true }).click();
-  await page.getByRole("checkbox", { name: "Company One" }).check();
-  await page.getByRole("checkbox", { name: "Company Two" }).check();
+  await page.getByRole("menuitem", { name: "Members", exact: true }).click();
+  await page.getByRole("checkbox", { name: "Alex Rivera" }).check();
+  await page.getByRole("checkbox", { name: "Jordan Lee" }).check();
   await page.keyboard.press("Escape");
-  await expect(lines.getByRole("button", { name: "Edit Companies filter" })).toContainText(
-    "North vendor",
+  await expect(lines.getByRole("button", { name: "Edit Members filter" })).toContainText(
+    "Design team",
   );
-  await lines.getByRole("button", { name: "Edit Companies filter" }).click();
-  await expect(page.getByRole("checkbox", { name: "Company One" })).toBeChecked();
+  await lines.getByRole("button", { name: "Edit Members filter" }).click();
+  await expect(page.getByRole("checkbox", { name: "Alex Rivera" })).toBeChecked();
 });
 
 test("clearing the last suggested selection closes its editor", async ({ page }) => {
@@ -197,9 +288,9 @@ test("clearing the last suggested selection closes its editor", async ({ page })
 
 test("empty number ranges disappear and invalid ranges explain the error", async ({ page }) => {
   await page.goto("/docs/advanced");
-  const lines = page.getByRole("region", { name: "Lines filters", exact: true });
+  const lines = page.getByRole("region", { name: "Project filters", exact: true });
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Member count", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Team size", exact: true }).click();
   await page.getByLabel("Minimum", { exact: true }).fill("5");
   await page.getByLabel("Maximum", { exact: true }).fill("2");
   await expect(page.getByRole("alert")).toContainText("Minimum must not exceed maximum");
@@ -208,29 +299,27 @@ test("empty number ranges disappear and invalid ranges explain the error", async
   await page.getByRole("button", { name: "Apply", exact: true }).click();
   await expect(page.getByLabel("Minimum", { exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(lines.getByRole("button", { name: "Edit Member count filter" })).toContainText(
+  await expect(lines.getByRole("button", { name: "Edit Team size filter" })).toContainText(
     "5 – Any",
   );
-  await lines.getByRole("button", { name: "Edit Member count filter" }).click();
+  await lines.getByRole("button", { name: "Edit Team size filter" }).click();
   await page.getByLabel("Minimum", { exact: true }).fill("");
   await page.getByRole("button", { name: "Apply", exact: true }).click();
-  await expect(lines.getByRole("button", { name: "Edit Member count filter" })).toHaveCount(0);
-  await expect
-    .poll(async () => (await values(page, "Lines filters values")).groupMemberCount)
-    .toBe(null);
+  await expect(lines.getByRole("button", { name: "Edit Team size filter" })).toHaveCount(0);
+  await expect.poll(async () => (await values(page, "Project filters values")).teamSize).toBe(null);
 });
 
 test("custom editor Apply keeps its latest immediate changes", async ({ page }) => {
   await page.goto("/docs/advanced");
-  const lines = page.getByRole("region", { name: "Lines filters", exact: true });
+  const lines = page.getByRole("region", { name: "Project filters", exact: true });
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Companies", exact: true }).click();
-  await page.getByRole("checkbox", { name: "Company One" }).check();
-  await page.getByRole("checkbox", { name: "Company Two" }).check();
+  await page.getByRole("menuitem", { name: "Members", exact: true }).click();
+  await page.getByRole("checkbox", { name: "Alex Rivera" }).check();
+  await page.getByRole("checkbox", { name: "Jordan Lee" }).check();
   await page.getByRole("button", { name: "Done", exact: true }).click();
-  await expect(page.getByRole("checkbox", { name: "Company Two" })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Jordan Lee" })).toBeVisible();
   await expect
-    .poll(async () => (await values(page, "Lines filters values")).vendorCompanyId)
+    .poll(async () => (await values(page, "Project filters values")).memberId)
     .toEqual(["one", "two"]);
 });
 
@@ -254,7 +343,7 @@ test("ordinary and Shift paste remain native, ambiguity preserves longer words",
   expect(await prevented("foo, bar")).toBe(false);
   await search.focus();
   await page.keyboard.down("Shift");
-  expect(await prevented("123456789012345")).toBe(false);
+  expect(await prevented("ISSUE-123")).toBe(false);
   await page.keyboard.up("Shift");
   await search.fill("#123 prefix#123suffix");
   await paste(page, "#123");
@@ -267,20 +356,20 @@ test("browser history restores ordinary and overflow states", async ({ page }) =
   await page.getByRole("button", { name: "Apply Owner filter" }).click();
   await page.keyboard.press("Escape");
   await expect.poll(() => new URL(page.url()).searchParams.get("owner")).toBe('["mendy"]');
-  const ids = Array.from({ length: 100 }, (_, i) => String(123456789012300 + i));
+  const ids = Array.from({ length: 100 }, (_, i) => `ISSUE-${12300 + i}`);
   await paste(page, ids.join("\n"));
   await expect.poll(() => new URL(page.url()).searchParams.has("_advanced")).toBe(true);
   const first = page.url();
-  await paste(page, "123456789012999");
+  await paste(page, "ISSUE-999");
   await expect.poll(() => page.url()).not.toBe(first);
   await page.goBack();
-  await expect.poll(async () => (await values(page)).imei).toEqual(ids);
+  await expect.poll(async () => (await values(page)).issueId).toEqual(ids);
   await page.goBack();
-  await expect.poll(async () => (await values(page)).imei).toBe(null);
+  await expect.poll(async () => (await values(page)).issueId).toBe(null);
   await expect(page.getByRole("link", { name: "Link to these filters" })).toBeVisible();
   await page.goForward();
-  await expect.poll(async () => (await values(page)).imei).toEqual(ids);
-  await page.getByRole("button", { name: "Remove IMEI filter" }).click();
+  await expect.poll(async () => (await values(page)).issueId).toEqual(ids);
+  await page.getByRole("button", { name: "Remove Issue ID filter" }).click();
   await expect.poll(() => new URL(page.url()).searchParams.has("_advanced")).toBe(false);
   await expect(page.getByRole("link", { name: "Link to these filters" })).toBeVisible();
 });
@@ -305,45 +394,42 @@ test("failed session storage still allows a complete URL link", async ({ page })
 
 test("changing dependent options retains the selected plan and its label", async ({ page }) => {
   await page.goto("/docs/advanced");
-  const lines = page.getByRole("region", { name: "Lines filters", exact: true });
+  const lines = page.getByRole("region", { name: "Project filters", exact: true });
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Plan", exact: true }).click();
-  await page.getByRole("menuitemcheckbox", { name: "North voice", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Project", exact: true }).click();
+  await page.getByRole("menuitemcheckbox", { name: "Website", exact: true }).click();
   await page.keyboard.press("Escape");
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Carrier", exact: true }).click();
-  await page.getByRole("menuitemcheckbox", { name: "South", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Workspace", exact: true }).click();
+  await page.getByRole("menuitemcheckbox", { name: "Engineering", exact: true }).click();
   await page.keyboard.press("Escape");
-  await expect(lines.getByRole("button", { name: "Edit Plan filter" })).toContainText(
-    "North voice",
-  );
-  await lines.getByRole("button", { name: "Edit Plan filter" }).click();
-  await expect(
-    page.getByRole("menuitemcheckbox", { name: "South voice", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("menuitemcheckbox", { name: "North voice", exact: true }),
-  ).toHaveCount(0);
+  await expect(lines.getByRole("button", { name: "Edit Project filter" })).toContainText("Website");
+  await lines.getByRole("button", { name: "Edit Project filter" }).click();
+  await expect(page.getByRole("menuitemcheckbox", { name: "API", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitemcheckbox", { name: "Website", exact: true })).toHaveCount(0);
   await expect
-    .poll(async () => (await values(page, "Lines filters values")).carrierPlanId)
-    .toEqual(["north-voice"]);
+    .poll(async () => (await values(page, "Project filters values")).projectId)
+    .toEqual(["design-web"]);
 });
 
 test("chip summaries truncate without losing selected values or accessible descriptions", async ({
   page,
 }) => {
   const owners = ["alex", "jordan", "mendy", "sam", "taylor"];
-  const imei = ["123456789012345", "123456789012346", "123456789012347"];
-  const params = new URLSearchParams({ owner: JSON.stringify(owners), imei: JSON.stringify(imei) });
+  const issueId = ["ISSUE-123", "ISSUE-124", "ISSUE-125"];
+  const params = new URLSearchParams({
+    owner: JSON.stringify(owners),
+    issueId: JSON.stringify(issueId),
+  });
   await page.goto(`/docs/advanced?${params}`);
   const owner = page.getByRole("button", { name: "Edit Owner filter" });
   await expect(owner).toContainText("Alex Rivera, Jordan Lee and 3 more");
   await expect(owner).toHaveAccessibleDescription(
     "Alex Rivera, Jordan Lee, Mendy Landa, Sam Cohen, Taylor Morgan",
   );
-  const chip = page.getByRole("button", { name: "Edit IMEI filter" });
+  const chip = page.getByRole("button", { name: "Edit Issue ID filter" });
   await expect(chip.locator("span.truncate")).toHaveCSS("text-overflow", "ellipsis");
-  await expect(chip).toHaveAccessibleDescription(imei.join(", "));
+  await expect(chip).toHaveAccessibleDescription(issueId.join(", "));
   await expect.poll(async () => (await values(page)).owner).toEqual(owners);
 });
 
@@ -366,13 +452,20 @@ test("single and text filters can be applied without reopening the filter menu",
   await expect(page.getByRole("button", { name: "Open filters" })).toBeFocused();
 });
 
-test("closing after applying is configurable for tokens and multiselects", async ({ page }) => {
+test("closing after applying is configurable for dates and multiselects", async ({ page }) => {
   await page.goto("/docs/advanced");
   await page.getByRole("checkbox", { name: "Close menu after applying" }).check();
-  await open(page, "IMEI");
-  await page.getByRole("textbox", { name: "IMEI", exact: true }).fill("123456789012345");
+  await page.clock.setFixedTime(new Date("2026-09-07T12:00:00"));
+  await open(page, "Created date");
+  await page
+    .locator('[data-slot="calendar"]')
+    .getByRole("button", { name: /Tuesday, September 1st, 2026/ })
+    .click();
   await page.getByRole("button", { name: "Apply", exact: true }).click();
-  await expect(page.getByRole("textbox", { name: "IMEI", exact: true })).toHaveCount(0);
+  await expect(page.locator('[data-slot="calendar"]')).toHaveCount(0);
+  await expect
+    .poll(async () => (await values(page)).created)
+    .toEqual({ from: "2026-09-01", to: "2026-09-01" });
   await open(page, "Owner");
   await page.getByRole("menuitemcheckbox", { name: "Alex Rivera", exact: true }).click();
   await expect(page.getByRole("searchbox", { name: "Search owner" })).toHaveCount(0);

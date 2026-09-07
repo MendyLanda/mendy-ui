@@ -17,6 +17,8 @@ import {
 import { ListFilter, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FilterDateEditor } from "@/registry/new-york/filter-date-editor";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
@@ -142,11 +144,19 @@ export function FilterSearch({
           autoCorrect="off"
           spellCheck={false}
           className={cn(
-            "w-full rounded-none pl-9 text-sm [&::-webkit-search-cancel-button]:appearance-none",
+            "w-full pl-9 text-sm [&::-webkit-search-cancel-button]:appearance-none",
             filters.search ? "pr-16" : "pr-9",
           )}
           onKeyDown={(event) => {
             shift.current = event.shiftKey;
+            if (event.key === "Enter" && !event.nativeEvent.isComposing && !event.shiftKey) {
+              const classified = classifyPaste(event.currentTarget.value, filters.entries);
+              if (Object.keys(classified.changes).length || classified.ambiguous.length) {
+                event.preventDefault();
+                const result = filters.paste(event.currentTarget.value, { before: "", after: "" });
+                setAmbiguous(result.ambiguous);
+              }
+            }
           }}
           onKeyUp={(event) => {
             shift.current = event.shiftKey;
@@ -178,7 +188,9 @@ export function FilterSearch({
           }}
         />
         {filters.search && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
             disabled={disabled}
             aria-label="Clear search"
@@ -190,21 +202,23 @@ export function FilterSearch({
             }}
           >
             <X className="size-[15px]" aria-hidden="true" />
-          </button>
+          </Button>
         )}
         <DropdownMenuTrigger asChild>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             ref={trigger}
             type="button"
             disabled={disabled}
             aria-label="Open filters"
             className={cn(
-              "absolute right-3 top-1/2 -translate-y-1/2 rounded-sm transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:opacity-100",
+              "absolute right-1 top-1/2 size-7 -translate-y-1/2 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:opacity-100",
               filters.active.length ? "opacity-100" : "opacity-50",
             )}
           >
             <ListFilter className="size-[17px]" aria-hidden="true" />
-          </button>
+          </Button>
         </DropdownMenuTrigger>
       </div>
       <FilterMenuContent />
@@ -249,7 +263,7 @@ function FilterMenuContent() {
       }}
     >
       {filters.entries.flatMap((entry) =>
-        !entry.field.hidden && !grouped.has(entry.id)
+        !entry.field.hidden && entry.field.menu !== false && !grouped.has(entry.id)
           ? [<MenuRow key={entry.id} id={entry.id} label={entry.field.label} entries={[entry]} />]
           : [],
       )}
@@ -259,7 +273,8 @@ function FilterMenuContent() {
           id={group.id}
           label={group.label}
           entries={filters.entries.filter(
-            (entry) => group.fields.includes(entry.id) && !entry.field.hidden,
+            (entry) =>
+              group.fields.includes(entry.id) && !entry.field.hidden && entry.field.menu !== false,
           )}
         />
       ))}
@@ -485,7 +500,7 @@ export function FilterClear({ children = "Clear all" }: { children?: ReactNode }
       disabled={disabled}
       variant="ghost"
       size="sm"
-      className="h-9 rounded-none px-2 font-normal text-muted-foreground underline hover:bg-transparent"
+      className="h-9 px-2 font-normal text-muted-foreground underline hover:bg-transparent"
       onClick={() => {
         setAmbiguous([]);
         filters.clear();
@@ -513,7 +528,7 @@ export function FilterFeedback() {
       {ambiguous.map((item) => (
         <div
           key={item.token}
-          className="flex w-full flex-wrap items-center gap-2 rounded border p-2 text-sm"
+          className="flex w-full flex-wrap items-center gap-2 rounded-md border p-2 text-sm"
         >
           <span>Use {item.token} as:</span>
           {item.candidates.map((candidate) => (
@@ -652,6 +667,16 @@ function FieldEditor({
         location={location}
       />
     );
+  if (field.kind === "dateRange")
+    return (
+      <FilterDateEditor
+        field={field}
+        value={value}
+        disabled={disabled}
+        apply={apply}
+        error={error}
+      />
+    );
   return (
     <ValueEditor
       field={field}
@@ -699,13 +724,13 @@ function ChoiceEditor({
       }}
     >
       {field.searchable && (
-        <div className="flex items-center border-b focus-within:ring-1 focus-within:ring-inset focus-within:ring-ring">
+        <div className="relative border-b p-2">
           <Search
-            className="mx-2 size-4 shrink-0 opacity-50"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 opacity-50"
             strokeWidth={1.5}
             aria-hidden="true"
           />
-          <input
+          <Input
             ref={(node) => {
               input.current = node;
             }}
@@ -714,7 +739,7 @@ function ChoiceEditor({
             disabled={disabled}
             placeholder={searchLabel}
             value={options.query}
-            className="h-10 min-w-0 w-full bg-transparent px-3 py-3 text-sm outline-none [&::-webkit-search-cancel-button]:appearance-none"
+            className="pl-8 [&::-webkit-search-cancel-button]:appearance-none"
             onChange={(event) => options.setQuery(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {
@@ -862,24 +887,15 @@ function ValueEditor({
         if (event.key === "Tab") event.stopPropagation();
       }}
     >
-      {field.kind === "numberRange" || field.kind === "dateRange" ? (
+      {field.kind === "numberRange" ? (
         <fieldset disabled={disabled} className="space-y-2">
           <legend className="text-sm font-medium">{field.label}</legend>
           {[0, 1].map((index) => {
-            const dates = field.kind === "dateRange";
             const key = index === 0 ? "from" : "to";
-            const rangeValue = dates
-              ? (draft as { from?: string; to?: string } | null)?.[key]
-              : (draft as (number | null)[] | null)?.[index];
+            const rangeValue = (draft as (number | null)[] | null)?.[index];
             return (
-              <label key={key} className="block space-y-1 text-xs">
-                {dates
-                  ? index === 0
-                    ? "Start date"
-                    : "End date"
-                  : index === 0
-                    ? "Minimum"
-                    : "Maximum"}
+              <Label key={key} className="block space-y-1 text-xs">
+                {index === 0 ? "Minimum" : "Maximum"}
                 <Input
                   ref={
                     index === 0
@@ -890,34 +906,27 @@ function ValueEditor({
                   }
                   aria-invalid={Boolean(validation || error)}
                   aria-describedby={validation || error ? `${id}-error` : undefined}
-                  type={dates ? "date" : "number"}
+                  type="number"
                   value={rangeValue ?? ""}
                   onKeyDown={(event) => {
                     if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
                   }}
                   onChange={(event) => {
                     const next = event.target.value || null;
-                    if (dates)
-                      setDraft({
-                        ...((draft as object | null) ?? { from: null, to: null }),
-                        [key]: next,
-                      });
-                    else {
-                      const range = [...((draft as (number | null)[] | null) ?? [null, null])];
-                      range[index] = next === null ? null : Number(next);
-                      setDraft(range);
-                    }
+                    const range = [...((draft as (number | null)[] | null) ?? [null, null])];
+                    range[index] = next === null ? null : Number(next);
+                    setDraft(range);
                   }}
                 />
-              </label>
+              </Label>
             );
           })}
         </fieldset>
       ) : (
         <>
-          <label htmlFor={id} className="text-sm font-medium">
+          <Label htmlFor={id} className="text-sm font-medium">
             {field.searchLabel ?? field.label}
-          </label>
+          </Label>
           <Textarea
             id={id}
             ref={(node) => {

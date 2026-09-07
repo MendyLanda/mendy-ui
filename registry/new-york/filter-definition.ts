@@ -78,6 +78,8 @@ export interface FieldConfig<V> {
   pastePriority?: number;
   merge?: (current: V, incoming: V) => V;
   urlKey?: string;
+  /** Hide only the menu entry; recognition and chip editing remain available. */
+  menu?: boolean;
   hidden?: boolean;
   disabled?: boolean;
   removable?: boolean;
@@ -127,6 +129,8 @@ export interface RuntimeField {
   urlKey?: string;
   source?: RuntimeSource;
   searchable?: boolean;
+  /** Hide only the menu entry; recognition and chip editing remain available. */
+  menu?: boolean;
   hidden?: boolean;
   disabled?: boolean;
   removable?: boolean;

@@ -20,7 +20,7 @@ Import `defineFilters`, `filter`, `bindFilters`, `remoteOptions`, `externalOptio
 | `filter.dateRange`   | `{ from, to }` or null, with ISO date strings or null endpoints  |
 | `filter.custom`      | Your value type, with a required codec, default, and clear value |
 
-Shared settings include `label`, `defaultValue`, `clearValue`, `isActive`, `normalize`, `validate`, `codec`, `urlKey`, `suggestion`, `summary`, `renderSummary`, `renderEditor`, `hidden`, `disabled`, and `removable`. `searchLabel`, `editorLabel`, and `placeholder` customize editor labels. Application validation remains necessary at the API boundary.
+Shared settings include `label`, `defaultValue`, `clearValue`, `isActive`, `normalize`, `validate`, `codec`, `urlKey`, `suggestion`, `summary`, `renderSummary`, `renderEditor`, `menu`, `hidden`, `disabled`, and `removable`. `searchLabel`, `editorLabel`, and `placeholder` customize editor labels. Application validation remains necessary at the API boundary.
 
 `validate` returns an error string or undefined. Normalization runs before validation. Removing and clearing use the declared clear value. A custom codec parses and serializes the field's value; JSON codecs can use `jsonCodec` with a type guard.
 
@@ -44,7 +44,7 @@ Pass query results as `options`, with `loading`, `error`, and `retry`. Use `filt
 
 For external search or pagination, use `externalOptions({ items, selectedItems, loading, error, retry, query, onQueryChange, hasMore, loadMore })`. `selectedItems` resolves IDs that are outside the current page. When `onQueryChange` is supplied, the component displays the provided results without applying another local search filter.
 
-The application continues owning its query hooks. A carrier-dependent query reads the current carrier IDs directly. Refreshing choices does not clear selected IDs. Define an explicit state update when a business rule requires clearing dependent values.
+The application continues owning its query hooks. A project query reads the current workspace IDs directly. Refreshing choices does not clear selected IDs. Define an explicit state update when a business rule requires clearing dependent values.
 
 ## Async option sources
 
@@ -63,11 +63,25 @@ Requests are shared within a filter bar, canceled when unused, and cached briefl
 
 Use stable IDs and JSON-serializable parameters. Do not put credentials in scope or parameters. Authorization belongs to your data-fetching layer.
 
-## Paste
+## Dates
+
+`filter.dateRange` uses the shadcn Calendar. Choose one day, or a start and end date, then Apply. A single day sets both endpoints to that date. Values are local calendar dates in `YYYY-MM-DD` format; your API decides how to interpret inclusive endpoints and time zones. Existing open-ended ranges keep their null endpoint until edited. Clear date uses the field's `clearValue`.
+
+## Recognized input
 
 Add `recognize(token)` to a definition. Return a typed value when recognized, or undefined when the token belongs elsewhere. `pastePriority` resolves overlapping recognizers when one should win. Equal-priority matches ask the user to choose.
 
-The search field splits pasted input on commas, tabs, and newlines. It normalizes, validates, and deduplicates recognized values. Arrays merge with the existing selection; `merge` overrides that behavior. Unmatched and ambiguous values remain in search. Shift-paste bypasses recognition.
+The search field recognizes pasted input automatically. Typing and pressing Enter uses the same recognition. It splits input on commas, tabs, and newlines. It normalizes, validates, and deduplicates recognized values. Arrays merge with the existing selection; `merge` overrides that behavior. Unmatched and ambiguous values remain in search. Shift-paste bypasses recognition.
+
+Use `menu: false` for a recognized field that does not need a menu entry. Its values still appear as editable, removable chips. `hidden: true` hides the field entirely and excludes it from recognition.
+
+```tsx
+issueId: filter.tokens({
+  label: "Issue ID",
+  menu: false,
+  recognize: (token) => (/^ISSUE-\d+$/i.test(token) ? [token.toUpperCase()] : undefined),
+});
+```
 
 Text entered directly into an individual token editor belongs to that field. It uses the same normalization and validation when applied.
 
@@ -99,15 +113,15 @@ The pure `encodeFilters` and `decodeFilters` functions from `filter-state` can b
 ## Binding existing state
 
 ```tsx
-const line = bindFilters<LineFilters>();
+const project = bindFilters<ProjectFilters>();
 const definitions = {
-  carrier: line.field(
-    "carrierId",
+  workspace: project.field(
+    "workspaceId",
     filter.options({
-      label: "Carrier",
-      options: carriers,
-      getValue: (carrier) => carrier.id,
-      getLabel: (carrier) => carrier.name,
+      label: "Workspace",
+      options: workspaces,
+      getValue: (workspace) => workspace.id,
+      getLabel: (workspace) => workspace.name,
     }),
   ),
 };
@@ -125,7 +139,7 @@ const filters = useControlledFilters({
 
 `onPatch` receives one typed patch per operation, plus metadata identifying edit, removal, clear, paste, suggestion, or search. Fields outside the definitions are preserved. A binding's optional `update(value, current)` can update related fields atomically.
 
-`line.composite(keys, { field, read, write })` maps one editor to several state keys. Its write function returns the complete mapped fields so applying or removing a date range updates both endpoints together. The editor receives the field's typed value; the mapping receives the selected state keys.
+`project.composite(keys, { field, read, write })` maps one editor to several state keys. Its write function returns the complete mapped fields so applying or removing a date range updates both endpoints together. The editor receives the field's typed value; the mapping receives the selected state keys.
 
 An existing state's field type must match its definition. Use `filter.options` for general string IDs, and literal option types for existing enums. Optional state fields read as the definition's default when undefined.
 
@@ -139,6 +153,6 @@ Set `<FilterBar closeMenuOnApply />` to close it after each successful change. A
 
 `renderEditor` receives typed `value`, `setValue`, `draft`, `setDraft`, `apply`, and `close`. `setValue` applies immediately and updates the draft. In the filter menu, it follows `closeMenuOnApply`; in a chip, it stays open unless the value is cleared. `setDraft` changes only the local draft. `apply()` commits the draft and follows the menu's `closeMenuOnApply` setting; inside a chip it closes. Closing an editor discards an unfinished draft.
 
-Group related fields under one menu with `groups={[{ id: "status-menu", label: "Status", fields: ["status", "pendingPort", "pendingSwap"] }]}`. Grouping does not change state ownership or chip removal.
+Group related fields under one menu with `groups={[{ id: "status-menu", label: "Status", fields: ["status", "openTasks", "reviews"] }]}`. Grouping does not change state ownership or chip removal.
 
 For another layout, compose `FilterRoot`, `FilterSearch` or `FilterMenu`, `FilterList`, `FilterClear`, and `FilterFeedback`. They share the same controller and behavior as `FilterBar`. Custom editors and summaries can use your own markup; underlying primitives use the application's shadcn tokens.

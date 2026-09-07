@@ -8,7 +8,7 @@ My personal collection of components I like to use. Built with React and shadcn/
 npx shadcn@latest add https://ui.mendylanda.com/r/filter-system.json
 ```
 
-Filters includes typed definitions, URL and session persistence, remote options, paste recognition, suggestions, and custom editors. Use the built-in state hooks or bind the UI to your existing state and queries. Your app filters its data. The demos use React 19, Tailwind CSS 4, and Radix-based shadcn.
+Filters includes typed definitions, URL and session persistence, remote options, paste recognition, suggestions, and custom editors. Use the built-in state hooks or bind the UI to your existing state and queries. Controls use shadcn components and theme radius. Recognized IDs can become editable chips directly from search, without menu entries. Date filters use a calendar for a day or range. Your app filters its data. The demos use React 19, Tailwind CSS 4, and Radix-based shadcn.
 
 ## Development
 

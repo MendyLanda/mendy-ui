@@ -60,7 +60,12 @@ test("appearance controls preview corner radius across demos and color themes", 
   await expect(search).toHaveCSS("border-radius", "0px");
   await appearance.click();
   await page.evaluate(() =>
-    Promise.all(document.getAnimations().map((animation) => animation.finished)),
+    Promise.allSettled(
+      document
+        .getAnimations()
+        .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
+        .map((animation) => animation.finished),
+    ),
   );
   const audit = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
@@ -257,7 +262,12 @@ test("no accessibility violations in both themes and submenu editors", async ({ 
     for (const name of [null, "Status", "Assignee", "Title"]) {
       if (name) await openFilter(page, name);
       await page.evaluate(() =>
-        Promise.all(document.getAnimations().map((animation) => animation.finished)),
+        Promise.allSettled(
+          document
+            .getAnimations()
+            .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
+            .map((animation) => animation.finished),
+        ),
       );
       const result = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
@@ -349,7 +359,12 @@ test("text submenu fits narrow and intermediate viewport widths", async ({ page 
     await page.goto("/");
     await openFilter(page, "Title");
     await page.evaluate(() =>
-      Promise.all(document.getAnimations().map((animation) => animation.finished)),
+      Promise.allSettled(
+        document
+          .getAnimations()
+          .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
+          .map((animation) => animation.finished),
+      ),
     );
     const bounds = await page.getByRole("dialog", { name: "Set title filter" }).boundingBox();
     expect(bounds!.x).toBeGreaterThanOrEqual(0);

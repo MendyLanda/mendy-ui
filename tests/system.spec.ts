@@ -97,7 +97,12 @@ test("calendar selection applies immediately with keyboard navigation and theme 
       expect(bounds!.x).toBeGreaterThanOrEqual(0);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
       await page.evaluate(() =>
-        Promise.all(document.getAnimations().map((animation) => animation.finished)),
+        Promise.allSettled(
+          document
+            .getAnimations()
+            .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
+            .map((animation) => animation.finished),
+        ),
       );
       const audit = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])

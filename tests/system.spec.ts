@@ -119,10 +119,14 @@ test("calendar selection applies immediately with keyboard navigation and theme 
   }
 });
 
-test("suggestions apply and stay open, then URL values survive a reload", async ({ page }) => {
+test("predefined filters apply on the first click and open on the second", async ({ page }) => {
   await page.goto("/?tab=retained");
   await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
   await page.getByRole("button", { name: "Apply Status filter" }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get("status")).toBe("todo");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const applied = page.getByRole("button", { name: "Edit Status filter" });
+  await applied.click();
   await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeChecked();
   await page.getByRole("menuitemradio", { name: "In progress", exact: true }).click();
   await expect.poll(() => new URL(page.url()).searchParams.get("status")).toBe("in-progress");
@@ -297,6 +301,7 @@ test("grouped tags enforce mutually exclusive values and custom members retain t
 test("clearing the last suggested selection closes its editor", async ({ page }) => {
   await page.goto("/docs/advanced");
   await page.getByRole("button", { name: "Apply Owner filter" }).click();
+  await page.getByRole("button", { name: "Edit Owner filter" }).click();
   await page.getByRole("searchbox", { name: "Search owner" }).fill("mendy");
   await page.getByRole("menuitemcheckbox", { name: "Mendy Landa" }).click();
   await expect(page.getByRole("button", { name: "Apply Owner filter" })).toBeVisible();
@@ -506,6 +511,8 @@ test("suggestions keep their positions when applied and return when removed", as
   await page.keyboard.press("Escape");
   expect((await assignee.boundingBox())?.y).toBe(before?.y);
   await assignee.click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "Edit Assignee filter" }).click();
   await expect(page.getByRole("menuitemcheckbox", { name: "Mendy", exact: true })).toBeChecked();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Remove Status filter" }).click();
@@ -513,4 +520,25 @@ test("suggestions keep their positions when applied and return when removed", as
   await expect(page.getByRole("button", { name: "Edit Assignee filter" })).toContainText("Mendy");
   await page.getByRole("button", { name: "Clear all" }).click();
   await expect(page.locator('[data-slot="filter-suggestion"]')).toHaveCount(2);
+});
+
+test("keyboard activation applies a predefined filter once, then opens its editor", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const suggestion = page.getByRole("button", { name: "Apply Assignee filter" });
+  await suggestion.focus();
+  await suggestion.press("Space");
+  const chip = page.getByRole("button", { name: "Edit Assignee filter" });
+  await expect(chip).toBeFocused();
+  await expect(chip).toContainText("Mendy");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await chip.press("Enter");
+  await expect(page.getByRole("menuitemcheckbox", { name: "Mendy", exact: true })).toBeChecked();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Remove Assignee filter" }).click();
+  await suggestion.focus();
+  await suggestion.press("Enter");
+  await expect(chip).toBeFocused();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });

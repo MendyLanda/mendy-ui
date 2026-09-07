@@ -383,8 +383,8 @@ function FieldChip({ entry }: { entry: FilterEntry }) {
       open={filters.editField === id}
       onOpenChange={(open) => {
         if (open && !active && field.suggestion && "value" in field.suggestion) {
-          const error = filters.commit(id, field.suggestion.value, "suggestion");
-          if (error) return;
+          filters.commit(id, field.suggestion.value, "suggestion");
+          return;
         }
         filters.edit(open ? id : null);
       }}

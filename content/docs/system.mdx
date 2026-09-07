@@ -26,7 +26,7 @@ Shared settings include `label`, `defaultValue`, `clearValue`, `isActive`, `norm
 
 ## Suggestions and summaries
 
-`suggestion: { value, label?, loading?, disabled? }` creates an unapplied shortcut. A valid preset applies on click and keeps the editor open. A suggestion without a value opens the editor without applying anything.
+`suggestion: { value, label?, loading?, disabled? }` creates an unapplied shortcut. A valid preset applies on the first click without opening the editor. Click the applied chip again to edit it. A suggestion without a value opens the editor without applying anything.
 
 `FilterBar` keeps unapplied suggestions visible alongside applied chips by default. Applying one turns it into an applied chip in the same position; other suggestions stay available. Removing it restores the dashed suggestion. Set `suggestions="when-empty"` for empty-state shortcuts only, or `suggestions="never"` to hide them.
 

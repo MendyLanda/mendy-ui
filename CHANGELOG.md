@@ -1,5 +1,9 @@
 # Changelog
 
+## Predefined shortcuts
+
+- Clicking a predefined filter applies it without opening the editor. A second click edits the applied chip. Suggestions without preset values still open an editor.
+
 ## Immediate selection and appearance preview
 
 - Dates and number ranges apply each valid change immediately; date chip editors stay open for range selection.

@@ -10,18 +10,20 @@ export interface FilterTextEditorProps {
   label: string;
   defaultValue: string;
   applyLabel?: string;
+  commitMode?: "enter" | "apply";
   placeholder?: string;
   onApply: (value: string) => void;
   validate?: (value: string) => string | undefined;
 }
 
-/** A draft is local to the open editor. Only Apply commits it to the caller. */
+/** A draft is local to the open editor. Enter commits it by default; explicit button submission is optional. */
 export function FilterTextEditor({
   label,
   defaultValue,
   onApply,
   validate,
   applyLabel = "Apply",
+  commitMode = "enter",
   placeholder,
 }: FilterTextEditorProps) {
   const id = useId();
@@ -54,6 +56,15 @@ export function FilterTextEditor({
         aria-describedby={error ? `${id}-error` : undefined}
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => {
+          if (
+            commitMode === "enter" &&
+            event.key === "Enter" &&
+            !event.shiftKey &&
+            !event.nativeEvent.isComposing
+          ) {
+            event.preventDefault();
+            if (!error) onApply(draft);
+          }
           // Let the textarea handle typing and cursor movement, not menu typeahead.
           if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
         }}
@@ -63,9 +74,13 @@ export function FilterTextEditor({
           {error}
         </p>
       )}
-      <Button type="button" size="sm" disabled={Boolean(error)} onClick={() => onApply(draft)}>
-        {applyLabel}
-      </Button>
+      {commitMode === "apply" ? (
+        <Button type="button" size="sm" disabled={Boolean(error)} onClick={() => onApply(draft)}>
+          {applyLabel}
+        </Button>
+      ) : (
+        <p className="text-xs text-muted-foreground">Enter to save. Shift+Enter for a new line.</p>
+      )}
     </div>
   );
 }

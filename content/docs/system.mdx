@@ -65,7 +65,7 @@ Use stable IDs and JSON-serializable parameters. Do not put credentials in scope
 
 ## Dates
 
-`filter.dateRange` uses the shadcn Calendar. Choose one day, or a start and end date, then Apply. A single day sets both endpoints to that date. Values are local calendar dates in `YYYY-MM-DD` format; your API decides how to interpret inclusive endpoints and time zones. Existing open-ended ranges keep their null endpoint until edited. Clear date uses the field's `clearValue`.
+`filter.dateRange` uses the shadcn Calendar. Click a day to apply it immediately. Click a second day to extend the range. The editor stays open by default, including when editing a chip. A single day sets both endpoints to that date. Values are local calendar dates in `YYYY-MM-DD` format; your API decides how to interpret inclusive endpoints and time zones. Existing open-ended ranges keep their null endpoint until edited. Clear date uses the field's `clearValue`.
 
 ## Recognized input
 
@@ -151,7 +151,7 @@ Set `<FilterBar closeMenuOnApply />` to close it after each successful change. A
 
 ## Custom editors and layout
 
-`renderEditor` receives typed `value`, `setValue`, `draft`, `setDraft`, `apply`, and `close`. `setValue` applies immediately and updates the draft. In the filter menu, it follows `closeMenuOnApply`; in a chip, it stays open unless the value is cleared. `setDraft` changes only the local draft. `apply()` commits the draft and follows the menu's `closeMenuOnApply` setting; inside a chip it closes. Closing an editor discards an unfinished draft.
+`renderEditor` receives typed `value`, `setValue`, `draft`, `setDraft`, `apply`, and `close`. `setValue` applies immediately and updates the draft. In the filter menu, it follows `closeMenuOnApply`; in a chip, it stays open unless the value is cleared. `setDraft` changes only the local draft. `apply()` commits the draft and follows the menu's `closeMenuOnApply` setting; inside a chip it closes. Closing an editor discards an unfinished draft. Built-in date and number ranges apply each valid change immediately. Text and token editors save with Enter; Shift+Enter adds a line. For explicit submission, supply a custom `renderEditor`, for example `FilterTextEditor` with `commitMode="apply"`.
 
 Group related fields under one menu with `groups={[{ id: "status-menu", label: "Status", fields: ["status", "openTasks", "reviews"] }]}`. Grouping does not change state ownership or chip removal.
 

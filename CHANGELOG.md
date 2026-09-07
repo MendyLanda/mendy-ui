@@ -1,5 +1,12 @@
 # Changelog
 
+## Immediate selection and appearance preview
+
+- Dates and number ranges apply each valid change immediately; date chip editors stay open for range selection.
+- Text editors save with Enter by default. Explicit buttons remain available through `FilterTextEditor commitMode="apply"` or custom editors.
+- The site's Appearance menu previews square, small, default, or rounded corners.
+- Removed the Done button from the member example.
+
 ## Theme controls and recognized input
 
 - Chips and controls follow the theme radius. Checkboxes, buttons, inputs, and calendars use shadcn.

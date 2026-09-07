@@ -8,7 +8,6 @@ import {
   filter,
   jsonCodec,
 } from "@/registry/new-york/filter-definition";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { FilterBar } from "@/registry/new-york/filter-bar";
@@ -58,7 +57,7 @@ const members = [
   { id: "two", name: "Jordan Lee", team: "Design team" },
   { id: "three", name: "Sam Cohen", team: "Engineering team" },
 ];
-function MemberEditor({ value, setValue, apply }: EditorContext<string[] | null>) {
+function MemberEditor({ value, setValue }: EditorContext<string[] | null>) {
   const id = useId();
   return (
     <fieldset className="w-56 space-y-2">
@@ -80,9 +79,6 @@ function MemberEditor({ value, setValue, apply }: EditorContext<string[] | null>
           <Label htmlFor={`${id}-${member.id}`}>{member.name}</Label>
         </div>
       ))}
-      <Button type="button" size="sm" variant="outline" onClick={() => apply()}>
-        Done
-      </Button>
     </fieldset>
   );
 }

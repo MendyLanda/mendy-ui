@@ -58,7 +58,7 @@ const issues = [
   },
   {
     id: "UI-035",
-    title: "Hold text drafts locally until Apply",
+    title: "Save text filters with Enter",
     status: "todo",
     priority: "medium",
     assignee: "Mendy",

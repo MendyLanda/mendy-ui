@@ -912,10 +912,13 @@ function ValueEditor({
                     if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
                   }}
                   onChange={(event) => {
+                    // An unfinished minus sign or exponent is not an intentional clear.
+                    if (event.target.validity.badInput) return;
                     const next = event.target.value || null;
                     const range = [...((draft as (number | null)[] | null) ?? [null, null])];
                     range[index] = next === null ? null : Number(next);
                     setDraft(range);
+                    apply(range, false);
                   }}
                 />
               </Label>
@@ -939,7 +942,7 @@ function ValueEditor({
             aria-describedby={validation || error ? `${id}-error` : undefined}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={(event) => {
-              if (field.kind === "text" && event.key === "Enter" && !event.shiftKey) {
+              if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
                 event.preventDefault();
                 if (!validation) apply(candidate);
               }
@@ -953,14 +956,9 @@ function ValueEditor({
           {validation ?? error}
         </p>
       )}
-      <Button
-        type="button"
-        size="sm"
-        disabled={disabled || Boolean(validation)}
-        onClick={() => apply(candidate)}
-      >
-        Apply
-      </Button>
+      {field.kind !== "numberRange" && (
+        <p className="text-xs text-muted-foreground">Enter to save. Shift+Enter for a new line.</p>
+      )}
     </div>
   );
 }

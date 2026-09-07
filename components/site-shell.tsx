@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeControls } from "@/components/theme-controls";
 import { SITE } from "@/constants/site";
 
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
-      <div className="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
         <Link href="/" className="shrink-0 text-sm font-semibold">
           Mendy UI
         </Link>
-        <nav aria-label="Main navigation" className="ml-auto flex items-center gap-4 text-sm">
+        <nav
+          aria-label="Main navigation"
+          className="ml-auto flex items-center gap-2 sm:gap-4 text-sm"
+        >
           <Link href="/docs" className="text-muted-foreground hover:text-foreground">
             Docs
           </Link>
@@ -22,7 +26,10 @@ export function SiteHeader() {
           <a href={SITE.github} className="text-muted-foreground hover:text-foreground">
             GitHub
           </a>
-          <ThemeToggle />
+          <div className="flex items-center">
+            <ThemeControls />
+            <ThemeToggle />
+          </div>
         </nav>
       </div>
     </header>

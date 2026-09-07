@@ -37,7 +37,7 @@ test("recognized input bypasses the menu and can still be edited through its chi
   const editor = page.getByRole("textbox", { name: "Issue ID", exact: true });
   await expect(editor).toBeFocused();
   await editor.fill("ISSUE-124, ISSUE-125");
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await editor.press("Enter");
   await expect.poll(async () => (await values(page)).issueId).toEqual(["ISSUE-124", "ISSUE-125"]);
   await page.getByRole("button", { name: "Remove Issue ID filter" }).click();
   await expect.poll(async () => (await values(page)).issueId).toBe(null);
@@ -59,7 +59,9 @@ test("the issue table filters recognized IDs entered in search", async ({ page }
   );
 });
 
-test("calendar keyboard navigation, drafts, clearing, and theme radius", async ({ page }) => {
+test("calendar selection applies immediately with keyboard navigation and theme radius", async ({
+  page,
+}) => {
   await page.goto("/docs/advanced");
   await page.clock.setFixedTime(new Date("2026-09-07T12:00:00"));
   for (const dark of [false, true]) {
@@ -87,16 +89,21 @@ test("calendar keyboard navigation, drafts, clearing, and theme radius", async (
       const second = calendar.getByRole("button", { name: /Wednesday, September 2nd, 2026/ });
       await expect(second).toBeFocused();
       await second.press("Enter");
-      await expect.poll(async () => (await values(page)).created).toBe(null);
+      await expect
+        .poll(async () => (await values(page)).created)
+        .toEqual({ from: "2026-09-02", to: "2026-09-02" });
       await expect(second).toHaveCSS("border-radius", `${Math.max(0, radius - 2)}px`);
       const bounds = await calendar.boundingBox();
       expect(bounds!.x).toBeGreaterThanOrEqual(0);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+      await page.evaluate(() =>
+        Promise.all(document.getAnimations().map((animation) => animation.finished)),
+      );
       const audit = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
         .analyze();
       expect(audit.violations).toEqual([]);
-      await page.getByRole("button", { name: "Apply", exact: true }).click();
+      await expect(page.getByRole("button", { name: "Apply", exact: true })).toHaveCount(0);
       await expect
         .poll(async () => (await values(page)).created)
         .toEqual({ from: "2026-09-02", to: "2026-09-02" });
@@ -124,14 +131,13 @@ test("suggestions apply and stay open, then URL values survive a reload", async 
   await expect.poll(() => new URL(page.url()).searchParams.get("status")).toBe(null);
 });
 
-test("text drafts stay out of the URL until Apply", async ({ page }) => {
+test("text drafts stay out of the URL until Enter", async ({ page }) => {
   await page.goto("/");
   await open(page, "Title");
   const input = page.getByRole("textbox", { name: "Title contains" });
   await input.fill("keyboard");
   expect(new URL(page.url()).searchParams.has("title")).toBe(false);
-  await input.press("Tab");
-  await page.keyboard.press("Enter");
+  await input.press("Enter");
   await expect.poll(() => new URL(page.url()).searchParams.get("title")).toBe("keyboard");
   await page.reload();
   await expect(page.getByRole("button", { name: "Edit Title filter" })).toContainText("keyboard");
@@ -235,7 +241,7 @@ test("composite dates update both state keys and saved view drafts remain indepe
   const calendar = page.locator('[data-slot="calendar"]');
   await calendar.getByRole("button", { name: /Tuesday, September 1st, 2026/ }).click();
   await calendar.getByRole("button", { name: /Sunday, September 6th, 2026/ }).click();
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Apply", exact: true })).toHaveCount(0);
   await expect
     .poll(() => values(page, "Project filters values"))
     .toMatchObject({ createdAfter: "2026-09-01", createdBefore: "2026-09-06" });
@@ -243,6 +249,13 @@ test("composite dates update both state keys and saved view drafts remain indepe
     createdAfter: null,
     createdBefore: null,
   });
+  await expect(calendar).toBeVisible();
+  await page.keyboard.press("Escape");
+  await lines.getByRole("button", { name: "Edit Created date filter" }).click();
+  await calendar.getByRole("button", { name: /Monday, September 7th, 2026/ }).click();
+  await expect
+    .poll(() => values(page, "Project filters values"))
+    .toMatchObject({ createdAfter: "2026-09-01", createdBefore: "2026-09-07" });
   await expect(calendar).toBeVisible();
   await page.keyboard.press("Escape");
   await lines.getByRole("button", { name: "Remove Created date filter" }).click();
@@ -294,9 +307,11 @@ test("empty number ranges disappear and invalid ranges explain the error", async
   await page.getByLabel("Minimum", { exact: true }).fill("5");
   await page.getByLabel("Maximum", { exact: true }).fill("2");
   await expect(page.getByRole("alert")).toContainText("Minimum must not exceed maximum");
-  await expect(page.getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
+  await expect
+    .poll(async () => (await values(page, "Project filters values")).teamSize)
+    .toEqual([5, null]);
   await page.getByLabel("Maximum", { exact: true }).fill("");
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Apply", exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Minimum", { exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(lines.getByRole("button", { name: "Edit Team size filter" })).toContainText(
@@ -304,19 +319,19 @@ test("empty number ranges disappear and invalid ranges explain the error", async
   );
   await lines.getByRole("button", { name: "Edit Team size filter" }).click();
   await page.getByLabel("Minimum", { exact: true }).fill("");
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Apply", exact: true })).toHaveCount(0);
   await expect(lines.getByRole("button", { name: "Edit Team size filter" })).toHaveCount(0);
   await expect.poll(async () => (await values(page, "Project filters values")).teamSize).toBe(null);
 });
 
-test("custom editor Apply keeps its latest immediate changes", async ({ page }) => {
+test("custom member editor applies immediately without a Done button", async ({ page }) => {
   await page.goto("/docs/advanced");
   const lines = page.getByRole("region", { name: "Project filters", exact: true });
   await lines.getByRole("button", { name: "Open filters" }).click();
   await page.getByRole("menuitem", { name: "Members", exact: true }).click();
   await page.getByRole("checkbox", { name: "Alex Rivera" }).check();
   await page.getByRole("checkbox", { name: "Jordan Lee" }).check();
-  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Done", exact: true })).toHaveCount(0);
   await expect(page.getByRole("checkbox", { name: "Jordan Lee" })).toBeVisible();
   await expect
     .poll(async () => (await values(page, "Project filters values")).memberId)
@@ -444,7 +459,7 @@ test("single and text filters can be applied without reopening the filter menu",
   await todo.press("ArrowLeft");
   await page.getByRole("menuitem", { name: "Title", exact: true }).click();
   await page.getByRole("textbox", { name: "Title contains" }).fill("keyboard");
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await page.getByRole("textbox", { name: "Title contains" }).press("Enter");
   await expect(page.getByRole("textbox", { name: "Title contains" })).toBeVisible();
   await expect.poll(() => new URL(page.url()).searchParams.get("title")).toBe("keyboard");
   expect(new URL(page.url()).searchParams.get("status")).toBe("todo");
@@ -461,7 +476,7 @@ test("closing after applying is configurable for dates and multiselects", async 
     .locator('[data-slot="calendar"]')
     .getByRole("button", { name: /Tuesday, September 1st, 2026/ })
     .click();
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Apply", exact: true })).toHaveCount(0);
   await expect(page.locator('[data-slot="calendar"]')).toHaveCount(0);
   await expect
     .poll(async () => (await values(page)).created)

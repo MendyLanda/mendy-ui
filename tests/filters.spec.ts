@@ -25,6 +25,52 @@ function count(page: Page, value: number) {
     .filter({ hasText: `${value} of 8 issues` });
 }
 
+test("appearance controls preview corner radius across demos and color themes", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const appearance = page.getByRole("button", { name: "Customize appearance" });
+  const search = page.getByRole("searchbox", { name: "Search issues" });
+  for (const [label, radius] of [
+    ["Square", "0px"],
+    ["Small", "4px"],
+    ["Rounded", "12px"],
+    ["Default", "6px"],
+  ]) {
+    await appearance.click();
+    const option = page.getByRole("menuitemradio", { name: label, exact: true });
+    await option.click();
+    await expect(option).toBeChecked();
+    await expect(search).toHaveCSS("border-radius", radius!);
+    await expect(page.locator('[data-slot="filter-suggestion"]').first()).toHaveCSS(
+      "border-radius",
+      radius!,
+    );
+    await page.keyboard.press("Escape");
+  }
+  await appearance.click();
+  await page.getByRole("menuitemradio", { name: "Square", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link", { name: "Filters", exact: true })
+    .click();
+  await expect(search).toHaveCSS("border-radius", "0px");
+  await page.getByRole("button", { name: "Toggle color theme" }).click();
+  await expect(search).toHaveCSS("border-radius", "0px");
+  await appearance.click();
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((animation) => animation.finished)),
+  );
+  const audit = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+    .analyze();
+  expect(audit.violations).toEqual([]);
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 320, height: 900 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= 320)).toBe(true);
+});
+
 test("menu items reveal options before applying, then the chip edits the value", async ({
   page,
 }) => {
@@ -91,7 +137,9 @@ test("text is entered and applied in the submenu without creating an empty chip"
   await openFilter(page, "Title");
   const input = page.getByRole("textbox", { name: "Title contains" });
   await expect(input).toBeFocused();
-  await expect(page.getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Apply", exact: true })).toHaveCount(0);
+  await input.press("Enter");
+  await expect(input).toBeVisible();
   await input.fill("discard this");
   await expect(
     page.getByRole("button", { name: "Edit Title filter", includeHidden: true }),
@@ -100,9 +148,7 @@ test("text is entered and applied in the submenu without creating an empty chip"
   await openFilter(page, "Title");
   await expect(input).toHaveValue("");
   await input.fill("keyboard");
-  await input.press("Tab");
-  await expect(page.getByRole("button", { name: "Apply", exact: true })).toBeFocused();
-  await page.keyboard.press("Enter");
+  await input.press("Enter");
   await expect(
     page.getByRole("button", { name: "Edit Title filter", includeHidden: true }),
   ).toContainText("keyboard");
@@ -122,7 +168,9 @@ test("text drafts validate, apply, and discard on Escape or outside dismissal", 
   await trigger.click();
   await expect(input).toBeFocused();
   await input.fill("");
-  await expect(page.getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Apply", exact: true })).toHaveCount(0);
+  await input.press("Enter");
+  await expect(input).toBeVisible();
   await expect(input).toHaveAttribute("aria-invalid", "true");
   await input.fill("not applied");
   await input.press("Escape");
@@ -134,12 +182,9 @@ test("text drafts validate, apply, and discard on Escape or outside dismissal", 
   await trigger.click();
   await expect(input).toHaveValue("design, frontend");
   await input.fill("one, two\none\tthree");
-  await input.press("Tab");
-  await expect(page.getByRole("button", { name: "Apply", exact: true })).toBeFocused();
-  await page.keyboard.press("Shift+Tab");
+  await input.press("Shift+Enter");
   await expect(input).toBeFocused();
-  await page.keyboard.press("Tab");
-  await page.keyboard.press("Enter");
+  await input.press("Enter");
   await expect(trigger).toContainText("one, two, three");
   await expect(input).toHaveCount(0);
 });
@@ -310,7 +355,7 @@ test("text submenu fits narrow and intermediate viewport widths", async ({ page 
     expect(bounds!.x).toBeGreaterThanOrEqual(0);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
     await page.getByRole("textbox", { name: "Title contains" }).fill("keyboard");
-    await page.getByRole("button", { name: "Apply", exact: true }).click();
+    await page.getByRole("textbox", { name: "Title contains" }).press("Enter");
     await expect(count(page, 1)).toBeVisible();
   }
 });

@@ -25,7 +25,7 @@ export function FilterDateEditor({
   field: RuntimeField;
   value: unknown;
   disabled?: boolean;
-  apply(value: unknown): void;
+  apply(value: unknown, shouldClose?: boolean): void;
   error?: string;
 }) {
   const initial = value as DateRange | null;
@@ -37,14 +37,6 @@ export function FilterDateEditor({
         }
       : undefined,
   );
-  const candidate =
-    range?.from || range?.to
-      ? {
-          from: dateString(range.from),
-          to: dateString(range.to),
-        }
-      : null;
-  const validation = field.validate(field.normalize(candidate));
   return (
     <div
       onKeyDown={(event) => {
@@ -57,28 +49,27 @@ export function FilterDateEditor({
         mode="range"
         autoFocus
         selected={range}
-        onSelect={(next) =>
-          setRange(next ? { from: next.from, to: next.to ?? next.from } : undefined)
-        }
+        onSelect={(next) => {
+          const selected = next ? { from: next.from, to: next.to ?? next.from } : undefined;
+          setRange(selected);
+          apply(
+            selected
+              ? { from: dateString(selected.from), to: dateString(selected.to) }
+              : field.clearValue,
+            false,
+          );
+        }}
         defaultMonth={range?.from ?? range?.to}
         disabled={disabled}
       />
       <div className="space-y-2 border-t p-3">
         <p className="text-xs text-muted-foreground">Pick a day, or two dates for a range.</p>
-        {(validation || error) && (
+        {error && (
           <p role="alert" className="text-sm text-destructive">
-            {validation ?? error}
+            {error}
           </p>
         )}
         <div className="flex gap-2">
-          <Button
-            type="button"
-            size="sm"
-            disabled={disabled || Boolean(validation)}
-            onClick={() => apply(candidate)}
-          >
-            Apply
-          </Button>
           <Button
             type="button"
             size="sm"

@@ -32,11 +32,11 @@ Import from `@/components/ui/filter-text-editor`.
 | `label`        | `string`                                 | Required visible textarea label.                                 |
 | `defaultValue` | `string`                                 | Initial draft when mounted.                                      |
 | `onApply`      | `(value: string) => void`                | Receives the raw draft. Does not close the editor automatically. |
-| `validate`     | `(value: string) => string \| undefined` | Return an error message to disable Apply.                        |
-| `applyLabel`   | `string`                                 | Button text; defaults to `Apply`.                                |
+| `validate`     | `(value: string) => string \| undefined` | Return an error message to prevent submission.                   |
+| `applyLabel`   | `string`                                 | Optional button text; defaults to `Apply`.                       |
 | `placeholder`  | `string`                                 | Optional textarea placeholder.                                   |
 
-Close through the parent's `onApply` callback when desired. Changing `defaultValue` while the editor is mounted does not overwrite an in-progress draft. Avoid `forceMount` on content if you want dismissal to discard drafts automatically.
+The default `commitMode="enter"` saves with Enter and allows new lines with Shift+Enter. Use `commitMode="apply"` for a custom flow with an explicit button. Close through the parent's `onApply` callback when desired. Changing `defaultValue` while the editor is mounted does not overwrite an in-progress draft. Avoid `forceMount` on content if you want dismissal to discard drafts automatically.
 
 ## Selection editors
 

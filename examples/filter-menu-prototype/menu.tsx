@@ -87,7 +87,9 @@ function OpenMenu({ variant }: { variant: PrototypeVariant }) {
         role="group"
         aria-label={`${item.field.label} options`}
         className={cn(
-          "min-w-0 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-1 motion-safe:duration-150 [&>div]:w-full [&_[role^=menuitem]]:min-h-9",
+          "min-w-0 [&>div]:w-full [&_[role^=menuitem]]:min-h-9",
+          variant !== "joined" &&
+            "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-1 motion-safe:duration-150",
           item.field.kind === "dateRange" && "[&>div>p:first-child]:hidden",
         )}
       >
@@ -199,6 +201,7 @@ function OpenMenu({ variant }: { variant: PrototypeVariant }) {
       className={cn(
         "max-h-[min(480px,var(--radix-dropdown-menu-content-available-height))] max-w-[calc(100vw-1.5rem)] overflow-y-auto p-0 shadow-md motion-reduce:animate-none data-[state=closed]:animate-none!",
         joined ? "w-[448px]" : "w-[300px]",
+        variant === "joined" && "animate-none! [&_*]:transition-none!",
       )}
     >
       {joined ? (

@@ -1,5 +1,12 @@
 # Changelog
 
+## Connected filter menu
+
+- The filter list and editor share one container on desktop. Hover reveals options; click or keyboard entry focuses the editor.
+- On mobile, the editor replaces the list and offers Back. Menus open and change immediately without animation.
+- Grouped fields, remote options, custom editors, URL persistence, and immediate selections use the same behavior. Clear removes a panel's applied values without closing it.
+- Filter definitions and groups accept an optional `icon`.
+
 ## Predefined shortcuts
 
 - Clicking a predefined filter applies it without opening the editor. A second click edits the applied chip. Suggestions without preset values still open an editor.

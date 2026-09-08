@@ -2,9 +2,15 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+async function dismissEditor(page: Page) {
+  await page.keyboard.press("Escape");
+  if (await page.getByRole("dialog", { name: "Filters", exact: true }).isVisible())
+    await page.keyboard.press("Escape");
+}
+
 async function open(page: Page, name: string) {
   await page.getByRole("button", { name: "Open filters" }).first().click();
-  await page.getByRole("menuitem", { name, exact: true }).click();
+  await page.getByRole("button", { name, exact: true }).click();
 }
 async function paste(page: Page, value: string) {
   await page.getByRole("searchbox", { name: "Search references" }).evaluate((element, text) => {
@@ -25,8 +31,8 @@ test("recognized input bypasses the menu and can still be edited through its chi
   await page.goto("/docs/advanced");
   await page.getByRole("button", { name: "Open filters" }).first().click();
   for (const name of ["Issue ID", "Email", "Ticket", "Reference"])
-    await expect(page.getByRole("menuitem", { name, exact: true })).toHaveCount(0);
-  await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
+  await dismissEditor(page);
   const search = page.getByRole("searchbox", { name: "Search references" });
   await search.fill("issue-123, alex@example.com, remaining");
   await search.press("Enter");
@@ -114,7 +120,7 @@ test("calendar selection applies immediately with keyboard navigation and theme 
         .toEqual({ from: "2026-09-02", to: "2026-09-02" });
       await page.getByRole("button", { name: "Clear date", exact: true }).click();
       await expect.poll(async () => (await values(page)).created).toBe(null);
-      await page.keyboard.press("Escape");
+      await dismissEditor(page);
     }
   }
 });
@@ -161,7 +167,7 @@ test("remote options resolve URL labels independently and load further pages", a
   await expect(page.getByRole("menuitemcheckbox", { name: "Alex Rivera" })).toBeVisible();
   await page.getByRole("button", { name: "Load more" }).click();
   await expect(page.getByRole("menuitemcheckbox", { name: "Sam Cohen" })).toBeChecked();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await expect.poll(async () => (await values(page)).owner).toEqual(["sam"]);
 });
 
@@ -201,7 +207,7 @@ test("URL takes precedence over remembered filters and clear removes remembered 
 }) => {
   await page.goto("/docs/advanced");
   await page.getByRole("button", { name: "Apply Owner filter" }).click();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await expect.poll(() => new URL(page.url()).searchParams.get("owner")).toBe('["mendy"]');
   await page.goto("/docs/advanced");
   await expect(page.getByRole("button", { name: "Edit Owner filter" })).toContainText(
@@ -246,7 +252,7 @@ test("composite dates update both state keys and saved view drafts remain indepe
   const lines = page.getByRole("region", { name: "Project filters", exact: true });
   await page.clock.setFixedTime(new Date("2026-09-07T12:00:00"));
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Created date", exact: true }).click();
+  await page.getByRole("button", { name: "Created date", exact: true }).click();
   const calendar = page.locator('[data-slot="calendar"]');
   await calendar.getByRole("button", { name: /Tuesday, September 1st, 2026/ }).click();
   await calendar.getByRole("button", { name: /Sunday, September 6th, 2026/ }).click();
@@ -259,14 +265,14 @@ test("composite dates update both state keys and saved view drafts remain indepe
     createdBefore: null,
   });
   await expect(calendar).toBeVisible();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await lines.getByRole("button", { name: "Edit Created date filter" }).click();
   await calendar.getByRole("button", { name: /Monday, September 7th, 2026/ }).click();
   await expect
     .poll(() => values(page, "Project filters values"))
     .toMatchObject({ createdAfter: "2026-09-01", createdBefore: "2026-09-07" });
   await expect(calendar).toBeVisible();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await lines.getByRole("button", { name: "Remove Created date filter" }).click();
   await expect
     .poll(() => values(page, "Project filters values"))
@@ -279,18 +285,18 @@ test("grouped tags enforce mutually exclusive values and custom members retain t
   await page.goto("/docs/advanced");
   const lines = page.getByRole("region", { name: "Project filters", exact: true });
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Tags", exact: true }).click();
+  await page.getByRole("button", { name: "Tags", exact: true }).click();
   await page.getByRole("menuitemcheckbox", { name: "Priority", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "No tags", exact: true }).click();
   await expect
     .poll(() => values(page, "Project filters values"))
     .toMatchObject({ tagId: null, hasTag: "without" });
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Members", exact: true }).click();
+  await page.getByRole("button", { name: "Members", exact: true }).click();
   await page.getByRole("checkbox", { name: "Alex Rivera" }).check();
   await page.getByRole("checkbox", { name: "Jordan Lee" }).check();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await expect(lines.getByRole("button", { name: "Edit Members filter" })).toContainText(
     "Design team",
   );
@@ -313,17 +319,19 @@ test("empty number ranges disappear and invalid ranges explain the error", async
   await page.goto("/docs/advanced");
   const lines = page.getByRole("region", { name: "Project filters", exact: true });
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Team size", exact: true }).click();
+  await page.getByRole("button", { name: "Team size", exact: true }).click();
   await page.getByLabel("Minimum", { exact: true }).fill("5");
   await page.getByLabel("Maximum", { exact: true }).fill("2");
-  await expect(page.getByRole("alert")).toContainText("Minimum must not exceed maximum");
+  await expect(
+    page.getByRole("dialog", { name: "Filters", exact: true }).getByRole("alert"),
+  ).toContainText("Minimum must not exceed maximum");
   await expect
     .poll(async () => (await values(page, "Project filters values")).teamSize)
     .toEqual([5, null]);
   await page.getByLabel("Maximum", { exact: true }).fill("");
   await expect(page.getByRole("button", { name: "Apply", exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Minimum", { exact: true })).toBeVisible();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await expect(lines.getByRole("button", { name: "Edit Team size filter" })).toContainText(
     "5 – Any",
   );
@@ -338,7 +346,7 @@ test("custom member editor applies immediately without a Done button", async ({ 
   await page.goto("/docs/advanced");
   const lines = page.getByRole("region", { name: "Project filters", exact: true });
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Members", exact: true }).click();
+  await page.getByRole("button", { name: "Members", exact: true }).click();
   await page.getByRole("checkbox", { name: "Alex Rivera" }).check();
   await page.getByRole("checkbox", { name: "Jordan Lee" }).check();
   await expect(page.getByRole("button", { name: "Done", exact: true })).toHaveCount(0);
@@ -379,7 +387,7 @@ test("ordinary and Shift paste remain native, ambiguity preserves longer words",
 test("browser history restores ordinary and overflow states", async ({ page }) => {
   await page.goto("/docs/advanced");
   await page.getByRole("button", { name: "Apply Owner filter" }).click();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await expect.poll(() => new URL(page.url()).searchParams.get("owner")).toBe('["mendy"]');
   const ids = Array.from({ length: 100 }, (_, i) => `ISSUE-${12300 + i}`);
   await paste(page, ids.join("\n"));
@@ -407,7 +415,7 @@ test("failed session storage still allows a complete URL link", async ({ page })
   });
   await page.goto("/docs/advanced");
   await page.getByRole("button", { name: "Apply Owner filter" }).click();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await expect(
     page.getByText("Filters could not be saved in this browser.", { exact: false }),
   ).toBeVisible();
@@ -421,13 +429,13 @@ test("changing dependent options retains the selected plan and its label", async
   await page.goto("/docs/advanced");
   const lines = page.getByRole("region", { name: "Project filters", exact: true });
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Project", exact: true }).click();
+  await page.getByRole("button", { name: "Project", exact: true }).click();
   await page.getByRole("menuitemcheckbox", { name: "Website", exact: true }).click();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await lines.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name: "Workspace", exact: true }).click();
+  await page.getByRole("button", { name: "Workspace", exact: true }).click();
   await page.getByRole("menuitemcheckbox", { name: "Engineering", exact: true }).click();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await expect(lines.getByRole("button", { name: "Edit Project filter" })).toContainText("Website");
   await lines.getByRole("button", { name: "Edit Project filter" }).click();
   await expect(page.getByRole("menuitemcheckbox", { name: "API", exact: true })).toBeVisible();
@@ -467,13 +475,13 @@ test("single and text filters can be applied without reopening the filter menu",
   await todo.click();
   await expect(todo).toBeChecked();
   await todo.press("ArrowLeft");
-  await page.getByRole("menuitem", { name: "Title", exact: true }).click();
+  await page.getByRole("button", { name: "Title", exact: true }).click();
   await page.getByRole("textbox", { name: "Title contains" }).fill("keyboard");
   await page.getByRole("textbox", { name: "Title contains" }).press("Enter");
   await expect(page.getByRole("textbox", { name: "Title contains" })).toBeVisible();
   await expect.poll(() => new URL(page.url()).searchParams.get("title")).toBe("keyboard");
   expect(new URL(page.url()).searchParams.get("status")).toBe("todo");
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await expect(page.getByRole("button", { name: "Open filters" })).toBeFocused();
 });
 
@@ -508,13 +516,13 @@ test("suggestions keep their positions when applied and return when removed", as
   await expect(
     page.getByRole("button", { name: "Apply Assignee filter", includeHidden: true }),
   ).toBeVisible();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   expect((await assignee.boundingBox())?.y).toBe(before?.y);
   await assignee.click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Edit Assignee filter" }).click();
   await expect(page.getByRole("menuitemcheckbox", { name: "Mendy", exact: true })).toBeChecked();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await page.getByRole("button", { name: "Remove Status filter" }).click();
   await expect(status).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit Assignee filter" })).toContainText("Mendy");
@@ -535,8 +543,9 @@ test("keyboard activation applies a predefined filter once, then opens its edito
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await chip.press("Enter");
   await expect(page.getByRole("menuitemcheckbox", { name: "Mendy", exact: true })).toBeChecked();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await page.getByRole("button", { name: "Remove Assignee filter" }).click();
+  await expect(page.getByRole("button", { name: "Open filters" })).toBeFocused();
   await suggestion.focus();
   await suggestion.press("Enter");
   await expect(chip).toBeFocused();

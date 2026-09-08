@@ -20,7 +20,7 @@ Import `defineFilters`, `filter`, `bindFilters`, `remoteOptions`, `externalOptio
 | `filter.dateRange`   | `{ from, to }` or null, with ISO date strings or null endpoints  |
 | `filter.custom`      | Your value type, with a required codec, default, and clear value |
 
-Shared settings include `label`, `defaultValue`, `clearValue`, `isActive`, `normalize`, `validate`, `codec`, `urlKey`, `suggestion`, `summary`, `renderSummary`, `renderEditor`, `menu`, `hidden`, `disabled`, and `removable`. `searchLabel`, `editorLabel`, and `placeholder` customize editor labels. Application validation remains necessary at the API boundary.
+Shared settings include `label`, `icon`, `defaultValue`, `clearValue`, `isActive`, `normalize`, `validate`, `codec`, `urlKey`, `suggestion`, `summary`, `renderSummary`, `renderEditor`, `menu`, `hidden`, `disabled`, and `removable`. `searchLabel`, `editorLabel`, and `placeholder` customize editor labels. Application validation remains necessary at the API boundary.
 
 `validate` returns an error string or undefined. Normalization runs before validation. Removing and clearing use the declared clear value. A custom codec parses and serializes the field's value; JSON codecs can use `jsonCodec` with a type guard.
 
@@ -145,7 +145,13 @@ An existing state's field type must match its definition. Use `filter.options` f
 
 ## Menu behavior
 
-The filter menu stays open after applying any filter by default, including single selections, text, ranges, and custom editors. Continue with another filter, or dismiss with Escape, an outside click, or the filter button.
+On desktop, the filter list and editor share one container. Hover or focus a row to reveal its options without applying anything. Clicking a row or pressing Enter or Right Arrow moves focus into its editor. Up and Down Arrow navigate the filter list; Left Arrow returns from an option to the list. Text inputs and calendars keep their own arrow-key behavior.
+
+Below 640px, tapping a filter replaces the list with its editor. The Back button or Escape returns to the list; a second Escape closes it. The menu opens and switches editors without animation, and long lists and editors scroll within the available space.
+
+The menu stays open after applying any filter by default, including single selections, text, ranges, and custom editors. Continue with another filter, or dismiss with an outside click or the filter button. On desktop, Escape closes it. Use the panel's Clear action to remove its applied values while keeping the editor open.
+
+Each filter gets an icon based on its editor type. Supply `icon: <YourIcon />` in its definition to choose another icon. Groups also accept `icon`.
 
 Set `<FilterBar closeMenuOnApply />` to close it after each successful change. A definition can override the bar with `closeMenuOnApply: true` or `false`. Invalid values keep the editor open. This setting controls the add-filter menu; editing an existing chip keeps its existing completion behavior. A custom editor can still call `close()` explicitly.
 

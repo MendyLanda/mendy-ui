@@ -63,6 +63,10 @@
           "type": "registry:ui"
         },
         {
+          "path": "registry/new-york/filter-menu-panel.tsx",
+          "type": "registry:ui"
+        },
+        {
           "path": "registry/new-york/filter-date-editor.tsx",
           "type": "registry:ui"
         }

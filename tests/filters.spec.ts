@@ -2,21 +2,27 @@ import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+async function dismissEditor(page: Page) {
+  await page.keyboard.press("Escape");
+  if (await page.getByRole("dialog", { name: "Filters", exact: true }).isVisible())
+    await page.keyboard.press("Escape");
+}
+
 async function openFilter(page: Page, name: string) {
   await page.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("menuitem", { name, exact: true }).click();
+  await page.getByRole("button", { name, exact: true }).click();
 }
 
 async function addStatus(page: Page, value = "Todo") {
   await openFilter(page, "Status");
   await page.getByRole("menuitemradio", { name: value, exact: true }).click();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
 }
 
 async function addAssignee(page: Page, value = "Mendy") {
   await openFilter(page, "Assignee");
   await page.getByRole("menuitemcheckbox", { name: value, exact: true }).click();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
 }
 
 function count(page: Page, value: number) {
@@ -46,11 +52,11 @@ test("appearance controls preview corner radius across demos and color themes", 
       "border-radius",
       radius!,
     );
-    await page.keyboard.press("Escape");
+    await dismissEditor(page);
   }
   await appearance.click();
   await page.getByRole("menuitemradio", { name: "Square", exact: true }).click();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await page
     .getByRole("navigation", { name: "Main navigation" })
     .getByRole("link", { name: "Filters", exact: true })
@@ -64,7 +70,7 @@ test("appearance controls preview corner radius across demos and color themes", 
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
   expect(audit.violations).toEqual([]);
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await page.setViewportSize({ width: 320, height: 900 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= 320)).toBe(true);
 });
@@ -75,10 +81,7 @@ test("menu items reveal options before applying, then the chip edits the value",
   await page.goto("/");
   await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
   await openFilter(page, "Status");
-  await expect(page.getByRole("menuitem", { name: "Status", exact: true })).toHaveAttribute(
-    "aria-expanded",
-    "true",
-  );
+  await expect(page.getByRole("group", { name: "Choose status", exact: true })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Edit Status filter", includeHidden: true }),
   ).toHaveCount(0);
@@ -88,7 +91,7 @@ test("menu items reveal options before applying, then the chip edits the value",
   await expect(trigger).toContainText("Todo");
   await expect(count(page, 3)).toBeVisible();
   await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeVisible();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await trigger.focus();
   await page.keyboard.press("Enter");
   await page.getByRole("menuitemradio", { name: "In progress", exact: true }).click();
@@ -119,12 +122,12 @@ test("multiselect applies inside the submenu and chips remain editable", async (
   await input.fill("");
   await expect(mendy).toBeChecked();
   await expect(count(page, 5)).toBeVisible();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   const trigger = page.getByRole("button", { name: "Edit Assignee filter", includeHidden: true });
   await trigger.click();
   await expect(mendy).toBeChecked();
   await expect(page.getByRole("menuitemcheckbox", { name: "Sam", exact: true })).toBeChecked();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await expect(trigger).toBeFocused();
 });
 
@@ -142,7 +145,7 @@ test("text is entered and applied in the submenu without creating an empty chip"
   await expect(
     page.getByRole("button", { name: "Edit Title filter", includeHidden: true }),
   ).toHaveCount(0);
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await openFilter(page, "Title");
   await expect(input).toHaveValue("");
   await input.fill("keyboard");
@@ -152,7 +155,7 @@ test("text is entered and applied in the submenu without creating an empty chip"
   ).toContainText("keyboard");
   await expect(count(page, 1)).toBeVisible();
   await expect(input).toBeVisible();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await page.getByRole("button", { name: "Edit Title filter", includeHidden: true }).click();
   await expect(input).toHaveValue("keyboard");
 });
@@ -266,7 +269,7 @@ test("no accessibility violations in both themes and submenu editors", async ({ 
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
         .analyze();
       expect(result.violations).toEqual([]);
-      if (name) await page.keyboard.press("Escape");
+      if (name) await dismissEditor(page);
     }
   }
 });
@@ -292,7 +295,7 @@ test("toolbar search combines with filters and clears without resetting selectio
     page.getByRole("button", { name: "Edit Priority filter", includeHidden: true }),
   ).toHaveCount(0);
   await page.getByRole("menuitemradio", { name: "Medium", exact: true }).click();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await expect(search).toHaveValue("UI-039");
   await expect(count(page, 1)).toBeVisible();
   await page.getByRole("button", { name: "Clear all" }).click();
@@ -317,7 +320,7 @@ test("arrow keys explore submenus without applying and clearing a chip returns f
   const menu = page.getByRole("button", { name: "Open filters" });
   await menu.focus();
   await page.keyboard.press("Enter");
-  const status = page.getByRole("menuitem", { name: "Status", exact: true });
+  const status = page.getByRole("button", { name: "Status", exact: true });
   await expect(status).toBeFocused();
   await page.keyboard.press("ArrowRight");
   await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeFocused();
@@ -327,7 +330,7 @@ test("arrow keys explore submenus without applying and clearing a chip returns f
   await page.keyboard.press("ArrowRight");
   await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeFocused();
   await page.keyboard.press("Enter");
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await page.getByRole("button", { name: "Edit Status filter" }).click();
   await page.getByRole("menuitemradio", { name: "Any status", exact: true }).click();
   await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
@@ -338,11 +341,11 @@ test("touch selection opens options before adding a chip", async ({ page, isMobi
   test.skip(!isMobile, "Touch interaction on the mobile device");
   await page.goto("/");
   await page.getByRole("button", { name: "Open filters" }).tap();
-  await page.getByRole("menuitem", { name: "Status", exact: true }).tap();
+  await page.getByRole("button", { name: "Status", exact: true }).tap();
   await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
   await page.getByRole("menuitemradio", { name: "Todo", exact: true }).tap();
   await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeChecked();
-  await page.keyboard.press("Escape");
+  await dismissEditor(page);
   await expect(page.getByRole("button", { name: "Edit Status filter" })).toContainText("Todo");
 });
 
@@ -359,7 +362,7 @@ test("text submenu fits narrow and intermediate viewport widths", async ({ page 
           .map((animation) => animation.finished),
       ),
     );
-    const bounds = await page.getByRole("dialog", { name: "Set title filter" }).boundingBox();
+    const bounds = await page.getByRole("dialog", { name: "Filters", exact: true }).boundingBox();
     expect(bounds!.x).toBeGreaterThanOrEqual(0);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
     await page.getByRole("textbox", { name: "Title contains" }).fill("keyboard");

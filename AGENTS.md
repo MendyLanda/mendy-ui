@@ -6,6 +6,8 @@ Use shadcn controls and theme tokens, including theme radius on chips and contro
 
 Show Mendy's preferred interaction in every example: selections apply immediately, text saves with Enter, and editors stay open for further selections. Predefined shortcuts apply on the first click; clicking the applied chip opens its editor. Explicit Apply/Done actions belong in opt-in custom implementations.
 
+Use the connected filter menu: adjacent list and editor on desktop, one panel with Back on mobile, and instant menu changes. Keep chip entry animations.
+
 The registry source is also the demo source. Keep fixes there so installed components and previews agree. The application owns filter values and data matching.
 
 For UI changes, inspect desktop and mobile screenshots in both themes and run the existing interaction checks. For registry changes, verify a fresh consumer installation before publishing.

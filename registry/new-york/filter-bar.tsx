@@ -14,7 +14,18 @@ import {
   useRef,
   useState,
 } from "react";
-import { ListFilter, Search, X } from "lucide-react";
+import {
+  ListFilter,
+  Search,
+  X,
+  Circle,
+  ListChecks,
+  Type,
+  Hash,
+  CalendarDays,
+  SlidersHorizontal,
+  Layers,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,20 +33,21 @@ import { FilterDateEditor } from "@/registry/new-york/filter-date-editor";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
-import { AppliedFilter, FilterCheckboxItem, FilterMenuItem } from "@/registry/new-york/filters";
+import { AppliedFilter, FilterCheckboxItem } from "@/registry/new-york/filters";
 import { FilterOptionCache, useFilterOptions } from "@/registry/new-york/use-filter-options";
 import { classifyPaste, resolvePasteAmbiguity } from "@/registry/new-york/filter-state";
 import { cn } from "@/lib/utils";
+import { FilterMenuPanel } from "@/registry/new-york/filter-menu-panel";
 
 export interface FilterMenuGroup {
   id: string;
   label: string;
   fields: string[];
+  icon?: ReactNode;
 }
 interface RootContext {
   filters: FilterController;
@@ -122,11 +134,12 @@ export function FilterSearch({
   placeholder?: string;
 }) {
   const { filters, trigger, disabled, setAmbiguous } = useRoot();
+  const anchor = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const shift = useRef(false);
   return (
-    <DropdownMenu open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
-      <div className="relative w-full shrink-0 sm:w-[350px]">
+    <DropdownMenu modal={false} open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
+      <div ref={anchor} className="relative w-full shrink-0 sm:w-[350px]">
         <Search
           className="pointer-events-none absolute left-3 top-1/2 size-[17px] -translate-y-1/2"
           aria-hidden="true"
@@ -212,6 +225,7 @@ export function FilterSearch({
             type="button"
             disabled={disabled}
             aria-label="Open filters"
+            aria-haspopup="dialog"
             className={cn(
               "absolute right-1 top-1/2 size-7 -translate-y-1/2 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:opacity-100",
               filters.active.length ? "opacity-100" : "opacity-50",
@@ -221,7 +235,7 @@ export function FilterSearch({
           </Button>
         </DropdownMenuTrigger>
       </div>
-      <FilterMenuContent />
+      {filters.menuOpen && <FilterMenuContent anchor={anchor} />}
     </DropdownMenu>
   );
 }
@@ -229,100 +243,110 @@ export function FilterSearch({
 export function FilterMenu({ children = "Add filter" }: { children?: ReactNode }) {
   const { filters, trigger, disabled } = useRoot();
   return (
-    <DropdownMenu open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
+    <DropdownMenu modal={false} open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
       <DropdownMenuTrigger asChild>
-        <Button ref={trigger} variant="outline" disabled={disabled}>
+        <Button ref={trigger} variant="outline" disabled={disabled} aria-haspopup="dialog">
           {children}
         </Button>
       </DropdownMenuTrigger>
-      <FilterMenuContent />
+      {filters.menuOpen && <FilterMenuContent />}
     </DropdownMenu>
   );
 }
-function FilterMenuContent() {
-  const { filters, groups } = useRoot();
+const fieldIcons = {
+  single: Circle,
+  multi: ListChecks,
+  text: Type,
+  tokens: Hash,
+  numberRange: Hash,
+  dateRange: CalendarDays,
+  custom: SlidersHorizontal,
+};
+function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement | null> }) {
+  const { filters, groups, disabled, trigger } = useRoot();
+  const [clearEpoch, setClearEpoch] = useState(0);
   const grouped = new Set(groups.flatMap((group) => group.fields));
-  return (
-    <DropdownMenuContent
-      inert={!filters.menuOpen}
-      aria-hidden={!filters.menuOpen || undefined}
-      align="end"
-      sideOffset={12}
-      alignOffset={-12}
-      loop
-      className="w-[min(350px,calc(100vw-2rem))]"
-      onCloseAutoFocus={(event) => {
-        const focused = document.activeElement;
-        if (
-          event.target instanceof HTMLElement &&
-          focused &&
-          focused !== document.body &&
-          !event.target.contains(focused)
-        )
-          event.preventDefault();
-      }}
-    >
-      {filters.entries.flatMap((entry) =>
-        !entry.field.hidden && entry.field.menu !== false && !grouped.has(entry.id)
-          ? [<MenuRow key={entry.id} id={entry.id} label={entry.field.label} entries={[entry]} />]
-          : [],
-      )}
-      {groups.map((group) => (
-        <MenuRow
-          key={group.id}
-          id={group.id}
-          label={group.label}
-          entries={filters.entries.filter(
-            (entry) =>
-              group.fields.includes(entry.id) && !entry.field.hidden && entry.field.menu !== false,
-          )}
-        />
-      ))}
-    </DropdownMenuContent>
+  const visible = filters.entries.filter(
+    (entry) => !entry.field.hidden && entry.field.menu !== false,
   );
-}
-function MenuRow({ id, label, entries }: { id: string; label: string; entries: FilterEntry[] }) {
-  const { filters, disabled } = useRoot();
-  const [epoch, setEpoch] = useState(0);
-  if (!entries.length) return null;
-  const single = entries.length === 1 ? entries[0]!.field : undefined;
-  const ariaLabel =
-    single?.editorLabel ??
-    (single?.kind === "text" || single?.kind === "tokens"
-      ? `Set ${label.toLowerCase()} filter`
-      : `Choose ${label.toLowerCase()}`);
-  return (
-    <FilterMenuItem
-      label={label}
-      open={filters.openField === id && filters.menuOpen}
-      onOpenChange={(open) => {
-        filters.setOpenField(open ? id : null);
-        if (open) setEpoch((value) => value + 1);
-      }}
-      contentProps={{
-        role: "dialog",
-        "aria-label": ariaLabel,
-        "aria-orientation": undefined,
-        inert: !filters.menuOpen,
-        "aria-hidden": !filters.menuOpen || undefined,
-      }}
-    >
-      {entries.map((entry) => (
-        <div key={entry.id}>
-          {entries.length > 1 && (
-            <p className="border-t px-3 pt-3 text-xs font-medium">{entry.field.label}</p>
+  const sections = [
+    ...visible.flatMap((entry) =>
+      grouped.has(entry.id)
+        ? []
+        : [
+            {
+              id: entry.id,
+              label: entry.field.label,
+              icon: entry.field.icon,
+              entries: [entry],
+            },
+          ],
+    ),
+    ...groups.flatMap((group) => {
+      const entries = visible.filter((entry) => group.fields.includes(entry.id));
+      return entries.length ? [{ ...group, entries }] : [];
+    }),
+  ].map((section) => {
+    const single = section.entries.length === 1 ? section.entries[0]!.field : undefined;
+    const Icon = single ? fieldIcons[single.kind] : Layers;
+    const active = section.entries.some((entry) => entry.field.isActive(entry.value));
+    const clearable = section.entries.filter(
+      (entry) =>
+        entry.field.isActive(entry.value) &&
+        !entry.field.disabled &&
+        entry.field.removable !== false,
+    );
+    return {
+      id: section.id,
+      label: section.label,
+      icon: section.icon ?? <Icon />,
+      editorLabel:
+        single?.editorLabel ??
+        (single?.kind === "text" || single?.kind === "tokens"
+          ? `Set ${section.label.toLowerCase()} filter`
+          : `Choose ${section.label.toLowerCase()}`),
+      disabled: disabled || section.entries.every((entry) => entry.field.disabled),
+      active,
+      clear:
+        !disabled && clearable.length
+          ? () => {
+              const error = filters.batch(
+                Object.fromEntries(clearable.map((entry) => [entry.id, entry.field.clearValue])),
+                undefined,
+                "remove",
+              );
+              if (!error) setClearEpoch((epoch) => epoch + 1);
+            }
+          : undefined,
+      content: section.entries.map((entry) => (
+        <div key={entry.id} className="[&>div]:w-full">
+          {!single && (
+            <p className="border-t px-3 pt-3 text-xs font-medium first:border-t-0">
+              {entry.field.label}
+            </p>
           )}
           <FieldEditor
-            key={`${entry.id}:${epoch}`}
+            key={`${entry.id}:${clearEpoch}`}
             entry={entry}
-            active={filters.menuOpen && filters.openField === id}
+            active
+            autoFocus={false}
+            showDateLabel={false}
             disabled={disabled || entry.field.disabled}
             close={() => filters.setMenuOpen(false)}
             location="menu"
           />
         </div>
-      ))}
-    </FilterMenuItem>
+      )),
+    };
+  });
+  return (
+    <FilterMenuPanel
+      sections={sections}
+      selectedId={filters.openField}
+      onSelect={filters.setOpenField}
+      anchor={anchor}
+      trigger={trigger}
+    />
   );
 }
 export function FilterList() {
@@ -568,7 +592,11 @@ function FieldEditor({
   disabled,
   close,
   location,
+  autoFocus = true,
+  showDateLabel = true,
 }: {
+  autoFocus?: boolean;
+  showDateLabel?: boolean;
   entry: FilterEntry;
   active: boolean;
   disabled?: boolean;
@@ -598,7 +626,7 @@ function FieldEditor({
   const id = useId();
   const options = useFilterOptions(entry.id, field, value, active);
   useEffect(() => {
-    if (!active) return;
+    if (!active || !autoFocus) return;
     const frame = requestAnimationFrame(() =>
       (
         input.current ??
@@ -608,7 +636,7 @@ function FieldEditor({
       )?.focus(),
     );
     return () => cancelAnimationFrame(frame);
-  }, [active]);
+  }, [active, autoFocus]);
   function apply(next: unknown, shouldClose = true) {
     if (disabled) return;
     const problem = filters.commit(entry.id, next);
@@ -670,6 +698,8 @@ function FieldEditor({
   if (field.kind === "dateRange")
     return (
       <FilterDateEditor
+        autoFocus={autoFocus}
+        showLabel={showDateLabel}
         field={field}
         value={value}
         disabled={disabled}

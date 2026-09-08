@@ -64,6 +64,7 @@ export interface EditorContext<V> {
 }
 export interface FieldConfig<V> {
   label: string;
+  icon?: ReactNode;
   defaultValue?: V;
   clearValue?: V;
   isActive?: (value: V) => boolean;
@@ -113,6 +114,7 @@ export interface RuntimeSource {
 export interface RuntimeField {
   kind: "single" | "multi" | "text" | "tokens" | "numberRange" | "dateRange" | "custom";
   label: string;
+  icon?: ReactNode;
   defaultValue: unknown;
   clearValue: unknown;
   isActive(value: unknown): boolean;

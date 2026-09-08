@@ -21,7 +21,11 @@ export function FilterDateEditor({
   disabled,
   apply,
   error,
+  autoFocus = true,
+  showLabel = true,
 }: {
+  autoFocus?: boolean;
+  showLabel?: boolean;
   field: RuntimeField;
   value: unknown;
   disabled?: boolean;
@@ -44,10 +48,10 @@ export function FilterDateEditor({
         if (event.key !== "Escape") event.stopPropagation();
       }}
     >
-      <p className="px-3 pt-3 text-sm font-medium">{field.label}</p>
+      {showLabel && <p className="px-3 pt-3 text-sm font-medium">{field.label}</p>}
       <Calendar
         mode="range"
-        autoFocus
+        autoFocus={autoFocus}
         selected={range}
         onSelect={(next) => {
           const selected = next ? { from: next.from, to: next.to ?? next.from } : undefined;

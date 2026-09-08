@@ -1,6 +1,6 @@
 "use client";
 
-import { Circle, CircleCheck, Clock3 } from "lucide-react";
+import { Circle, CircleCheck, Clock3, Flag, Users } from "lucide-react";
 import { NuqsAdapter } from "nuqs/adapters/react";
 import { defineFilters, filter } from "@/registry/new-york/filter-definition";
 import { FilterBar } from "@/registry/new-york/filter-bar";
@@ -92,9 +92,10 @@ const definitions = defineFilters({
     recognize: (token) => (/^UI-\d+$/i.test(token) ? [token.toUpperCase()] : undefined),
   }),
   status: filter.select({ label: "Status", options: statuses, suggestion: { value: "todo" } }),
-  priority: filter.select({ label: "Priority", options: priorities }),
+  priority: filter.select({ label: "Priority", icon: <Flag />, options: priorities }),
   assignee: filter.multiSelect({
     label: "Assignee",
+    icon: <Users />,
     options: people,
     searchable: true,
     searchLabel: "Search assignees",

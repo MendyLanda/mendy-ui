@@ -78,6 +78,10 @@
         {
           "path": "examples/filters-demo.tsx",
           "type": "registry:component"
+        },
+        {
+          "path": "examples/filters-demo-data.ts",
+          "type": "registry:component"
         }
       ]
     },

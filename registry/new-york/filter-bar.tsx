@@ -1,5 +1,8 @@
 "use client";
 
+// EXPERIMENTAL BRANCH ONLY: prototypeMenu and the prototype exports are evaluation hooks.
+// Do not publish them as the final registry API.
+
 import type { ReactNode } from "react";
 import type { Choice, RuntimeField, SummaryPolicy } from "@/registry/new-york/filter-definition";
 import type { FilterController } from "@/registry/new-york/use-filters";
@@ -44,6 +47,7 @@ interface RootContext {
   suggestions: "when-empty" | "always" | "never";
   groups: FilterMenuGroup[];
   disabled: boolean;
+  prototypeMenu?: ReactNode;
   trigger: React.RefObject<HTMLButtonElement | null>;
   ambiguous: PasteAmbiguity[];
   setAmbiguous(value: PasteAmbiguity[]): void;
@@ -66,6 +70,7 @@ export interface FilterRootProps {
   disabled?: boolean;
   className?: string;
   children: ReactNode;
+  prototypeMenu?: ReactNode;
 }
 export function FilterRoot({
   filters,
@@ -76,6 +81,7 @@ export function FilterRoot({
   disabled = false,
   className,
   children,
+  prototypeMenu,
 }: FilterRootProps) {
   const [cache] = useState(() => new Map());
   const [ambiguous, setAmbiguous] = useState<PasteAmbiguity[]>([]);
@@ -83,6 +89,7 @@ export function FilterRoot({
   const context = useMemo(
     () => ({
       filters,
+      prototypeMenu,
       summary,
       suggestions,
       closeMenuOnApply,
@@ -92,7 +99,7 @@ export function FilterRoot({
       ambiguous,
       setAmbiguous,
     }),
-    [filters, summary, suggestions, closeMenuOnApply, groups, disabled, ambiguous],
+    [filters, prototypeMenu, summary, suggestions, closeMenuOnApply, groups, disabled, ambiguous],
   );
   return (
     <FilterOptionCache.Provider value={cache}>
@@ -121,11 +128,11 @@ export function FilterSearch({
   label?: string;
   placeholder?: string;
 }) {
-  const { filters, trigger, disabled, setAmbiguous } = useRoot();
+  const { filters, trigger, disabled, setAmbiguous, prototypeMenu } = useRoot();
   const input = useRef<HTMLInputElement>(null);
   const shift = useRef(false);
   return (
-    <DropdownMenu open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
+    <DropdownMenu modal={!prototypeMenu} open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
       <div className="relative w-full shrink-0 sm:w-[350px]">
         <Search
           className="pointer-events-none absolute left-3 top-1/2 size-[17px] -translate-y-1/2"
@@ -227,9 +234,9 @@ export function FilterSearch({
 }
 /** A standalone menu button for layouts without a search field. */
 export function FilterMenu({ children = "Add filter" }: { children?: ReactNode }) {
-  const { filters, trigger, disabled } = useRoot();
+  const { filters, trigger, disabled, prototypeMenu } = useRoot();
   return (
-    <DropdownMenu open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
+    <DropdownMenu modal={!prototypeMenu} open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
       <DropdownMenuTrigger asChild>
         <Button ref={trigger} variant="outline" disabled={disabled}>
           {children}
@@ -240,7 +247,8 @@ export function FilterMenu({ children = "Add filter" }: { children?: ReactNode }
   );
 }
 function FilterMenuContent() {
-  const { filters, groups } = useRoot();
+  const { filters, groups, prototypeMenu } = useRoot();
+  if (prototypeMenu) return prototypeMenu;
   const grouped = new Set(groups.flatMap((group) => group.fields));
   return (
     <DropdownMenuContent
@@ -568,7 +576,9 @@ function FieldEditor({
   disabled,
   close,
   location,
+  autoFocus = true,
 }: {
+  autoFocus?: boolean;
   entry: FilterEntry;
   active: boolean;
   disabled?: boolean;
@@ -598,7 +608,7 @@ function FieldEditor({
   const id = useId();
   const options = useFilterOptions(entry.id, field, value, active);
   useEffect(() => {
-    if (!active) return;
+    if (!active || !autoFocus) return;
     const frame = requestAnimationFrame(() =>
       (
         input.current ??
@@ -608,7 +618,7 @@ function FieldEditor({
       )?.focus(),
     );
     return () => cancelAnimationFrame(frame);
-  }, [active]);
+  }, [active, autoFocus]);
   function apply(next: unknown, shouldClose = true) {
     if (disabled) return;
     const problem = filters.commit(entry.id, next);
@@ -670,6 +680,7 @@ function FieldEditor({
   if (field.kind === "dateRange")
     return (
       <FilterDateEditor
+        autoFocus={autoFocus}
         field={field}
         value={value}
         disabled={disabled}
@@ -962,3 +973,6 @@ function ValueEditor({
     </div>
   );
 }
+
+// Temporary exports for the connected menu experiment.
+export { useRoot as usePrototypeRoot, FieldEditor as PrototypeFieldEditor };

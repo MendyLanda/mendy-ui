@@ -65,4 +65,4 @@ const server = createServer(async (request, response) => {
     response.writeHead(400).end();
   }
 });
-server.listen(8787, "127.0.0.1");
+server.listen(Number(process.env.PORT ?? 8787), "127.0.0.1");

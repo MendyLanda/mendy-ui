@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { InstallCommand } from "@/components/install-command";
 import { SITE } from "@/constants/site";
+import { Suspense } from "react";
 import { FiltersDemo } from "@/examples/filters-demo";
+import { FilterMenuPrototype } from "@/components/filter-menu-prototype";
 
 export default function HomePage() {
   return (
@@ -17,7 +19,9 @@ export default function HomePage() {
           Search, filter menus, and editable chips. Define your filters and connect your data.
         </p>
         <div className="mt-4">
-          <FiltersDemo />
+          <Suspense fallback={<FiltersDemo />}>
+            <FilterMenuPrototype />
+          </Suspense>
         </div>
         <div className="mt-6">
           <InstallCommand />

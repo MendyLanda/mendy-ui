@@ -152,13 +152,13 @@ export function FilterMenuPanel({
       }}
       className={cn(
         "[--filter-menu-height:min(480px,var(--radix-dropdown-menu-content-available-height))] max-h-(--filter-menu-height) max-w-[calc(100vw-1.5rem)] overflow-hidden p-0 shadow-md animate-none! [&_*]:transition-none!",
-        desktop && selected ? "w-[448px]" : "w-[300px]",
+        desktop && selected ? "w-[512px]" : "w-[300px]",
       )}
     >
       <div
         className={cn(
           "max-h-(--filter-menu-height)",
-          desktop && selected ? "grid grid-cols-[156px_minmax(0,1fr)]" : "flex flex-col",
+          desktop && selected ? "grid grid-cols-[208px_minmax(0,1fr)]" : "flex flex-col",
         )}
       >
         {showList && (
@@ -173,7 +173,7 @@ export function FilterMenuPanel({
         )}
         {selected && (
           <div className="flex min-h-0 min-w-0 flex-col">
-            <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3 text-xs font-medium">
+            <div className="flex min-h-10 shrink-0 items-center gap-2 border-b px-3 py-2 text-xs font-medium">
               {!desktop && (
                 <>
                   <Button
@@ -190,7 +190,9 @@ export function FilterMenuPanel({
                   </span>
                 </>
               )}
-              <span className="min-w-0 flex-1 truncate">{selected.label}</span>
+              <span className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere]">
+                {selected.label}
+              </span>
               {selected.clear && (
                 <Button
                   variant="ghost"
@@ -267,7 +269,7 @@ function FilterMenuList({
           aria-controls={selectedId === section.id ? panelId : undefined}
           disabled={section.disabled}
           className={cn(
-            "h-10 w-full justify-start gap-2 rounded-sm px-2 text-sm font-normal sm:h-9",
+            "h-auto min-h-10 w-full justify-start gap-2 rounded-sm px-2 py-2 text-sm font-normal",
             selectedId === section.id && "bg-accent text-accent-foreground",
           )}
           onPointerEnter={(event) => {
@@ -323,7 +325,10 @@ function FilterMenuList({
               {section.icon}
             </span>
           )}
-          <span className="min-w-0 flex-1 truncate text-left" title={section.label}>
+          <span
+            className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere] text-left"
+            title={section.label}
+          >
             {section.label}
           </span>
           {section.active && (

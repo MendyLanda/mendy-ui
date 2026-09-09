@@ -7,7 +7,7 @@ The npm package is `packages/ui`. The documentation site consumes its compiled w
 1. Log in to the npm account that owns the `@mendylanda` scope with `npm login`. Confirm the account with `npm whoami`.
 2. Run `pnpm install --frozen-lockfile`, `pnpm build`, `pnpm lint`, `pnpm format`, `pnpm typecheck`, `pnpm test:unit`, `pnpm test`, and `pnpm verify:consumers`.
 3. Run `pnpm package:pack`. Inspect the archive in `artifacts/`; it should contain the compiled package, declarations, scoped stylesheet, README, and licenses.
-4. Publish that archive with `npm publish artifacts/mendylanda-ui-0.1.0.tgz --access public`. npm may request account authentication or 2FA. Never put credentials in the repository.
+4. Publish that archive with `npm publish ./artifacts/mendylanda-ui-0.1.0.tgz --access public`. npm may request account authentication or 2FA. Never put credentials in the repository.
 5. Confirm `npm view @mendylanda/ui@0.1.0 version`, then merge the migration and deploy the website. Do not replace the live installation instructions before the package exists.
 
 ## Subsequent versions

@@ -25,4 +25,4 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:unit && pnpm test && pnpm verify:consumers
       - run: pnpm package:pack
-      - run: npm publish artifacts/*.tgz --access public --provenance
+      - run: npm publish ./artifacts/*.tgz --access public --provenance

@@ -1,7 +1,8 @@
 import { chromium } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 const phase = process.argv[2] ?? "after";
-const root = "artifacts/ui-polish/design-stress";
+const root = process.env.STRESS_OUTPUT ?? "artifacts/ui-polish/design-stress";
+const origin = process.env.STRESS_URL ?? "http://127.0.0.1:8790";
 await mkdir(root, { recursive: true });
 const browser = await chromium.launch();
 const report = { phase, cases: [], performance: [] };
@@ -40,7 +41,8 @@ for (const c of process.argv.includes("--performance") ? [] : cases) {
   page.on("pageerror", (e) => errors.push(e.message));
   await page.clock.setFixedTime(new Date("2026-09-09T12:00:00Z"));
   await page.goto(
-    "http://127.0.0.1:8790/?" +
+    origin +
+      "/?" +
       new URLSearchParams(
         Object.entries(c).filter(([k]) =>
           [
@@ -60,7 +62,7 @@ for (const c of process.argv.includes("--performance") ? [] : cases) {
   await page.evaluate(() => document.fonts.ready);
   await page.getByRole("button", { name: "Open filters", exact: true }).click();
   if (c.field) await page.getByRole("button", { name: c.field, exact: true }).click();
-  else if (c.mobile) await page.locator('[aria-label="Filter types"] > button').first().click();
+  else if (c.mobile) await page.locator('[aria-label="Filter types"] button').first().click();
   await page.mouse.move(0, 0);
   await page.waitForTimeout(80);
   const geometry = await page.evaluate(() => {
@@ -127,7 +129,7 @@ for (const c of process.argv.includes("--performance") ? [] : cases) {
       ...(document.querySelector('[aria-label="Filter types"]')
         ? [
             {
-              selector: '[aria-label="Filter types"] > button:first-child',
+              selector: '[aria-label="Filter types"] button:first-child',
               edges: ["top", "bottom", "centerY"],
             },
           ]
@@ -155,7 +157,7 @@ for (const spec of process.argv.includes("--captures")
   const cdp = await context.newCDPSession(page);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   for (let run = 0; run < 3; run++) {
-    await page.goto("http://127.0.0.1:8790/?" + new URLSearchParams(spec));
+    await page.goto(origin + "/?" + new URLSearchParams(spec));
     await page.getByRole("button", { name: "Open filters", exact: true }).waitFor();
     const start = await page.evaluate(() => performance.now());
     await page.getByRole("button", { name: "Open filters", exact: true }).click();

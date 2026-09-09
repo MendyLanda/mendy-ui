@@ -4,6 +4,8 @@ import type { PointerEvent, ReactNode, RefObject } from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Button, Input } from "../customization.js";
+import type { CollectionHandle } from "./filter-collection.js";
+import { FilterCollection } from "./filter-collection.js";
 import { useValueDraft } from "./use-value-draft.js";
 import { DropdownMenuContent } from "../primitives/dropdown-menu.js";
 import { useMendyUI } from "../customization.js";
@@ -67,6 +69,7 @@ export function FilterMenuPanel({
   const [alignOffset, setAlignOffset] = useState(0);
   const panelId = useId();
   const initialSelection = useRef(selected?.id);
+  const lastSelection = useRef(selected?.id);
   const [keyboardNavigation, setKeyboardNavigation] = useState(
     () => trigger.current?.matches(":focus-visible") ?? false,
   );
@@ -130,6 +133,7 @@ export function FilterMenuPanel({
   }
   function back() {
     const previous = selected?.id;
+    lastSelection.current = previous;
     pointer.cancel();
     onSelect(null);
     requestAnimationFrame(() => previous && rows.current.get(previous)?.focus());
@@ -147,7 +151,7 @@ export function FilterMenuPanel({
       align={desktop ? "start" : "end"}
       alignOffset={alignOffset}
       sideOffset={7}
-      collisionPadding={12}
+      collisionPadding={16}
       onEscapeKeyDown={(event) => {
         if (selected && !desktop) {
           event.preventDefault();
@@ -201,7 +205,7 @@ export function FilterMenuPanel({
         }
       }}
       className={cn(
-        "[--filter-menu-height:min(30rem,var(--radix-dropdown-menu-content-available-height))] max-h-(--filter-menu-height) max-w-[calc(100vw-1.5rem)] overflow-hidden p-0 shadow-md animate-none! [&_*]:transition-none!",
+        "[--filter-menu-height:min(30rem,var(--radix-dropdown-menu-content-available-height,30rem))] max-h-(--filter-menu-height) max-w-[calc(100vw-2rem)] overflow-hidden p-0 shadow-md animate-none! [&_*]:transition-none!",
         desktop && selected ? "w-[var(--mendy-filter-menu-width,32rem)]" : "w-[18.75rem]",
         classNames?.menu,
       )}
@@ -218,6 +222,7 @@ export function FilterMenuPanel({
           <FilterMenuList
             sections={sections}
             selectedId={selected?.id}
+            initialKey={selected?.id ?? lastSelection.current}
             panelId={panelId}
             desktop={desktop}
             rows={rows}
@@ -337,6 +342,7 @@ function MenuHeading({ label }: { label: string }) {
 interface FilterMenuListProps {
   sections: FilterMenuSection[];
   selectedId?: string;
+  initialKey?: string;
   panelId: string;
   desktop: boolean;
   rows: RefObject<Map<string, HTMLButtonElement>>;
@@ -348,6 +354,7 @@ interface FilterMenuListProps {
 function FilterMenuList({
   sections,
   selectedId,
+  initialKey,
   panelId,
   desktop,
   rows,
@@ -357,25 +364,12 @@ function FilterMenuList({
 }: FilterMenuListProps) {
   const { classNames } = useMendyUI();
   const [query, setQuery] = useValueDraft("types", () => "", "__menu:query");
-  const [window, setWindow] = useValueDraft(
-    "types",
-    () => ({ query, limit: 100 }),
-    "__menu:window",
-  );
-  const limit = window.query === query ? window.limit : 100;
-  const matches = sections.filter((section) =>
-    section.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
-  );
-  const shown = matches.slice(0, limit);
-  const tabStop =
-    shown.find((section) => section.id === selectedId && !section.disabled)?.id ??
-    shown.find((section) => !section.disabled)?.id;
-  function focusRow(id: string) {
-    const index = matches.findIndex((section) => section.id === id);
-    if (index >= limit) {
-      setWindow({ query, limit: Math.ceil((index + 1) / 100) * 100 });
-      requestAnimationFrame(() => rows.current.get(id)?.focus());
-    } else rows.current.get(id)?.focus();
+  const collection = useRef<CollectionHandle>(null);
+  const matches: (FilterMenuSection & { key: string })[] = [];
+  const term = query.toLocaleLowerCase();
+  for (const section of sections) {
+    if (section.label.toLocaleLowerCase().includes(term))
+      matches.push({ ...section, key: section.id });
   }
   return (
     <div className={cn("flex min-h-0 flex-col", desktop && selectedId && "border-e")}>
@@ -391,42 +385,47 @@ function FilterMenuList({
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {
                 event.preventDefault();
-                const first = matches.find((section) => !section.disabled);
-                if (first) focusRow(first.id);
+                collection.current?.focusFirst();
               }
               if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
             }}
           />
         </div>
       )}
-      <div
+      {matches.length === 0 && (
+        <p className="p-3 text-sm text-muted-foreground">
+          {sections.length ? "No matching filters." : "No filters available."}
+        </p>
+      )}
+      <FilterCollection
+        items={matches}
         role="group"
-        aria-label="Filter types"
-        className={cn(
-          "min-h-0 overflow-y-auto overscroll-contain p-1",
-
-          classNames?.menuList,
-        )}
+        label="Filter types"
+        collectionRef={collection}
+        initialKey={initialKey}
+        className={cn("max-h-[calc(var(--filter-menu-height)-2px)]", classNames?.menuList)}
       >
-        {matches.length === 0 && (
-          <p className="p-3 text-sm text-muted-foreground">
-            {sections.length ? "No matching filters." : "No filters available."}
-          </p>
-        )}
-        {shown.map((section) => (
+        {(section, index, row) => (
           <Button
             key={section.id}
+            {...row}
             ref={(node) => {
+              row.ref(node);
               if (node) rows.current.set(section.id, node);
               else rows.current.delete(section.id);
             }}
             variant="ghost"
             type="button"
             aria-label={section.label}
-            aria-description={section.active ? "Filter applied" : undefined}
+            aria-description={
+              matches.length > 100
+                ? `${section.active ? "Filter applied. " : ""}${index + 1} of ${matches.length}`
+                : section.active
+                  ? "Filter applied"
+                  : undefined
+            }
             aria-expanded={selectedId === section.id}
             aria-controls={selectedId === section.id ? `${panelId}-${section.id}` : undefined}
-            tabIndex={tabStop === section.id ? 0 : -1}
             data-navigation={keyboardNavigation ? "keyboard" : "pointer"}
             disabled={section.disabled}
             className={cn(
@@ -444,50 +443,10 @@ function FilterMenuList({
             onKeyDown={(event) => {
               if (event.nativeEvent.isComposing) return;
               const rtl = getComputedStyle(event.currentTarget).direction === "rtl";
-              if (
-                ["ArrowDown", "ArrowUp", "Home", "End", "PageDown", "PageUp"].includes(event.key)
-              ) {
-                event.preventDefault();
-                event.stopPropagation();
-                const enabled = matches.filter((item) => !item.disabled);
-                const index = enabled.findIndex((item) => item.id === section.id);
-                const next =
-                  event.key === "Home"
-                    ? enabled[0]
-                    : event.key === "End"
-                      ? enabled.at(-1)
-                      : event.key === "PageDown"
-                        ? enabled[Math.min(index + 10, enabled.length - 1)]
-                        : event.key === "PageUp"
-                          ? enabled[Math.max(index - 10, 0)]
-                          : enabled[
-                              (index + (event.key === "ArrowDown" ? 1 : -1) + enabled.length) %
-                                enabled.length
-                            ];
-                if (next) focusRow(next.id);
-              } else if ([rtl ? "ArrowLeft" : "ArrowRight", "Enter", " "].includes(event.key)) {
+              if ([rtl ? "ArrowLeft" : "ArrowRight", "Enter", " "].includes(event.key)) {
                 event.preventDefault();
                 event.stopPropagation();
                 choose(section.id, true);
-              } else if (
-                event.key.length === 1 &&
-                !event.ctrlKey &&
-                !event.metaKey &&
-                !event.altKey
-              ) {
-                event.preventDefault();
-                event.stopPropagation();
-                const start = matches.findIndex((item) => item.id === section.id) + 1;
-                const next = [...matches.slice(start), ...matches.slice(0, start)].find(
-                  (item) =>
-                    !item.disabled &&
-                    item.label.toLocaleLowerCase().startsWith(event.key.toLocaleLowerCase()),
-                );
-                if (next) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  focusRow(next.id);
-                }
               }
             }}
           >
@@ -510,21 +469,8 @@ function FilterMenuList({
               className="size-3.5 shrink-0 opacity-50 rtl:rotate-180"
             />
           </Button>
-        ))}
-        {matches.length > shown.length && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full whitespace-normal"
-            onClick={() => {
-              setWindow({ query, limit: limit + 100 });
-              requestAnimationFrame(() => rows.current.get(matches[limit]!.id)?.focus());
-            }}
-          >
-            Show more ({matches.length - shown.length} remaining)
-          </Button>
         )}
-      </div>
+      </FilterCollection>
     </div>
   );
 }

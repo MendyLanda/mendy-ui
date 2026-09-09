@@ -1,7 +1,11 @@
-import { chromium, expect } from "@playwright/test";
+import { chromium, firefox, webkit, expect } from "@playwright/test";
 import assert from "node:assert/strict";
-import { writeFile } from "node:fs/promises";
-const browser = await chromium.launch();
+import AxeBuilder from "@axe-core/playwright";
+import { mkdir, writeFile } from "node:fs/promises";
+const browserName = process.env.STRESS_BROWSER ?? "chromium";
+const browserType = { chromium, firefox, webkit }[browserName];
+if (!browserType) throw new Error(`Unknown stress browser: ${browserName}`);
+const browser = await browserType.launch();
 const results = [];
 async function check(name, fn) {
   const start = Date.now();
@@ -16,21 +20,50 @@ async function check(name, fn) {
 async function fixture(query = "", width = 1280) {
   const context = await browser.newContext({
     viewport: { width, height: 900 },
-    isMobile: width < 640,
+    isMobile: browserName === "firefox" ? undefined : width < 640,
     hasTouch: width < 640,
   });
   const page = await context.newPage();
+  page.setDefaultTimeout(10000);
   await page.goto("http://127.0.0.1:8790/?" + query);
   await page.getByRole("button", { name: "Open filters", exact: true }).click();
-  if (width < 640) await page.locator('[aria-label="Filter types"] > button').first().click();
+  if (width < 640)
+    await page.locator('[aria-label="Filter types"] button[aria-expanded]').first().click();
   return { context, page };
 }
+await check(
+  "Large collections stay bounded throughout opening, including the first measured frame",
+  async () => {
+    for (const query of ["fields=1000", "options=50000", "fields=1000&options=50000"]) {
+      const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+      const page = await context.newPage();
+      await page.goto("http://127.0.0.1:8790/?" + query);
+      await page.evaluate(() => {
+        window.peakRows = 0;
+        new MutationObserver(() => {
+          window.peakRows = Math.max(
+            window.peakRows,
+            document.querySelectorAll('[aria-label="Filter types"] button, [role^="menuitem"]')
+              .length,
+          );
+        }).observe(document.body, { childList: true, subtree: true });
+      });
+      await page.getByRole("button", { name: "Open filters", exact: true }).click();
+      await expect(page.getByRole("dialog", { name: "Filters", exact: true })).toBeVisible();
+      await page.evaluate(
+        () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+      );
+      assert((await page.evaluate(() => window.peakRows)) < 80, query);
+      await context.close();
+    }
+  },
+);
 await check(
   "1,000 filters: bounded initial rows, search, End/Home, scrolling, PageDown and empty recovery",
   async () => {
     const { context, page } = await fixture("fields=1000");
-    const rows = page.locator('[aria-label="Filter types"] > button[aria-expanded]');
-    await expect(rows).toHaveCount(100);
+    const rows = page.locator('[aria-label="Filter types"] button[aria-expanded]');
+    assert((await rows.count()) < 50);
     const search = page.getByRole("searchbox", { name: "Find a filter" });
     await search.fill("Field 0994");
     await search.press("ArrowDown");
@@ -50,16 +83,20 @@ await check(
     await page.keyboard.press("Home");
     await expect(rows.first()).toBeFocused();
     await page.keyboard.press("PageDown");
-    assert.equal(await rows.first().evaluate((e) => e === document.activeElement), false);
+    assert.notEqual(
+      await page.evaluate(() => document.activeElement?.getAttribute("aria-label")),
+      "Assignee",
+    );
+    await expect(page.locator('[aria-label="Filter types"] :focus')).toBeInViewport();
     await context.close();
   },
 );
 for (const width of [1280, 320])
   await check(
-    `10,000 options at ${width}px: search distant selection, clear query, reveal more and retain focus`,
+    `10,000 options at ${width}px: search distant selection, clear query, End/Home and bounded scrolling`,
     async () => {
       const { context, page } = await fixture("options=10000", width);
-      await expect(page.getByRole("menuitemcheckbox")).toHaveCount(100);
+      assert((await page.getByRole("menuitemcheckbox").count()) < 50);
       const search = page.getByRole("searchbox", { name: "Search people" });
       await search.fill("Person 09999");
       const last = page.getByRole("menuitemcheckbox", { name: "Person 09999" });
@@ -68,10 +105,15 @@ for (const width of [1280, 320])
       await expect(page.getByRole("dialog", { name: "Filters", exact: true })).toBeVisible();
       assert.deepEqual(JSON.parse(await page.locator("#values").textContent()).people, ["9999"]);
       await search.fill("");
-      await expect(page.getByRole("menuitemcheckbox")).toHaveCount(100);
-      await page.getByRole("button", { name: "Show more (9,900 remaining)" }).click();
-      await expect(page.getByRole("menuitemcheckbox")).toHaveCount(200);
-      await expect(page.getByRole("menuitemcheckbox").nth(100)).toBeFocused();
+      assert((await page.getByRole("menuitemcheckbox").count()) < 50);
+      await search.press("ArrowDown");
+      await page.keyboard.press("End");
+      await expect(last).toBeFocused();
+      await expect(last).toBeInViewport();
+      await expect(last).toHaveAttribute("aria-checked", "true");
+      assert((await page.getByRole("menuitemcheckbox").count()) < 50);
+      await page.keyboard.press("Home");
+      await expect(page.getByRole("menuitemcheckbox", { name: "Person 00000" })).toBeFocused();
       await search.fill("Person 09999");
       await last.click();
       assert.equal(JSON.parse(await page.locator("#values").textContent()).people, null);
@@ -151,37 +193,133 @@ await check("10,000 selected values: complete data, compact summary, removal", a
 });
 await check("50,000 options: bounded DOM and full search", async () => {
   const { context, page } = await fixture("options=50000");
-  await expect(page.getByRole("menuitemcheckbox")).toHaveCount(100);
+  assert((await page.getByRole("menuitemcheckbox").count()) < 50);
+  const search = page.getByRole("searchbox", { name: "Search people" });
+  await search.press("ArrowDown");
+  await page.keyboard.press("End");
+  await expect(page.getByRole("menuitemcheckbox", { name: "Person 49999" })).toBeFocused();
+  await expect(page.getByRole("menuitemcheckbox", { name: "Person 49999" })).toBeInViewport();
+  assert((await page.getByRole("menuitemcheckbox").count()) < 50);
+  const list = page.locator('[data-filter-collection][aria-label="Assignee"]');
+  const accessibility = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+  assert.deepEqual(
+    accessibility.violations.map((violation) => ({
+      id: violation.id,
+      nodes: violation.nodes.map((node) => node.target),
+    })),
+    [],
+  );
+  for (const fraction of [0.25, 0.75, 0.5, 0.1]) {
+    await list.evaluate((element, fraction) => {
+      element.scrollTop = element.scrollHeight * fraction;
+    }, fraction);
+    await page.waitForTimeout(100);
+    assert((await page.getByRole("menuitemcheckbox").count()) < 50);
+    await expect(page.getByRole("menuitemcheckbox", { name: "Person 49999" })).toBeFocused();
+  }
+  await page.keyboard.press("ArrowUp");
+  await expect(page.getByRole("menuitemcheckbox", { name: "Person 49998" })).toBeFocused();
+  await expect(page.getByRole("menuitemcheckbox", { name: "Person 49998" })).toBeInViewport();
   await page.getByRole("searchbox", { name: "Search people" }).fill("Person 49999");
   await page.getByRole("menuitemcheckbox", { name: "Person 49999" }).click();
   assert.deepEqual(JSON.parse(await page.locator("#values").textContent()).people, ["49999"]);
   await context.close();
 });
-await check("30 open/close cycles: no retained dialogs or runaway heap growth", async () => {
-  const { context, page } = await fixture("fields=1000&options=10000");
-  const cdp = await context.newCDPSession(page);
-  await cdp.send("Performance.enable");
-  await page.keyboard.press("Escape");
-  await cdp.send("HeapProfiler.collectGarbage");
-  const before = (await cdp.send("Performance.getMetrics")).metrics.find(
-    (x) => x.name === "JSHeapUsedSize",
-  ).value;
-  const nodeCount = await page.locator("*").count();
-  for (let i = 0; i < 30; i++) {
-    await page.getByRole("button", { name: "Open filters", exact: true }).click();
-    await page.getByRole("searchbox", { name: "Search people" }).fill("Person 09999");
+await check(
+  "1,000 filters on a phone: Back restores the distant row and scroll position",
+  async () => {
+    const { context, page } = await fixture("fields=1000", 320);
     await page.keyboard.press("Escape");
-  }
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  assert.equal(await page.locator("*").count(), nodeCount);
-  await cdp.send("HeapProfiler.collectGarbage");
-  const after = (await cdp.send("Performance.getMetrics")).metrics.find(
-    (x) => x.name === "JSHeapUsedSize",
-  ).value;
-  results.push({ name: "Heap after GC", before, after, growth: after - before });
-  assert(after - before < 8 * 1024 * 1024);
-  await context.close();
-});
+    const search = page.getByRole("searchbox", { name: "Find a filter" });
+    await search.press("ArrowDown");
+    await page.keyboard.press("End");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("textbox", { name: "Field 0994", exact: true })).toBeFocused();
+    await page.keyboard.press("Escape");
+    const last = page.getByRole("button", { name: "Field 0994", exact: true });
+    await expect(last).toBeFocused();
+    await expect(last).toBeInViewport();
+    assert((await page.locator('[aria-label="Filter types"] button[aria-expanded]').count()) < 50);
+    await context.close();
+  },
+);
+await check(
+  "Virtual rows measure wrapped labels without overlapping, including enlarged text",
+  async () => {
+    const { context, page } = await fixture("options=10000&long=1&font=24", 320);
+    const rows = page.getByRole("menuitemcheckbox");
+    const first = await rows.first().boundingBox();
+    const second = await rows.nth(1).boundingBox();
+    assert(first.height > 60 && second.y >= first.y + first.height - 1);
+    await page.getByRole("searchbox", { name: "Search people" }).press("ArrowDown");
+    await page.keyboard.press("End");
+    await expect(page.getByRole("menuitemcheckbox", { name: "Person 09999" })).toBeFocused();
+    await expect(page.getByRole("menuitemcheckbox", { name: "Person 09999" })).toBeInViewport();
+    await page.keyboard.press("Home");
+    await expect(rows.first()).toBeFocused();
+    await context.close();
+  },
+);
+await check(
+  "Changing collections preserve focus across virtualization, removal, disabling and empty results",
+  async () => {
+    const { context, page } = await fixture("options=1000&dynamic=1");
+    const update = (detail) =>
+      page.evaluate(
+        (detail) => window.dispatchEvent(new CustomEvent("stress-options", { detail })),
+        detail,
+      );
+    await update({ count: 50 });
+    const current = page.getByRole("menuitemcheckbox", { name: "Person 00040" });
+    await current.focus();
+    await update({ count: 1000 });
+    await expect(current).toBeFocused();
+    await update({ count: 50 });
+    await expect(current).toBeFocused();
+    await update({ count: 50, remove: "40" });
+    await expect(page.getByRole("menuitemcheckbox", { name: "Person 00041" })).toBeFocused();
+    await update({ count: 50, remove: "40", disable: "41" });
+    await expect(page.getByRole("menuitemcheckbox", { name: "Person 00042" })).toBeFocused();
+    await update({ count: 0 });
+    await expect(page.locator('[data-filter-collection][aria-label="Assignee"]')).toBeFocused();
+    await update({ count: 1000 });
+    await expect(page.getByRole("menuitemcheckbox", { name: "Person 00000" })).toBeFocused();
+    const search = page.getByRole("searchbox", { name: "Search people" });
+    await search.fill("Person 00999");
+    await update({ count: 20 });
+    await expect(search).toBeFocused();
+    await update({ count: 1000 });
+    await expect(search).toBeFocused();
+    await expect(page.getByRole("menuitemcheckbox", { name: "Person 00999" })).toBeVisible();
+    await context.close();
+  },
+);
+if (browserName === "chromium")
+  await check("30 open/close cycles: no retained dialogs or runaway heap growth", async () => {
+    const { context, page } = await fixture("fields=1000&options=10000");
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Performance.enable");
+    await page.keyboard.press("Escape");
+    await cdp.send("HeapProfiler.collectGarbage");
+    const before = (await cdp.send("Performance.getMetrics")).metrics.find(
+      (x) => x.name === "JSHeapUsedSize",
+    ).value;
+    const nodeCount = await page.locator("*").count();
+    for (let i = 0; i < 30; i++) {
+      await page.getByRole("button", { name: "Open filters", exact: true }).click();
+      await page.getByRole("searchbox", { name: "Search people" }).fill("Person 09999");
+      await page.keyboard.press("Escape");
+    }
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    assert.equal(await page.locator("*").count(), nodeCount);
+    await cdp.send("HeapProfiler.collectGarbage");
+    const after = (await cdp.send("Performance.getMetrics")).metrics.find(
+      (x) => x.name === "JSHeapUsedSize",
+    ).value;
+    results.push({ name: "Heap after GC", before, after, growth: after - before });
+    assert(after - before < 8 * 1024 * 1024);
+    await context.close();
+  });
 await check("RTL mirrors search controls and isolates chip punctuation", async () => {
   const { context, page } = await fixture("rtl=1");
   const trigger = page.getByRole("button", { name: "Open filters", exact: true });
@@ -209,8 +347,7 @@ await check(
   },
 );
 await browser.close();
-await writeFile(
-  "artifacts/ui-polish/design-stress/behavior.json",
-  JSON.stringify(results, null, 2),
-);
+const output = process.env.STRESS_OUTPUT ?? "artifacts/ui-polish/design-stress";
+await mkdir(output, { recursive: true });
+await writeFile(`${output}/behavior-${browserName}.json`, JSON.stringify(results, null, 2));
 if (results.some((r) => r.passed === false)) process.exitCode = 1;

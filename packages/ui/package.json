@@ -68,6 +68,7 @@
     "prepack": "pnpm build"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.14.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",

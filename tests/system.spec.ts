@@ -16,9 +16,10 @@ async function paste(page: Page, value: string) {
   await page.getByRole("searchbox", { name: "Search references" }).evaluate((element, text) => {
     const data = new DataTransfer();
     data.setData("text", text);
-    element.dispatchEvent(
-      new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }),
-    );
+    // Firefox ignores ClipboardEventInit.clipboardData on synthetic events.
+    const event = new ClipboardEvent("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", { value: data });
+    element.dispatchEvent(event);
   }, value);
 }
 async function values(page: Page, label = "Dynamic filter values") {
@@ -59,20 +60,23 @@ test("the issue table filters recognized IDs entered in search", async ({ page }
   await expect(page.getByRole("status").filter({ hasText: "of 8 issues" })).toContainText(
     "1 of 8 issues",
   );
+  // nuqs applies state immediately and batches browser-history writes.
+  await expect.poll(() => new URL(page.url()).searchParams.get("issueId")).toBe('["UI-039"]');
   await page.reload();
   await expect(page.getByRole("status").filter({ hasText: "of 8 issues" })).toContainText(
     "1 of 8 issues",
   );
 });
 
-test("calendar selection applies immediately with keyboard navigation and theme radius", async ({
-  page,
-}) => {
-  await page.goto("/docs/advanced");
-  await page.clock.setFixedTime(new Date("2026-09-07T12:00:00"));
-  for (const dark of [false, true]) {
-    if (dark) await page.getByRole("button", { name: "Toggle color theme" }).click();
-    for (const radius of [0, 12]) {
+for (const dark of [false, true])
+  for (const radius of [0, 12])
+    test(`calendar selection applies immediately: ${dark ? "dark" : "light"}, radius ${radius}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.goto("/docs/advanced");
+      await page.clock.setFixedTime(new Date("2026-09-07T12:00:00"));
+      if (dark) await page.getByRole("button", { name: "Toggle color theme" }).click();
       await page.evaluate(
         (radius) => document.documentElement.style.setProperty("--radius", `${radius}px`),
         radius,
@@ -102,14 +106,6 @@ test("calendar selection applies immediately with keyboard navigation and theme 
       const bounds = await calendar.boundingBox();
       expect(bounds!.x).toBeGreaterThanOrEqual(0);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
-      await page.evaluate(() =>
-        Promise.allSettled(
-          document
-            .getAnimations()
-            .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
-            .map((animation) => animation.finished),
-        ),
-      );
       const audit = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
         .analyze();
@@ -121,9 +117,7 @@ test("calendar selection applies immediately with keyboard navigation and theme 
       await page.getByRole("button", { name: "Clear Created date filter", exact: true }).click();
       await expect.poll(async () => (await values(page)).created).toBe(null);
       await dismissEditor(page);
-    }
-  }
-});
+    });
 
 test("predefined filters apply on the first click and open on the second", async ({ page }) => {
   await page.goto("/?tab=retained");
@@ -370,6 +364,7 @@ test("ordinary and Shift paste remain native, ambiguity preserves longer words",
         bubbles: true,
         cancelable: true,
       });
+      Object.defineProperty(event, "clipboardData", { value: data });
       element.dispatchEvent(event);
       return event.defaultPrevented;
     }, text);

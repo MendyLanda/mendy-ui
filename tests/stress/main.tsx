@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   defineFilters,
@@ -75,7 +76,36 @@ document.documentElement.style.setProperty("--radius", params.get("radius") ?? "
 if (params.has("font")) document.documentElement.style.fontSize = `${params.get("font")}px`;
 if (params.has("rtl")) document.documentElement.dir = "rtl";
 function Fixture() {
-  const filters = useFilters(definitions, {
+  const [liveChoices, setLiveChoices] = useState(choices);
+  useEffect(() => {
+    const update = (event: Event) => {
+      const {
+        count = optionCount,
+        remove,
+        disable,
+      } = (event as CustomEvent<{ count?: number; remove?: string; disable?: string }>).detail;
+      setLiveChoices(
+        choices
+          .slice(0, count)
+          .filter((item) => item.value !== remove)
+          .map((item) => ({ ...item, disabled: item.value === disable })),
+      );
+    };
+    window.addEventListener("stress-options", update);
+    return () => window.removeEventListener("stress-options", update);
+  }, []);
+  const liveDefinitions = params.has("dynamic")
+    ? {
+        ...definitions,
+        people: filter.multiSelect({
+          label: title,
+          options: liveChoices,
+          searchable: true,
+          searchLabel: "Search people",
+        }),
+      }
+    : definitions;
+  const filters = useFilters(liveDefinitions, {
     defaultValues: params.has("active")
       ? { people: choices.slice(0, Number(params.get("active") || 1)).map((item) => item.value) }
       : undefined,

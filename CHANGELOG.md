@@ -73,5 +73,6 @@
 
 - Contain long option names and chips, narrow search containers, and independently scrolling filter lists. Scale menu proportions with root text size and mirror search controls in RTL.
 - Center calendars, distinguish today from selection, remove duplicate date-clear controls, and refine text labels, search density, and chip value contrast.
-- Initially render 100 filter or option rows, with full-collection search and incremental reveal. Add filter-type search above 20 entries and Page Up/Down navigation. Avoid mounting inactive chips and remove quadratic work from selection summaries.
+- Virtualize collections above 100 rows with measured wrapping, full-list keyboard navigation, and focus preservation during scrolling and data replacement. Add filter-type search above 20 entries. Avoid mounting inactive chips and remove quadratic work from selection summaries.
+- Run interaction and accessibility checks in Chromium, Firefox, and WebKit, including phone layouts. Keep clipboard test data intact in Firefox and create stress report directories on clean CI checkouts.
 - Add production-package stress checks for 1,000 filters, 50,000 options, 10,000 selected values, long labels, async races, and repeated opening/closing. Run with `pnpm test:stress`.

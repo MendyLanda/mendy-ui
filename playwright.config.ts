@@ -10,6 +10,9 @@ export default defineConfig({
   use: { baseURL: "http://127.0.0.1:8787", trace: "retain-on-failure" },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+    { name: "webkit", use: { ...devices["Desktop Safari"] } },
+    { name: "webkit-mobile", use: { ...devices["iPhone 13"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
   webServer: {

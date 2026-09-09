@@ -117,8 +117,8 @@ For a project previously using the registry, replace imports with the package ex
 
 ### Large collections
 
-The built-in menus initially render up to 100 rows. **Show more** reveals another 100, and search matches the complete supplied collection. Option search appears automatically for large collections. Filter lists with more than 20 entries include **Find a filter**. Arrow keys, Home, End, Page Up, and Page Down reach filter entries beyond the first batch.
+Collections with more than 100 rows use a measured scrolling list. Only the visible rows, a small buffer, and the keyboard-focused row stay mounted. Arrow keys, Home, End, Page Up, Page Down, and typeahead navigate the complete supplied collection. Option search appears automatically for large collections. Filter lists with more than 20 entries include **Find a filter**.
 
-Selected values stay intact even when their rows are outside the current batch. Chips keep the complete value in their accessible description. Long option labels wrap; oversized header labels scroll independently so the editor stays usable. The menu also adapts to increased root text size.
+Selected values stay intact when their rows scroll out of view. Long option labels wrap and are measured individually. Chips keep the complete value in their accessible description. Oversized header labels scroll independently so the editor stays usable, including with increased root text size.
 
-Remote option sources should still paginate. Revealing every batch eventually mounts the full collection. For a custom virtualized editor, use `renderEditor`; the controller and URL state do not depend on the built-in list rendering.
+Remote sources should still paginate to avoid downloading every option. **Load more** requests another server page; loaded rows use the same scrolling list. Your source, controller, URL state, and custom option content use the same API for small and large collections.

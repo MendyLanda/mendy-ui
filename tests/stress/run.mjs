@@ -10,8 +10,11 @@ if (
   );
 }
 const server = spawn(process.execPath, ["tests/stress/serve.mjs"], { stdio: "inherit" });
-async function run(file, args = []) {
-  const child = spawn(process.execPath, [file, ...args], { stdio: "inherit" });
+async function run(file, args = [], env = {}) {
+  const child = spawn(process.execPath, [file, ...args], {
+    stdio: "inherit",
+    env: { ...process.env, ...env },
+  });
   const code = await new Promise((resolve) => child.once("exit", resolve));
   if (code !== 0) throw new Error(`${file} failed with exit code ${code}`);
 }
@@ -26,7 +29,9 @@ try {
     await setTimeout(200);
   }
   if (!ready) throw new Error("Stress fixture server did not become ready");
-  await run("tests/stress/check.mjs");
+  for (const browser of (process.env.STRESS_BROWSERS ?? "chromium").split(",")) {
+    await run("tests/stress/check.mjs", [], { STRESS_BROWSER: browser });
+  }
   if (process.argv.includes("--measure")) await run("tests/stress/audit.mjs", ["measured"]);
 } finally {
   server.kill("SIGTERM");

@@ -1,5 +1,7 @@
 "use client";
 
+import type { CollectionHandle } from "./filter-collection.js";
+import { FilterCollection } from "./filter-collection.js";
 import type { ReactNode } from "react";
 import type { Choice, RuntimeField, SummaryPolicy } from "./filter-definition.js";
 import type { FilterController } from "./use-filters.js";
@@ -846,21 +848,11 @@ interface CommitEditorProps {
   input: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
   apply(value: unknown, shouldClose?: boolean): void;
 }
-function useChoiceWindow(field: RuntimeField, options: ReturnType<typeof useFilterOptions>) {
-  // Retain the search affordance once a large remote response reveals it.
-  // Updating during render avoids removing a focused search input between requests.
-  const large = (field.source?.items.length ?? 0) > 100 || options.items.length > 100;
+function useChoiceSearch(field: RuntimeField, count: number) {
+  const large = (field.source?.items.length ?? 0) > 100 || count > 100;
   const [discovered, setDiscovered] = useState(large);
   if (large && !discovered) setDiscovered(true);
-  const [window, setWindow] = useState({ query: options.query, limit: 100 });
-  const limit = window.query === options.query ? window.limit : 100;
-  const visible = options.items.slice(0, limit);
-  return {
-    visible,
-    remaining: options.items.length - visible.length,
-    searchable: field.searchable || large || discovered,
-    showMore: () => setWindow({ query: options.query, limit: limit + 100 }),
-  };
+  return field.searchable || large || discovered;
 }
 
 function ChoiceEditor({
@@ -878,8 +870,8 @@ function ChoiceEditor({
   options: ReturnType<typeof useFilterOptions>;
   location: "menu" | "chip" | "inline";
 }) {
-  const { classNames } = useMendyUI();
-  const { visible, remaining, searchable, showMore } = useChoiceWindow(field, options);
+  const searchable = useChoiceSearch(field, options.items.length);
+  const collection = useRef<CollectionHandle>(null);
   const selected = Array.isArray(value) ? value : value === null ? [] : [value];
   const selectedSet = new Set(selected);
   const searchLabel = field.searchLabel ?? `Search ${field.label.toLowerCase()}`;
@@ -912,26 +904,86 @@ function ChoiceEditor({
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {
                 event.preventDefault();
-                event.currentTarget
-                  .closest("[data-filter-choices]")
-                  ?.querySelector<HTMLElement>('[role^="menuitem"]:not([data-disabled])')
-                  ?.focus();
+                collection.current?.focusFirst();
               }
               if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
             }}
           />
         </div>
       )}
-      <div role={location === "inline" ? "group" : "menu"} aria-label={field.label} className="p-1">
-        {location === "inline" ? (
-          visible.map((choice) => (
+      <ChoiceCollection
+        field={field}
+        options={options}
+        value={value}
+        selected={selected}
+        selectedSet={selectedSet}
+        disabled={disabled}
+        apply={apply}
+        location={location}
+        collection={collection}
+      />
+      <OptionFeedback options={options} error={error} />
+    </div>
+  );
+}
+function ChoiceCollection({
+  field,
+  options,
+  value,
+  selected,
+  selectedSet,
+  disabled,
+  apply,
+  location,
+  collection,
+}: {
+  field: RuntimeField;
+  options: ReturnType<typeof useFilterOptions>;
+  value: unknown;
+  selected: unknown[];
+  selectedSet: Set<unknown>;
+  disabled?: boolean;
+  apply(value: unknown, shouldClose?: boolean): void;
+  location: "menu" | "chip" | "inline";
+  collection: React.RefObject<CollectionHandle | null>;
+}) {
+  const { classNames } = useMendyUI();
+  const choices = (
+    field.kind === "single" && location === "chip" && field.removable !== false
+      ? [{ value: "", label: `Any ${field.label.toLowerCase()}` }, ...options.items]
+      : options.items
+  ).map((choice) => ({ ...choice, key: choice.value, disabled: disabled || choice.disabled }));
+  const list = (
+    <FilterCollection
+      items={choices}
+      role={location === "inline" ? "group" : "menu"}
+      label={field.label}
+      collectionRef={collection}
+      initialKey={typeof selected[0] === "string" ? selected[0] : undefined}
+      className="max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height,20rem))]"
+    >
+      {(choice, index, row) => {
+        const content =
+          field.renderOption && choice.value !== ""
+            ? field.renderOption(choice, { selected: selectedSet.has(choice.value) })
+            : choice.label;
+        const common = {
+          ...row,
+          "aria-label": choice.label,
+          disabled: choice.disabled,
+          className: cn(
+            "items-start py-2 sm:pointer-fine:py-1.5 whitespace-normal [overflow-wrap:anywhere] [&>span:first-child]:mt-[calc(0.5lh-0.4375rem)]",
+            classNames?.option,
+          ),
+        };
+        if (location === "inline")
+          return (
             <Button
-              key={choice.value}
+              key={choice.key}
+              {...common}
               variant="ghost"
               type="button"
-              aria-label={choice.label}
               aria-pressed={selectedSet.has(choice.value)}
-              disabled={disabled || choice.disabled}
               className={cn(
                 "h-auto min-h-9 w-full justify-start whitespace-normal [overflow-wrap:anywhere] text-start",
                 selectedSet.has(choice.value) && "bg-accent",
@@ -947,88 +999,56 @@ function ChoiceEditor({
                 }
               }}
             >
-              {field.renderOption
-                ? field.renderOption(choice, { selected: selectedSet.has(choice.value) })
-                : choice.label}
+              {content}
             </Button>
-          ))
-        ) : field.kind === "single" ? (
-          <DropdownMenuRadioGroup
-            value={typeof value === "string" ? value : ""}
-            onValueChange={(next) => apply(next || field.clearValue)}
-          >
-            {location === "chip" && field.removable !== false && (
-              <DropdownMenuRadioItem
-                value=""
-                disabled={disabled}
-                onSelect={(event) => event.preventDefault()}
-              >
-                Any {field.label.toLowerCase()}
-              </DropdownMenuRadioItem>
-            )}
-            {visible.map((choice) => (
-              <DropdownMenuRadioItem
-                key={choice.value}
-                aria-label={choice.label}
-                className={cn("whitespace-normal [overflow-wrap:anywhere]", classNames?.option)}
-                value={choice.value}
-                onSelect={(event) => event.preventDefault()}
-                disabled={disabled || choice.disabled}
-              >
-                {field.renderOption
-                  ? field.renderOption(choice, { selected: selectedSet.has(choice.value) })
-                  : choice.label}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        ) : (
-          visible.map((choice) => (
-            <FilterCheckboxItem
-              key={choice.value}
-              aria-label={choice.label}
-              className={cn("whitespace-normal [overflow-wrap:anywhere]", classNames?.option)}
-              disabled={disabled || choice.disabled}
-              checked={selectedSet.has(choice.value)}
-              onCheckedChange={(checked) => {
-                const next = checked
-                  ? [...new Set([...selected, choice.value])]
-                  : selected.filter((item) => item !== choice.value);
-                apply(next.length ? next : field.clearValue, false);
-              }}
+          );
+        const position =
+          choices.length > 100
+            ? { "aria-posinset": index + 1, "aria-setsize": choices.length }
+            : {};
+        if (field.kind === "single")
+          return (
+            <DropdownMenuRadioItem
+              key={choice.key}
+              {...common}
+              {...position}
+              value={choice.value}
+              onSelect={(event) => event.preventDefault()}
             >
-              {field.renderOption
-                ? field.renderOption(choice, { selected: selectedSet.has(choice.value) })
-                : choice.label}
-            </FilterCheckboxItem>
-          ))
-        )}
-      </div>
-      {remaining > 0 && (
-        <div className="border-t p-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full whitespace-normal"
-            onClick={(event) => {
-              const root = event.currentTarget.closest("[data-filter-choices]");
-              const previousCount = root?.querySelectorAll('[role^="menuitem"]').length ?? 0;
-              showMore();
-              requestAnimationFrame(() =>
-                root?.querySelectorAll<HTMLElement>('[role^="menuitem"]')[previousCount]?.focus(),
-              );
+              {content}
+            </DropdownMenuRadioItem>
+          );
+        return (
+          <FilterCheckboxItem
+            key={choice.key}
+            {...common}
+            {...position}
+            checked={selectedSet.has(choice.value)}
+            onCheckedChange={(checked) => {
+              const next = checked
+                ? [...new Set([...selected, choice.value])]
+                : selected.filter((item) => item !== choice.value);
+              apply(next.length ? next : field.clearValue, false);
             }}
           >
-            Show more ({remaining.toLocaleString()} remaining)
-          </Button>
-        </div>
-      )}
-      <OptionFeedback
-        options={remaining > 0 ? { ...options, hasMore: false } : options}
-        error={error}
-      />
-    </div>
+            {content}
+          </FilterCheckboxItem>
+        );
+      }}
+    </FilterCollection>
+  );
+  return field.kind === "single" && location !== "inline" ? (
+    <DropdownMenuRadioGroup
+      value={typeof value === "string" ? value : ""}
+      onValueChange={(next) => apply(next || field.clearValue)}
+    >
+      {list}
+    </DropdownMenuRadioGroup>
+  ) : (
+    list
   );
 }
+
 function OptionFeedback({
   options,
   error,

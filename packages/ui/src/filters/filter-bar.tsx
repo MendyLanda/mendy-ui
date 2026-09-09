@@ -43,7 +43,8 @@ import { classifyPaste, resolvePasteAmbiguity } from "./filter-state.js";
 import { cn } from "../utils.js";
 import { FilterMenuPanel } from "./filter-menu-panel.js";
 
-import { useValueDraft } from "./use-value-draft.js";
+import type { DraftCache } from "./use-value-draft.js";
+import { FilterDraftCache, useValueDraft } from "./use-value-draft.js";
 import { MendyUIProvider, useMendyUI } from "../customization.js";
 import type { FilterClassNames } from "../customization.js";
 
@@ -54,6 +55,7 @@ export interface FilterMenuGroup {
   icon?: ReactNode;
 }
 interface RootContext {
+  direction: "ltr" | "rtl";
   filters: FilterController;
   summary: SummaryPolicy;
   closeMenuOnApply: boolean;
@@ -105,8 +107,14 @@ function FilterRootContent({
   const [cache] = useState(() => new Map());
   const [ambiguous, setAmbiguous] = useState<PasteAmbiguity[]>([]);
   const trigger = useRef<HTMLButtonElement>(null);
+  const [direction, setDirection] = useState<"ltr" | "rtl">("ltr");
+  useLayoutEffect(() => {
+    if (filters.menuOpen && trigger.current)
+      setDirection(getComputedStyle(trigger.current).direction === "rtl" ? "rtl" : "ltr");
+  }, [filters.menuOpen]);
   const context = useMemo(
     () => ({
+      direction,
       filters,
       summary,
       suggestions,
@@ -117,7 +125,7 @@ function FilterRootContent({
       ambiguous,
       setAmbiguous,
     }),
-    [filters, summary, suggestions, closeMenuOnApply, groups, disabled, ambiguous],
+    [filters, summary, suggestions, closeMenuOnApply, groups, disabled, ambiguous, direction],
   );
   return (
     <FilterOptionCache.Provider value={cache}>
@@ -151,13 +159,18 @@ export function FilterSearch({
   label?: string;
   placeholder?: string;
 }) {
-  const { filters, trigger, disabled, setAmbiguous } = useRoot();
+  const { filters, trigger, disabled, setAmbiguous, direction } = useRoot();
   const { classNames } = useMendyUI();
   const anchor = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const shift = useRef(false);
   return (
-    <DropdownMenu modal={false} open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
+    <DropdownMenu
+      dir={direction}
+      modal={false}
+      open={filters.menuOpen}
+      onOpenChange={filters.setMenuOpen}
+    >
       <div ref={anchor} className={cn("relative w-full shrink-0 sm:w-[350px]", classNames?.search)}>
         <Search
           className="pointer-events-none absolute left-3 top-1/2 size-[17px] -translate-y-1/2"
@@ -268,10 +281,15 @@ export function FilterMenu({
   children?: ReactNode;
   asChild?: boolean;
 }) {
-  const { filters, trigger, disabled } = useRoot();
+  const { filters, trigger, disabled, direction } = useRoot();
   const { classNames } = useMendyUI();
   return (
-    <DropdownMenu modal={false} open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
+    <DropdownMenu
+      dir={direction}
+      modal={false}
+      open={filters.menuOpen}
+      onOpenChange={filters.setMenuOpen}
+    >
       <DropdownMenuTrigger asChild>
         <Button
           ref={trigger}
@@ -300,6 +318,7 @@ const fieldIcons = {
 function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement | null> }) {
   const { filters, groups, disabled, trigger } = useRoot();
   const [clearEpoch, setClearEpoch] = useState(0);
+  const [drafts] = useState<DraftCache>(() => new Map());
   const grouped = new Set(groups.flatMap((group) => group.fields));
   const visible = filters.entries.filter(
     (entry) => !entry.field.hidden && entry.field.menu !== false,
@@ -350,7 +369,12 @@ function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement
                 undefined,
                 "remove",
               );
-              if (!error) setClearEpoch((epoch) => epoch + 1);
+              if (!error) {
+                for (const entry of section.entries)
+                  for (const part of ["value", "text", "error", "date", "query"])
+                    drafts.delete(`${entry.id}:${part}`);
+                setClearEpoch((epoch) => epoch + 1);
+              }
             }
           : undefined,
       content: section.entries.map((entry) => (
@@ -375,13 +399,16 @@ function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement
     };
   });
   return (
-    <FilterMenuPanel
-      sections={sections}
-      selectedId={filters.openField}
-      onSelect={filters.setOpenField}
-      anchor={anchor}
-      trigger={trigger}
-    />
+    <FilterDraftCache.Provider value={drafts}>
+      <FilterMenuPanel
+        sections={sections}
+        selectedId={filters.openField}
+        onSelect={filters.setOpenField}
+        onClose={() => filters.setMenuOpen(false)}
+        anchor={anchor}
+        trigger={trigger}
+      />
+    </FilterDraftCache.Provider>
   );
 }
 export function FilterList() {
@@ -674,7 +701,7 @@ function FieldEditor({
   const { field, value } = entry;
   const input = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const customRoot = useRef<HTMLDivElement>(null);
-  const [draft, updateDraft] = useValueDraft(value, (current) => current);
+  const [draft, updateDraft] = useValueDraft(value, (current) => current, `${entry.id}:value`);
   const draftRef = useRef(value);
   useLayoutEffect(() => {
     draftRef.current = draft;
@@ -683,16 +710,23 @@ function FieldEditor({
     draftRef.current = next;
     updateDraft(next);
   }
-  const [text, setText] = useValueDraft(value, (value) =>
-    field.kind === "tokens"
-      ? Array.isArray(value)
-        ? value.join(", ")
-        : ""
-      : typeof value === "string"
-        ? value
-        : "",
+  const [text, setText] = useValueDraft(
+    value,
+    (value) =>
+      field.kind === "tokens"
+        ? Array.isArray(value)
+          ? value.join(", ")
+          : ""
+        : typeof value === "string"
+          ? value
+          : "",
+    `${entry.id}:text`,
   );
-  const [error, setError] = useState<string>();
+  const [error, setError] = useValueDraft<unknown, string | undefined>(
+    value,
+    () => undefined,
+    `${entry.id}:error`,
+  );
   const id = useId();
   const options = useFilterOptions(entry.id, field, value, active);
   useEffect(() => {
@@ -769,6 +803,7 @@ function FieldEditor({
   if (field.kind === "dateRange")
     return (
       <FilterDateEditor
+        draftKey={`${entry.id}:date`}
         autoFocus={autoFocus}
         showLabel={showDateLabel}
         field={field}
@@ -821,6 +856,7 @@ function ChoiceEditor({
   return (
     <div
       data-mendy-ui=""
+      data-filter-choices=""
       className="w-64 max-w-full"
       onKeyDown={(event) => {
         if (event.key === "Tab") event.stopPropagation();
@@ -848,7 +884,7 @@ function ChoiceEditor({
               if (event.key === "ArrowDown") {
                 event.preventDefault();
                 event.currentTarget
-                  .closest("[data-radix-menu-content]")
+                  .closest("[data-filter-choices]")
                   ?.querySelector<HTMLElement>('[role^="menuitem"]:not([data-disabled])')
                   ?.focus();
               }
@@ -1008,6 +1044,7 @@ function ValueEditor({
   error?: string;
   id: string;
 }) {
+  const [attempted, setAttempted] = useState(false);
   const candidate =
     field.kind === "tokens"
       ? text.split(/[\r\n\t,]+/).flatMap((item) => (item.trim() ? [item.trim()] : []))
@@ -1020,6 +1057,9 @@ function ValueEditor({
   } catch {
     validation = "Enter a valid value.";
   }
+  const message =
+    (text.length > 0 || attempted || field.kind === "numberRange" ? validation : undefined) ??
+    error;
   return (
     <div
       data-mendy-ui=""
@@ -1045,8 +1085,8 @@ function ValueEditor({
                         }
                       : undefined
                   }
-                  aria-invalid={Boolean(validation || error)}
-                  aria-describedby={validation || error ? `${id}-error` : undefined}
+                  aria-invalid={Boolean(message)}
+                  aria-describedby={message ? `${id}-error` : `${id}-hint`}
                   type="number"
                   value={rangeValue ?? ""}
                   onKeyDown={(event) => {
@@ -1079,12 +1119,16 @@ function ValueEditor({
             disabled={disabled}
             placeholder={field.placeholder}
             value={text}
-            aria-invalid={Boolean(validation || error)}
-            aria-describedby={validation || error ? `${id}-error` : undefined}
-            onChange={(event) => setText(event.target.value)}
+            aria-invalid={Boolean(message)}
+            aria-describedby={message ? `${id}-error` : `${id}-hint`}
+            onChange={(event) => {
+              setAttempted(false);
+              setText(event.target.value);
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
                 event.preventDefault();
+                setAttempted(true);
                 if (!validation) apply(candidate);
               }
               if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
@@ -1092,13 +1136,15 @@ function ValueEditor({
           />
         </>
       )}
-      {(validation || error) && (
+      {message && (
         <p role="alert" id={`${id}-error`} className="text-sm text-destructive">
-          {validation ?? error}
+          {message}
         </p>
       )}
       {field.kind !== "numberRange" && (
-        <p className="text-xs text-muted-foreground">Enter to save. Shift+Enter for a new line.</p>
+        <p id={`${id}-hint`} className="text-xs text-muted-foreground">
+          Enter to save. Shift+Enter for a new line.
+        </p>
       )}
     </div>
   );

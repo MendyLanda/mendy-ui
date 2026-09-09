@@ -1,6 +1,7 @@
 "use client";
 
 import type { Choice, OptionPage, RuntimeField } from "./filter-definition.js";
+import { useValueDraft } from "./use-value-draft.js";
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 interface Request {
@@ -90,10 +91,10 @@ export function useFilterOptions(
   useLayoutEffect(() => {
     latest.current = source;
   }, [source]);
-  const [localQuery, setLocalQuery] = useState("");
+  const scopeKey = JSON.stringify([id, source?.scope, source?.params]);
+  const [localQuery, setLocalQuery] = useValueDraft(scopeKey, () => "", `${id}:query`);
   const query = source?.query ?? localQuery;
   const [retryKey, retry] = useState(0);
-  const scopeKey = JSON.stringify([id, source?.scope, source?.params]);
   const requestKey = JSON.stringify([scopeKey, query, retryKey]);
   const identity = JSON.stringify([id, source?.scope]);
   const ids = selectedIds(value);

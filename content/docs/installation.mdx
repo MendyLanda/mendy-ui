@@ -97,6 +97,10 @@ Selections, dates, and number ranges apply immediately. Text and token drafts sa
 
 The filter list and editor share a panel on desktop. On mobile, the editor replaces the list and offers Back. Menu changes are instant, and chip entry animations respect reduced motion.
 
+Hover previews a filter on desktop. While a text input has focus, click another filter to switch. Unapplied drafts and option searches survive switching filters or using mobile Back; closing the menu discards them.
+
+Arrow keys move through the filter list. Enter or the arrow toward the editor enters it. The return arrow moves back to the list, while text inputs and calendars keep their own arrow-key behavior. Tab moves through the visible controls and then continues after the trigger in the page. Shift+Tab from the list returns to the trigger. Escape closes the desktop menu; on mobile it first returns to the list.
+
 ## Customization
 
 Use theme variables, named `classNames`, typed `renderOption`, `renderSummary`, and `renderEditor` callbacks, or compose your own layout. `MendyUIProvider` can replace controls and set a portal container. See the [customization guide](/docs/customization).

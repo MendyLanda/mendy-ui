@@ -1,11 +1,13 @@
 "use client";
 
-import type { ReactNode, RefObject } from "react";
+import type { PointerEvent, ReactNode, RefObject } from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "../customization.js";
 import { DropdownMenuContent } from "../primitives/dropdown-menu.js";
 import { useMendyUI } from "../customization.js";
+import { focusMenuEditor, handleMenuTab } from "./filter-menu-focus.js";
+import { useMenuPointer } from "./use-menu-pointer.js";
 import { cn } from "../utils.js";
 
 export interface FilterMenuSection {
@@ -22,6 +24,7 @@ interface FilterMenuPanelProps {
   sections: FilterMenuSection[];
   selectedId: string | null;
   onSelect(id: string | null): void;
+  onClose(): void;
   anchor?: RefObject<HTMLDivElement | null>;
   trigger: RefObject<HTMLButtonElement | null>;
 }
@@ -39,6 +42,7 @@ export function FilterMenuPanel({
   sections,
   selectedId,
   onSelect,
+  onClose,
   anchor,
   trigger,
 }: FilterMenuPanelProps) {
@@ -53,6 +57,18 @@ export function FilterMenuPanel({
   const pendingEditorFocus = useRef(false);
   const [alignOffset, setAlignOffset] = useState(0);
   const panelId = useId();
+  const initialSelection = useRef(selected?.id);
+  const [keyboardNavigation, setKeyboardNavigation] = useState(
+    () => trigger.current?.matches(":focus-visible") ?? false,
+  );
+  const pointer = useMenuPointer({
+    editor,
+    selectedId: selected?.id,
+    onChoose(id) {
+      choose(id);
+      rows.current.get(id)?.focus({ preventScroll: true });
+    },
+  });
 
   useLayoutEffect(() => {
     const button = trigger.current;
@@ -75,22 +91,15 @@ export function FilterMenuPanel({
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
-      const first = [...rows.current.values()].find((button) => !button.disabled);
+      const first =
+        rows.current.get(initialSelection.current ?? "") ??
+        [...rows.current.values()].find((button) => !button.disabled);
       (first ?? content.current)?.focus();
     });
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  function focusEditor() {
-    const root = editor.current;
-    if (!root) return;
-    // Prefer the current calendar day to month-navigation buttons.
-    const target =
-      root.querySelector<HTMLElement>(
-        'input:not([disabled]), textarea:not([disabled]), [role="grid"] button[tabindex="0"], [role^="menuitem"]:not([data-disabled])',
-      ) ?? root.querySelector<HTMLElement>('button:not([disabled]), [tabindex="0"]');
-    (target ?? root).focus();
-  }
+  const focusEditor = () => focusMenuEditor(editor.current);
   useLayoutEffect(() => {
     if (!pendingEditorFocus.current) return;
     pendingEditorFocus.current = false;
@@ -98,12 +107,14 @@ export function FilterMenuPanel({
   });
 
   function choose(id: string, enter = false) {
+    pointer.cancel();
     if (enter && selected?.id === id && editor.current) focusEditor();
     else pendingEditorFocus.current = enter;
     onSelect(id);
   }
   function back() {
     const previous = selected?.id;
+    pointer.cancel();
     onSelect(null);
     requestAnimationFrame(() => previous && rows.current.get(previous)?.focus());
   }
@@ -137,15 +148,35 @@ export function FilterMenuPanel({
         )
           event.preventDefault();
       }}
+      onPointerDownCapture={() => {
+        setKeyboardNavigation(false);
+        pointer.cancel();
+      }}
+      onPointerLeave={pointer.cancel}
+      onKeyDownCapture={(event) => {
+        if (
+          !event.nativeEvent.isComposing &&
+          !["Shift", "Control", "Alt", "Meta"].includes(event.key)
+        )
+          setKeyboardNavigation(true);
+        if (event.key === "Tab") pointer.cancel();
+        handleMenuTab(event, {
+          trigger: trigger.current,
+          editor: editor.current,
+          onClose,
+          hasSelection: Boolean(selected),
+        });
+      }}
       onKeyDown={(event) => {
-        // Allow normal Tab traversal within the dialog; Radix menus normally cancel Tab.
-        if (event.key === "Tab") event.stopPropagation();
         const target = event.target;
         const rtl = getComputedStyle(event.currentTarget).direction === "rtl";
         if (
           event.key === (rtl ? "ArrowRight" : "ArrowLeft") &&
           target instanceof HTMLElement &&
-          !target.closest('input, textarea, select, [role="grid"], [contenteditable=true]')
+          !target.isContentEditable &&
+          !target.closest(
+            'input, textarea, select, [role="grid"], [role="slider"], [role="spinbutton"], [role="combobox"], [role="tablist"], [role="tree"], [role="listbox"]',
+          )
         ) {
           event.preventDefault();
           event.stopPropagation();
@@ -175,13 +206,29 @@ export function FilterMenuPanel({
             desktop={desktop}
             rows={rows}
             choose={choose}
+            keyboardNavigation={keyboardNavigation}
+            onPointerMove={(id, event) => {
+              if (desktop && event.pointerType === "mouse") {
+                setKeyboardNavigation(false);
+                const focused = document.activeElement;
+                if (
+                  focused instanceof HTMLElement &&
+                  editor.current?.contains(focused) &&
+                  (focused.matches("input, textarea") || focused.isContentEditable)
+                ) {
+                  pointer.cancel();
+                  return;
+                }
+                pointer.move(id, event);
+              }
+            }}
           />
         )}
         {selected && (
-          <div className="flex min-h-0 min-w-0 flex-col">
+          <div onPointerEnter={pointer.cancel} className="flex min-h-0 min-w-0 flex-col">
             <div
               className={cn(
-                "flex min-h-10 shrink-0 items-center gap-2 border-b px-3 py-2 text-xs font-medium",
+                "flex min-h-10 shrink-0 items-center gap-2 border-b px-3 py-2 text-xs font-medium sm:pointer-fine:min-h-8 sm:pointer-fine:py-0.5",
                 classNames?.menuHeader,
               )}
             >
@@ -222,12 +269,12 @@ export function FilterMenuPanel({
             <div
               key={selected.id}
               ref={editor}
-              id={panelId}
+              id={`${panelId}-${selected.id}`}
               role="group"
               aria-label={selected.editorLabel}
               tabIndex={-1}
               className={cn(
-                "min-h-0 min-w-0 overflow-y-auto overscroll-contain outline-none [&>div]:w-full [&_[role^=menuitem]]:min-h-9",
+                "min-h-0 min-w-0 overflow-y-auto overscroll-contain outline-none [&>div]:w-full [&_[role^=menuitem]]:min-h-9 sm:pointer-fine:[&_[role^=menuitem]]:min-h-8",
                 classNames?.editor,
               )}
             >
@@ -247,6 +294,8 @@ interface FilterMenuListProps {
   desktop: boolean;
   rows: RefObject<Map<string, HTMLButtonElement>>;
   choose(id: string, enter?: boolean): void;
+  keyboardNavigation: boolean;
+  onPointerMove(id: string, event: PointerEvent<HTMLButtonElement>): void;
 }
 
 function FilterMenuList({
@@ -256,6 +305,8 @@ function FilterMenuList({
   desktop,
   rows,
   choose,
+  keyboardNavigation,
+  onPointerMove,
 }: FilterMenuListProps) {
   const { classNames } = useMendyUI();
   return (
@@ -281,22 +332,28 @@ function FilterMenuList({
           variant="ghost"
           type="button"
           aria-label={section.label}
+          aria-description={section.active ? "Filter applied" : undefined}
           aria-expanded={selectedId === section.id}
-          aria-controls={selectedId === section.id ? panelId : undefined}
+          aria-controls={selectedId === section.id ? `${panelId}-${section.id}` : undefined}
+          tabIndex={
+            (selectedId ?? sections.find((item) => !item.disabled)?.id) === section.id ? 0 : -1
+          }
+          data-navigation={keyboardNavigation ? "keyboard" : "pointer"}
           disabled={section.disabled}
           className={cn(
-            "h-auto min-h-10 w-full justify-start gap-2 rounded-sm px-2 py-2 text-sm font-normal",
+            "h-auto min-h-10 w-full justify-start gap-2 rounded-sm px-2 py-2 text-sm font-normal sm:pointer-fine:min-h-8 sm:pointer-fine:py-1.5 data-[navigation=pointer]:focus-visible:ring-0",
             selectedId === section.id && "bg-accent text-accent-foreground",
             classNames?.menuRow,
           )}
-          onPointerEnter={(event) => {
-            if (desktop && event.pointerType === "mouse" && !section.disabled) choose(section.id);
+          onPointerMove={(event) => {
+            if (!section.disabled) onPointerMove(section.id, event);
           }}
           onFocus={() => {
             if (desktop) choose(section.id);
           }}
           onClick={() => choose(section.id, true)}
           onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing) return;
             const rtl = getComputedStyle(event.currentTarget).direction === "rtl";
             if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
               event.preventDefault();
@@ -323,6 +380,8 @@ function FilterMenuList({
               !event.metaKey &&
               !event.altKey
             ) {
+              event.preventDefault();
+              event.stopPropagation();
               const start = sections.findIndex((item) => item.id === section.id) + 1;
               const next = [...sections.slice(start), ...sections.slice(0, start)].find(
                 (item) =>
@@ -343,7 +402,7 @@ function FilterMenuList({
             </span>
           )}
           <span
-            className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere] text-left"
+            className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere] text-start"
             title={section.label}
           >
             {section.label}

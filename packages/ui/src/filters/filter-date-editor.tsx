@@ -21,9 +21,11 @@ export function FilterDateEditor({
   disabled,
   apply,
   error,
+  draftKey,
   autoFocus = true,
   showLabel = true,
 }: {
+  draftKey?: string;
   autoFocus?: boolean;
   showLabel?: boolean;
   field: RuntimeField;
@@ -36,6 +38,7 @@ export function FilterDateEditor({
     value as DateRange | null,
     (current): CalendarRange | undefined =>
       current ? { from: calendarDate(current.from), to: calendarDate(current.to) } : undefined,
+    draftKey,
   );
   return (
     <div

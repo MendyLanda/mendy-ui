@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased: menu interaction polish
+
+- Start empty text editors without an error; show validation on invalid edits or an attempted save, and associate keyboard instructions with the input.
+
+- Use 32px filter and option rows on fine-pointer desktops, with the existing touch spacing.
+- Keep drafts and option searches while browsing an open menu. Closing discards unapplied drafts; clearing one filter preserves the others' drafts.
+- Keep hover and keyboard focus on the same filter. Protect focused text inputs from hover changes and allow diagonal movement into the editor.
+- Fix Tab entry and dismissal, focus checked options on entry, isolate list typeahead, and announce applied filters.
+- Preserve the trigger's text direction in the portalled menu and reverse entry/return arrows for RTL layouts.
+
 ## 0.1.0 — npm package
 
 - Distribute one shared `@mendylanda/ui` package instead of copying source through the registry.

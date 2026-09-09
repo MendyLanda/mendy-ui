@@ -67,6 +67,7 @@ export function FilterMenuPanel({
   const rows = useRef(new Map<string, HTMLButtonElement>());
   const pendingEditorFocus = useRef(false);
   const [alignOffset, setAlignOffset] = useState(0);
+  const [side, setSide] = useState<"top" | "bottom">("bottom");
   const panelId = useId();
   const initialSelection = useRef(selected?.id);
   const lastSelection = useRef(selected?.id);
@@ -89,6 +90,15 @@ export function FilterMenuPanel({
       const bounds = button.getBoundingClientRect();
       const target = anchor?.current?.getBoundingClientRect();
       const rtl = getComputedStyle(button).direction === "rtl";
+      const viewport = window.visualViewport;
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
+      const below = viewportBottom - bounds.bottom - 23;
+      const above = bounds.top - viewportTop - 23;
+      const preferredHeight = 30 * parseFloat(getComputedStyle(document.documentElement).fontSize);
+      // A short list can fit below the trigger while its editor cannot. Choose room
+      // for the editor before Radix constrains its height to the current side.
+      setSide(below < preferredHeight && above > below ? "top" : "bottom");
       // Desktop starts at the search field's edge; mobile stays close to the icon.
       setAlignOffset(
         desktop
@@ -102,9 +112,15 @@ export function FilterMenuPanel({
     const observer = new ResizeObserver(update);
     observer.observe(anchor?.current ?? button);
     window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    window.visualViewport?.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("scroll", update);
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+      window.visualViewport?.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("scroll", update);
     };
   }, [anchor, desktop, trigger]);
 
@@ -150,6 +166,7 @@ export function FilterMenuPanel({
       aria-orientation={undefined}
       align={desktop ? "start" : "end"}
       alignOffset={alignOffset}
+      side={side}
       sideOffset={7}
       collisionPadding={16}
       onEscapeKeyDown={(event) => {

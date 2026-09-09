@@ -92,6 +92,7 @@ test("menu items reveal options before applying, then the chip edits the value",
   await expect(count(page, 3)).toBeVisible();
   await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeVisible();
   await dismissEditor(page);
+  await expect(trigger).toBeEnabled();
   await trigger.focus();
   await page.keyboard.press("Enter");
   await page.getByRole("menuitemradio", { name: "In progress", exact: true }).click();
@@ -318,6 +319,7 @@ test("arrow keys explore submenus without applying and clearing a chip returns f
 }) => {
   await page.goto("/");
   const menu = page.getByRole("button", { name: "Open filters" });
+  await expect(menu).toBeEnabled();
   await menu.focus();
   await page.keyboard.press("Enter");
   const status = page.getByRole("button", { name: "Status", exact: true });

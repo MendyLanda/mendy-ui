@@ -113,6 +113,7 @@ test("Tab enters the editor and Shift+Tab returns to the selected filter", async
   test.skip(isMobile, "The desktop chooser has adjacent panels.");
   await page.goto("/");
   const trigger = page.getByRole("button", { name: "Open filters", exact: true });
+  await expect(trigger).toBeEnabled();
   await trigger.focus();
   await trigger.press("Enter");
   const status = page.getByRole("button", { name: "Status", exact: true });
@@ -224,6 +225,7 @@ test("Tab exits in page order, Shift+Tab returns to the trigger, and outside foc
   test.skip(isMobile, "The desktop chooser has adjacent panels.");
   await page.goto("/");
   const trigger = page.getByRole("button", { name: "Open filters", exact: true });
+  await expect(trigger).toBeEnabled();
   await trigger.focus();
   await trigger.press("Enter");
   await page.getByRole("button", { name: "Status", exact: true }).press("Shift+Tab");
@@ -288,6 +290,7 @@ test("list keys wrap, Home and End jump, and RTL entry and return arrows are rev
   await page.goto("/");
   await page.evaluate(() => (document.documentElement.dir = "rtl"));
   const trigger = page.getByRole("button", { name: "Open filters", exact: true });
+  await expect(trigger).toBeEnabled();
   await trigger.focus();
   await trigger.press("Enter");
   const status = page.getByRole("button", { name: "Status", exact: true });

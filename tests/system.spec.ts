@@ -13,7 +13,9 @@ async function open(page: Page, name: string) {
   await page.getByRole("button", { name, exact: true }).click();
 }
 async function paste(page: Page, value: string) {
-  await page.getByRole("searchbox", { name: "Search references" }).evaluate((element, text) => {
+  const search = page.getByRole("searchbox", { name: "Search references" });
+  await expect(search).toBeEnabled();
+  await search.evaluate((element, text) => {
     const data = new DataTransfer();
     data.setData("text", text);
     // Firefox ignores ClipboardEventInit.clipboardData on synthetic events.
@@ -400,6 +402,7 @@ test("ordinary and Shift paste remain native, ambiguity preserves longer words",
       element.dispatchEvent(event);
       return event.defaultPrevented;
     }, text);
+  await expect(search).toBeEnabled();
   expect(await prevented("foo, bar")).toBe(false);
   await search.focus();
   await page.keyboard.down("Shift");
@@ -565,6 +568,7 @@ test("keyboard activation applies a predefined filter once, then opens its edito
 }) => {
   await page.goto("/");
   const suggestion = page.getByRole("button", { name: "Apply Assignee filter" });
+  await expect(suggestion).toBeEnabled();
   await suggestion.focus();
   await suggestion.press("Space");
   const chip = page.getByRole("button", { name: "Edit Assignee filter" });
@@ -576,6 +580,7 @@ test("keyboard activation applies a predefined filter once, then opens its edito
   await dismissEditor(page);
   await page.getByRole("button", { name: "Remove Assignee filter" }).click();
   await expect(page.getByRole("button", { name: "Open filters" })).toBeFocused();
+  await expect(suggestion).toBeEnabled();
   await suggestion.focus();
   await suggestion.press("Enter");
   await expect(chip).toBeFocused();

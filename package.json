@@ -17,7 +17,8 @@
     "verify:consumers": "node scripts/verify-consumers.mjs",
     "test:unit": "tsx --test tests/unit/*.test.ts",
     "package:build": "pnpm --filter @mendylanda/ui build",
-    "package:pack": "pnpm --dir packages/ui pack --pack-destination ../../artifacts"
+    "package:pack": "pnpm --dir packages/ui pack --pack-destination ../../artifacts",
+    "test:stress": "pnpm package:build && node tests/stress/run.mjs"
   },
   "dependencies": {
     "@mendylanda/ui": "workspace:*",

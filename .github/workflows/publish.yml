@@ -22,7 +22,8 @@ jobs:
       - run: npm install --global npm@11
       - run: pnpm install --frozen-lockfile
       - run: pnpm build && pnpm lint && pnpm format && pnpm typecheck
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
       - run: pnpm test:unit && pnpm test && pnpm verify:consumers
+      - run: STRESS_BROWSERS=chromium,firefox,webkit pnpm test:stress
       - run: pnpm package:pack
       - run: npm publish ./artifacts/*.tgz --access public --provenance

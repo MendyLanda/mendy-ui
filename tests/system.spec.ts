@@ -13,17 +13,46 @@ async function open(page: Page, name: string) {
   await page.getByRole("button", { name, exact: true }).click();
 }
 async function paste(page: Page, value: string) {
-  await page.getByRole("searchbox", { name: "Search references" }).evaluate((element, text) => {
+  const search = page.getByRole("searchbox", { name: "Search references" });
+  await expect(search).toBeEnabled();
+  await search.evaluate((element, text) => {
     const data = new DataTransfer();
     data.setData("text", text);
-    element.dispatchEvent(
-      new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }),
-    );
+    // Firefox ignores ClipboardEventInit.clipboardData on synthetic events.
+    const event = new ClipboardEvent("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", { value: data });
+    element.dispatchEvent(event);
   }, value);
 }
 async function values(page: Page, label = "Dynamic filter values") {
   return JSON.parse((await page.locator(`pre[aria-label="${label}"]`).textContent()) ?? "{}");
 }
+
+test("server-rendered filters wait for hydration before accepting input", async ({ page }) => {
+  let releaseScripts!: () => void;
+  const scriptsReady = new Promise<void>((resolve) => {
+    releaseScripts = resolve;
+  });
+  await page.route("**/*.js", async (route) => {
+    await scriptsReady;
+    await route.continue();
+  });
+  const search = page.getByRole("searchbox", { name: "Search references" });
+  try {
+    await page.goto("/docs/advanced", { waitUntil: "domcontentloaded" });
+    await expect(search).toBeDisabled();
+    await expect(
+      page
+        .getByRole("region", { name: "Dynamic filters example" })
+        .getByRole("button", { name: "Open filters" }),
+    ).toBeDisabled();
+  } finally {
+    releaseScripts();
+  }
+  await expect(search).toBeEnabled();
+  await search.fill("existing");
+  await expect.poll(async () => (await values(page)).search).toBe("existing");
+});
 
 test("recognized input bypasses the menu and can still be edited through its chip", async ({
   page,
@@ -59,20 +88,23 @@ test("the issue table filters recognized IDs entered in search", async ({ page }
   await expect(page.getByRole("status").filter({ hasText: "of 8 issues" })).toContainText(
     "1 of 8 issues",
   );
+  // nuqs applies state immediately and batches browser-history writes.
+  await expect.poll(() => new URL(page.url()).searchParams.get("issueId")).toBe('["UI-039"]');
   await page.reload();
   await expect(page.getByRole("status").filter({ hasText: "of 8 issues" })).toContainText(
     "1 of 8 issues",
   );
 });
 
-test("calendar selection applies immediately with keyboard navigation and theme radius", async ({
-  page,
-}) => {
-  await page.goto("/docs/advanced");
-  await page.clock.setFixedTime(new Date("2026-09-07T12:00:00"));
-  for (const dark of [false, true]) {
-    if (dark) await page.getByRole("button", { name: "Toggle color theme" }).click();
-    for (const radius of [0, 12]) {
+for (const dark of [false, true])
+  for (const radius of [0, 12])
+    test(`calendar selection applies immediately: ${dark ? "dark" : "light"}, radius ${radius}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.goto("/docs/advanced");
+      await page.clock.setFixedTime(new Date("2026-09-07T12:00:00"));
+      if (dark) await page.getByRole("button", { name: "Toggle color theme" }).click();
       await page.evaluate(
         (radius) => document.documentElement.style.setProperty("--radius", `${radius}px`),
         radius,
@@ -102,14 +134,6 @@ test("calendar selection applies immediately with keyboard navigation and theme 
       const bounds = await calendar.boundingBox();
       expect(bounds!.x).toBeGreaterThanOrEqual(0);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
-      await page.evaluate(() =>
-        Promise.allSettled(
-          document
-            .getAnimations()
-            .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
-            .map((animation) => animation.finished),
-        ),
-      );
       const audit = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
         .analyze();
@@ -118,12 +142,10 @@ test("calendar selection applies immediately with keyboard navigation and theme 
       await expect
         .poll(async () => (await values(page)).created)
         .toEqual({ from: "2026-09-02", to: "2026-09-02" });
-      await page.getByRole("button", { name: "Clear date", exact: true }).click();
+      await page.getByRole("button", { name: "Clear Created date filter", exact: true }).click();
       await expect.poll(async () => (await values(page)).created).toBe(null);
       await dismissEditor(page);
-    }
-  }
-});
+    });
 
 test("predefined filters apply on the first click and open on the second", async ({ page }) => {
   await page.goto("/?tab=retained");
@@ -189,6 +211,12 @@ test("remote search retries failures and uses the latest query", async ({ page }
 test("paste merges recognized tokens, keeps text, and asks about ambiguity", async ({ page }) => {
   await page.goto("/docs/advanced");
   await page.getByRole("searchbox", { name: "Search references" }).fill("existing");
+  await expect.poll(async () => (await values(page)).search).toBe("existing");
+  // This case appends. WebKit can leave fill() text selected on touch devices.
+  await page.getByRole("searchbox", { name: "Search references" }).evaluate((element) => {
+    const input = element as HTMLInputElement;
+    input.setSelectionRange(input.value.length, input.value.length);
+  });
   await paste(page, "ISSUE-123,ISSUE-123\nalex@example.com\tremaining\n#123");
   await expect.poll(async () => (await values(page)).issueId).toEqual(["ISSUE-123"]);
   await expect.poll(async () => (await values(page)).email).toEqual(["alex@example.com"]);
@@ -370,9 +398,11 @@ test("ordinary and Shift paste remain native, ambiguity preserves longer words",
         bubbles: true,
         cancelable: true,
       });
+      Object.defineProperty(event, "clipboardData", { value: data });
       element.dispatchEvent(event);
       return event.defaultPrevented;
     }, text);
+  await expect(search).toBeEnabled();
   expect(await prevented("foo, bar")).toBe(false);
   await search.focus();
   await page.keyboard.down("Shift");
@@ -461,7 +491,10 @@ test("chip summaries truncate without losing selected values or accessible descr
     "Alex Rivera, Jordan Lee, Mendy Landa, Sam Cohen, Taylor Morgan",
   );
   const chip = page.getByRole("button", { name: "Edit Issue ID filter" });
-  await expect(chip.locator("span[title]")).toHaveCSS("text-overflow", "ellipsis");
+  await expect(chip.locator(`span[title="${issueId.join(", ")}"]`)).toHaveCSS(
+    "text-overflow",
+    "ellipsis",
+  );
   await expect(chip).toHaveAccessibleDescription(issueId.join(", "));
   await expect.poll(async () => (await values(page)).owner).toEqual(owners);
 });
@@ -535,6 +568,7 @@ test("keyboard activation applies a predefined filter once, then opens its edito
 }) => {
   await page.goto("/");
   const suggestion = page.getByRole("button", { name: "Apply Assignee filter" });
+  await expect(suggestion).toBeEnabled();
   await suggestion.focus();
   await suggestion.press("Space");
   const chip = page.getByRole("button", { name: "Edit Assignee filter" });
@@ -546,6 +580,7 @@ test("keyboard activation applies a predefined filter once, then opens its edito
   await dismissEditor(page);
   await page.getByRole("button", { name: "Remove Assignee filter" }).click();
   await expect(page.getByRole("button", { name: "Open filters" })).toBeFocused();
+  await expect(suggestion).toBeEnabled();
   await suggestion.focus();
   await suggestion.press("Enter");
   await expect(chip).toBeFocused();

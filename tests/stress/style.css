@@ -1,0 +1,66 @@
+@font-face {
+  font-family: Geist;
+  src: url("../../node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2") format("woff2");
+  font-weight: 400;
+}
+:root {
+  font-family: Geist, sans-serif;
+  --radius: 0.5rem;
+  --background: #fff;
+  --foreground: #020817;
+  --popover: #fff;
+  --popover-foreground: #020817;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #5e6e87;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+  --destructive: #dc2626;
+}
+.dark {
+  --background: #121212;
+  --foreground: #fafafa;
+  --popover: #121212;
+  --popover-foreground: #fafafa;
+  --secondary: #1c1c1c;
+  --secondary-foreground: #fafafa;
+  --muted: #1c1c1c;
+  --muted-foreground: #a2a2ab;
+  --accent: #1c1c1c;
+  --accent-foreground: #fafafa;
+  --border: #2b2b2b;
+  --input: #1c1c1c;
+  --ring: #d4d4d8;
+  --destructive: #ff383b;
+}
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
+main {
+  margin: 36px auto;
+  padding: 0 16px;
+}
+section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.fixture-note {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin: 0 0 12px;
+}
+#after {
+  margin-top: 520px;
+}
+#values {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}

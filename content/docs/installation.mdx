@@ -97,6 +97,10 @@ Selections, dates, and number ranges apply immediately. Text and token drafts sa
 
 The filter list and editor share a panel on desktop. On mobile, the editor replaces the list and offers Back. Menu changes are instant, and chip entry animations respect reduced motion.
 
+Hover previews a filter on desktop. While a text input has focus, click another filter to switch. Unapplied drafts and option searches survive switching filters or using mobile Back; closing the menu discards them.
+
+Arrow keys move through the filter list. Enter or the arrow toward the editor enters it. The return arrow moves back to the list, while text inputs and calendars keep their own arrow-key behavior. Tab moves through the visible controls and then continues after the trigger in the page. Shift+Tab from the list returns to the trigger. Escape closes the desktop menu; on mobile it first returns to the list.
+
 ## Customization
 
 Use theme variables, named `classNames`, typed `renderOption`, `renderSummary`, and `renderEditor` callbacks, or compose your own layout. `MendyUIProvider` can replace controls and set a portal container. See the [customization guide](/docs/customization).
@@ -110,3 +114,11 @@ npm update @mendylanda/ui
 Review the [changelog](https://github.com/MendyLanda/mendy-ui/blob/main/CHANGELOG.md), test, and deploy the consuming project. Its lockfile controls the installed version. Updating the dependency brings in the shared implementation without copying or merging component files.
 
 For a project previously using the registry, replace imports with the package exports, import the stylesheet, and remove the copied Mendy UI implementation after migrating its callers. Keep your definitions, queries, and custom editors. Move local visual changes to the documented customization points.
+
+### Large collections
+
+Collections with more than 100 rows use a measured scrolling list. Only the visible rows, a small buffer, and the keyboard-focused row stay mounted. Arrow keys, Home, End, Page Up, Page Down, and typeahead navigate the complete supplied collection. Option search appears automatically for large collections. Filter lists with more than 20 entries include **Find a filter**.
+
+Selected values stay intact when their rows scroll out of view. Long option labels wrap and are measured individually. Chips keep the complete value in their accessible description. Oversized header labels scroll independently so the editor stays usable, including with increased root text size.
+
+Remote sources should still paginate to avoid downloading every option. **Load more** requests another server page; loaded rows use the same scrolling list. Your source, controller, URL state, and custom option content use the same API for small and large collections.

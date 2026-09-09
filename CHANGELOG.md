@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.1
+
+- Keep server-rendered controls disabled until hydration can handle edits, preventing early search text from being erased on slow startup.
+- Reserve room for editors near viewport edges and update placement when scrolling or the mobile viewport changes.
+- Start empty text editors without an error; show validation on invalid edits or an attempted save, and associate keyboard instructions with the input.
+
+- Use 32px filter and option rows on fine-pointer desktops, with the existing touch spacing.
+- Keep drafts and option searches while browsing an open menu. Closing discards unapplied drafts; clearing one filter preserves the others' drafts.
+- Keep hover and keyboard focus on the same filter. Protect focused text inputs from hover changes and allow diagonal movement into the editor.
+- Fix Tab entry and dismissal, focus checked options on entry, isolate list typeahead, and announce applied filters.
+- Preserve the trigger's text direction in the portalled menu and reverse entry/return arrows for RTL layouts.
+
+### Design and stress testing
+
+- Contain long option names and chips, narrow search containers, and independently scrolling filter lists. Scale menu proportions with root text size and mirror search controls in RTL.
+- Center calendars, distinguish today from selection, remove duplicate date-clear controls, and refine text labels, search density, and chip value contrast.
+- Virtualize collections above 100 rows with measured wrapping, full-list keyboard navigation, and focus preservation during scrolling and data replacement. Add filter-type search above 20 entries. Avoid mounting inactive chips and remove quadratic work from selection summaries.
+- Run interaction and accessibility checks in Chromium, Firefox, and WebKit, including phone layouts. Keep clipboard test data intact in Firefox and create stress report directories on clean CI checkouts.
+- Add production-package stress checks for 1,000 filters, 50,000 options, 10,000 selected values, long labels, async races, and repeated opening/closing. Run with `pnpm test:stress`.
+
 ## 0.1.0 — npm package
 
 - Distribute one shared `@mendylanda/ui` package instead of copying source through the registry.

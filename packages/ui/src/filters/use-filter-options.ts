@@ -1,6 +1,7 @@
 "use client";
 
 import type { Choice, OptionPage, RuntimeField } from "./filter-definition.js";
+import { useValueDraft } from "./use-value-draft.js";
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 interface Request {
@@ -55,6 +56,7 @@ function acquire(
   let released = false;
   return {
     promise: current.promise,
+    signal: current.abort.signal,
     release() {
       if (released) return;
       released = true;
@@ -90,12 +92,12 @@ export function useFilterOptions(
   useLayoutEffect(() => {
     latest.current = source;
   }, [source]);
-  const [localQuery, setLocalQuery] = useState("");
+  const scopeKey = JSON.stringify([id, source?.kind, source?.scope, source?.params]);
+  const [localQuery, setLocalQuery] = useValueDraft(scopeKey, () => "", `${id}:query`);
   const query = source?.query ?? localQuery;
   const [retryKey, retry] = useState(0);
-  const scopeKey = JSON.stringify([id, source?.scope, source?.params]);
   const requestKey = JSON.stringify([scopeKey, query, retryKey]);
-  const identity = JSON.stringify([id, source?.scope]);
+  const identity = JSON.stringify([id, source?.kind, source?.scope]);
   const ids = selectedIds(value);
   const idsKey = JSON.stringify(ids);
   const [page, setPage] = useState<{
@@ -233,7 +235,7 @@ export function useFilterOptions(
       request.promise
         .then(
           (result) => {
-            if (currentRequest.current !== requestKey) return;
+            if (request.signal.aborted || currentRequest.current !== requestKey) return;
             setPage((previous) => ({
               key: requestKey,
               items: [
@@ -246,7 +248,7 @@ export function useFilterOptions(
             }));
           },
           (error) => {
-            if (currentRequest.current === requestKey)
+            if (!request.signal.aborted && currentRequest.current === requestKey)
               setPage((previous) => ({ ...previous, loading: false, error: errorMessage(error) }));
           },
         )

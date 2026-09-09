@@ -15,6 +15,7 @@ import {
   useId,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import {
   ListFilter,
@@ -70,6 +71,9 @@ interface RootContext {
 }
 const defaultGroups: FilterMenuGroup[] = [];
 const defaultSummary: SummaryPolicy = { mode: "count", limit: 3 };
+const subscribeHydration = () => () => {};
+const clientHydrated = () => true;
+const serverHydrated = () => false;
 const Context = createContext<RootContext | null>(null);
 function useRoot() {
   const context = useContext(Context);
@@ -101,11 +105,15 @@ function FilterRootContent({
   suggestions = "always",
   closeMenuOnApply = false,
   groups = defaultGroups,
-  disabled = false,
+  disabled: disabledProp = false,
   className,
   children,
 }: FilterRootProps) {
   const { classNames } = useMendyUI();
+  // Server HTML must not accept edits that React cannot handle yet. Client-only
+  // renders are ready immediately; hydration enables the existing controls.
+  const hydrated = useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated);
+  const disabled = disabledProp || !hydrated;
   const [cache] = useState(() => new Map());
   const [ambiguous, setAmbiguous] = useState<PasteAmbiguity[]>([]);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -134,6 +142,7 @@ function FilterRootContent({
       <Context.Provider value={context}>
         <div
           data-mendy-ui=""
+          aria-busy={!hydrated || undefined}
           className={cn("flex flex-wrap items-center gap-2", classNames?.root, className)}
         >
           {children}

@@ -2,6 +2,8 @@
 
 ## Unreleased: menu interaction polish
 
+- Keep server-rendered controls disabled until hydration can handle edits, preventing early search text from being erased on slow startup.
+- Reserve room for editors near viewport edges and update placement when scrolling or the mobile viewport changes.
 - Start empty text editors without an error; show validation on invalid edits or an attempted save, and associate keyboard instructions with the input.
 
 - Use 32px filter and option rows on fine-pointer desktops, with the existing touch spacing.

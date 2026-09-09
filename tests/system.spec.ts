@@ -26,6 +26,32 @@ async function values(page: Page, label = "Dynamic filter values") {
   return JSON.parse((await page.locator(`pre[aria-label="${label}"]`).textContent()) ?? "{}");
 }
 
+test("server-rendered filters wait for hydration before accepting input", async ({ page }) => {
+  let releaseScripts!: () => void;
+  const scriptsReady = new Promise<void>((resolve) => {
+    releaseScripts = resolve;
+  });
+  await page.route("**/*.js", async (route) => {
+    await scriptsReady;
+    await route.continue();
+  });
+  const search = page.getByRole("searchbox", { name: "Search references" });
+  try {
+    await page.goto("/docs/advanced", { waitUntil: "domcontentloaded" });
+    await expect(search).toBeDisabled();
+    await expect(
+      page
+        .getByRole("region", { name: "Dynamic filters example" })
+        .getByRole("button", { name: "Open filters" }),
+    ).toBeDisabled();
+  } finally {
+    releaseScripts();
+  }
+  await expect(search).toBeEnabled();
+  await search.fill("existing");
+  await expect.poll(async () => (await values(page)).search).toBe("existing");
+});
+
 test("recognized input bypasses the menu and can still be edited through its chip", async ({
   page,
 }) => {

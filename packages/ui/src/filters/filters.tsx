@@ -53,7 +53,7 @@ export function FilterEditorTrigger({ className, asChild, ...props }: FilterEdit
         data-slot="filter-editor-trigger"
         aria-haspopup="dialog"
         className={cn(
-          "flex h-full shrink rounded-none font-normal min-w-0 items-center gap-1.5 px-2 text-left hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=open]:bg-accent data-[state=open]:text-foreground",
+          "flex h-full shrink rounded-none font-normal min-w-0 items-center gap-1.5 px-2 text-start hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=open]:bg-accent data-[state=open]:text-foreground",
           className,
         )}
         {...props}
@@ -99,7 +99,7 @@ export function FilterRemove({ className, children, ...props }: FilterRemoveProp
       data-mendy-ui=""
       data-slot="filter-remove"
       className={cn(
-        "flex h-full rounded-none p-0 w-8 shrink-0 items-center justify-center border-l border-border/50 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+        "flex h-full rounded-none p-0 w-8 shrink-0 items-center justify-center border-s border-border/50 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
         className,
       )}
       {...props}

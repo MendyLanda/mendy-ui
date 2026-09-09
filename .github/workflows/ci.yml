@@ -22,7 +22,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint && pnpm format && pnpm build && pnpm typecheck
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:unit && pnpm test && pnpm verify:consumers
+      - run: pnpm test:unit && pnpm test && pnpm test:stress && pnpm verify:consumers
       - run: pnpm package:pack
       - uses: actions/upload-artifact@v4
         with:

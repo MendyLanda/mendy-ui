@@ -118,7 +118,7 @@ test("calendar selection applies immediately with keyboard navigation and theme 
       await expect
         .poll(async () => (await values(page)).created)
         .toEqual({ from: "2026-09-02", to: "2026-09-02" });
-      await page.getByRole("button", { name: "Clear date", exact: true }).click();
+      await page.getByRole("button", { name: "Clear Created date filter", exact: true }).click();
       await expect.poll(async () => (await values(page)).created).toBe(null);
       await dismissEditor(page);
     }
@@ -461,7 +461,10 @@ test("chip summaries truncate without losing selected values or accessible descr
     "Alex Rivera, Jordan Lee, Mendy Landa, Sam Cohen, Taylor Morgan",
   );
   const chip = page.getByRole("button", { name: "Edit Issue ID filter" });
-  await expect(chip.locator("span[title]")).toHaveCSS("text-overflow", "ellipsis");
+  await expect(chip.locator(`span[title="${issueId.join(", ")}"]`)).toHaveCSS(
+    "text-overflow",
+    "ellipsis",
+  );
   await expect(chip).toHaveAccessibleDescription(issueId.join(", "));
   await expect.poll(async () => (await values(page)).owner).toEqual(owners);
 });

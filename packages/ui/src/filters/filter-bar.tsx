@@ -171,9 +171,12 @@ export function FilterSearch({
       open={filters.menuOpen}
       onOpenChange={filters.setMenuOpen}
     >
-      <div ref={anchor} className={cn("relative w-full shrink-0 sm:w-[350px]", classNames?.search)}>
+      <div
+        ref={anchor}
+        className={cn("relative w-full max-w-full shrink-0 sm:w-[21.875rem]", classNames?.search)}
+      >
         <Search
-          className="pointer-events-none absolute left-3 top-1/2 size-[17px] -translate-y-1/2"
+          className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2"
           aria-hidden="true"
         />
         <Input
@@ -189,8 +192,8 @@ export function FilterSearch({
           autoCorrect="off"
           spellCheck={false}
           className={cn(
-            "w-full pl-9 text-sm [&::-webkit-search-cancel-button]:appearance-none",
-            filters.search ? "pr-16" : "pr-9",
+            "w-full ps-9 text-sm [&::-webkit-search-cancel-button]:appearance-none",
+            filters.search ? "pe-16" : "pe-9",
             classNames?.searchInput,
           )}
           onKeyDown={(event) => {
@@ -240,14 +243,14 @@ export function FilterSearch({
             type="button"
             disabled={disabled}
             aria-label="Clear search"
-            className="absolute right-8 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm opacity-50 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="absolute end-9 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm opacity-50 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             onClick={() => {
               setAmbiguous([]);
               filters.setSearch("");
               input.current?.focus();
             }}
           >
-            <X className="size-[15px]" aria-hidden="true" />
+            <X className="size-3.5" aria-hidden="true" />
           </Button>
         )}
         <DropdownMenuTrigger asChild>
@@ -260,12 +263,12 @@ export function FilterSearch({
             aria-label="Open filters"
             aria-haspopup="dialog"
             className={cn(
-              "absolute right-1 top-1/2 size-7 -translate-y-1/2 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:opacity-100",
+              "absolute end-1 top-1/2 size-7 -translate-y-1/2 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:opacity-100",
               filters.active.length ? "opacity-100" : "opacity-50",
               classNames?.menuTrigger,
             )}
           >
-            <ListFilter className="size-[17px]" aria-hidden="true" />
+            <ListFilter className="size-4" aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
       </div>
@@ -412,24 +415,26 @@ function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement
   );
 }
 export function FilterList() {
-  const { filters } = useRoot();
+  const { filters, suggestions } = useRoot();
   return (
     <>
-      {filters.entries.map((entry) => (
-        <FieldChip key={entry.id} entry={entry} />
-      ))}
+      {filters.entries.flatMap((entry) =>
+        !entry.field.hidden &&
+        (entry.field.isActive(entry.value) ||
+          showSuggestion(entry, suggestions, filters.active.length))
+          ? [<FieldChip key={entry.id} entry={entry} />]
+          : [],
+      )}
     </>
   );
 }
 function summarize(field: RuntimeField, value: unknown, choices: Choice[]): string {
   if (field.kind === "numberRange" && Array.isArray(value))
     return `${value[0] ?? "Any"} – ${value[1] ?? "Any"}`;
-  if (Array.isArray(value))
-    return value
-      .map(
-        (item) => choices.find((choice) => choice.value === item)?.label ?? String(item ?? "Any"),
-      )
-      .join(", ");
+  if (Array.isArray(value)) {
+    const labels = new Map(choices.map((choice) => [choice.value, choice.label]));
+    return value.map((item) => labels.get(item) ?? String(item ?? "Any")).join(", ");
+  }
   if (value && typeof value === "object" && "from" in value && "to" in value)
     return `${value.from ?? "Any"} – ${value.to ?? "Any"}`;
   return choices.find((choice) => choice.value === value)?.label ?? String(value ?? "");
@@ -582,7 +587,11 @@ function ChipSummary({
   const text = summaryText(field, shownValue, options.selected, policy);
   return (
     <>
-      <span>
+      <span
+        className={cn("min-w-0 shrink truncate [unicode-bidi:isolate]", full && "max-w-[60%]")}
+        title={field.label}
+        dir="auto"
+      >
         {!active && field.suggestion?.label ? field.suggestion.label : field.label}
         {full ? ":" : ""}
       </span>
@@ -591,9 +600,10 @@ function ChipSummary({
       ) : (
         <span
           title={full}
+          dir="auto"
           className={cn(
-            "min-w-0",
-            policy.mode === "ellipsis" && "truncate",
+            "min-w-0 text-foreground [overflow-wrap:anywhere] [unicode-bidi:isolate]",
+            policy.mode !== "all" && "truncate",
             policy.mode === "all" && "whitespace-normal break-words py-1",
           )}
           style={policy.mode === "ellipsis" ? { maxWidth: policy.maxWidth ?? 180 } : undefined}
@@ -806,6 +816,7 @@ function FieldEditor({
         draftKey={`${entry.id}:date`}
         autoFocus={autoFocus}
         showLabel={showDateLabel}
+        showClear={location !== "menu"}
         field={field}
         value={value}
         disabled={disabled}
@@ -815,6 +826,7 @@ function FieldEditor({
     );
   return (
     <ValueEditor
+      location={location}
       field={field}
       draft={draft}
       setDraft={setDraft}
@@ -834,6 +846,23 @@ interface CommitEditorProps {
   input: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
   apply(value: unknown, shouldClose?: boolean): void;
 }
+function useChoiceWindow(field: RuntimeField, options: ReturnType<typeof useFilterOptions>) {
+  // Retain the search affordance once a large remote response reveals it.
+  // Updating during render avoids removing a focused search input between requests.
+  const large = (field.source?.items.length ?? 0) > 100 || options.items.length > 100;
+  const [discovered, setDiscovered] = useState(large);
+  if (large && !discovered) setDiscovered(true);
+  const [window, setWindow] = useState({ query: options.query, limit: 100 });
+  const limit = window.query === options.query ? window.limit : 100;
+  const visible = options.items.slice(0, limit);
+  return {
+    visible,
+    remaining: options.items.length - visible.length,
+    searchable: field.searchable || large || discovered,
+    showMore: () => setWindow({ query: options.query, limit: limit + 100 }),
+  };
+}
+
 function ChoiceEditor({
   field,
   value,
@@ -850,6 +879,7 @@ function ChoiceEditor({
   location: "menu" | "chip" | "inline";
 }) {
   const { classNames } = useMendyUI();
+  const { visible, remaining, searchable, showMore } = useChoiceWindow(field, options);
   const selected = Array.isArray(value) ? value : value === null ? [] : [value];
   const selectedSet = new Set(selected);
   const searchLabel = field.searchLabel ?? `Search ${field.label.toLowerCase()}`;
@@ -862,11 +892,10 @@ function ChoiceEditor({
         if (event.key === "Tab") event.stopPropagation();
       }}
     >
-      {field.searchable && (
+      {searchable && (
         <div data-mendy-ui="" className="relative border-b p-2">
           <Search
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 opacity-50"
-            strokeWidth={1.5}
+            className="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -878,7 +907,7 @@ function ChoiceEditor({
             disabled={disabled}
             placeholder={searchLabel}
             value={options.query}
-            className="pl-8 [&::-webkit-search-cancel-button]:appearance-none"
+            className="ps-8 sm:pointer-fine:h-8 [&::-webkit-search-cancel-button]:appearance-none"
             onChange={(event) => options.setQuery(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {
@@ -895,7 +924,7 @@ function ChoiceEditor({
       )}
       <div role={location === "inline" ? "group" : "menu"} aria-label={field.label} className="p-1">
         {location === "inline" ? (
-          options.items.map((choice) => (
+          visible.map((choice) => (
             <Button
               key={choice.value}
               variant="ghost"
@@ -904,7 +933,7 @@ function ChoiceEditor({
               aria-pressed={selectedSet.has(choice.value)}
               disabled={disabled || choice.disabled}
               className={cn(
-                "w-full justify-start",
+                "h-auto min-h-9 w-full justify-start whitespace-normal [overflow-wrap:anywhere] text-start",
                 selectedSet.has(choice.value) && "bg-accent",
                 classNames?.option,
               )}
@@ -937,11 +966,11 @@ function ChoiceEditor({
                 Any {field.label.toLowerCase()}
               </DropdownMenuRadioItem>
             )}
-            {options.items.map((choice) => (
+            {visible.map((choice) => (
               <DropdownMenuRadioItem
                 key={choice.value}
                 aria-label={choice.label}
-                className={classNames?.option}
+                className={cn("whitespace-normal [overflow-wrap:anywhere]", classNames?.option)}
                 value={choice.value}
                 onSelect={(event) => event.preventDefault()}
                 disabled={disabled || choice.disabled}
@@ -953,11 +982,11 @@ function ChoiceEditor({
             ))}
           </DropdownMenuRadioGroup>
         ) : (
-          options.items.map((choice) => (
+          visible.map((choice) => (
             <FilterCheckboxItem
               key={choice.value}
               aria-label={choice.label}
-              className={classNames?.option}
+              className={cn("whitespace-normal [overflow-wrap:anywhere]", classNames?.option)}
               disabled={disabled || choice.disabled}
               checked={selectedSet.has(choice.value)}
               onCheckedChange={(checked) => {
@@ -974,7 +1003,29 @@ function ChoiceEditor({
           ))
         )}
       </div>
-      <OptionFeedback options={options} error={error} />
+      {remaining > 0 && (
+        <div className="border-t p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full whitespace-normal"
+            onClick={(event) => {
+              const root = event.currentTarget.closest("[data-filter-choices]");
+              const previousCount = root?.querySelectorAll('[role^="menuitem"]').length ?? 0;
+              showMore();
+              requestAnimationFrame(() =>
+                root?.querySelectorAll<HTMLElement>('[role^="menuitem"]')[previousCount]?.focus(),
+              );
+            }}
+          >
+            Show more ({remaining.toLocaleString()} remaining)
+          </Button>
+        </div>
+      )}
+      <OptionFeedback
+        options={remaining > 0 ? { ...options, hasMore: false } : options}
+        error={error}
+      />
     </div>
   );
 }
@@ -1026,6 +1077,7 @@ function OptionFeedback({
   );
 }
 function ValueEditor({
+  location,
   field,
   draft,
   setDraft,
@@ -1037,6 +1089,7 @@ function ValueEditor({
   disabled,
   apply,
 }: CommitEditorProps & {
+  location: "menu" | "chip" | "inline";
   draft: unknown;
   setDraft(value: unknown): void;
   text: string;
@@ -1069,8 +1122,10 @@ function ValueEditor({
       }}
     >
       {field.kind === "numberRange" ? (
-        <fieldset disabled={disabled} className="space-y-2">
-          <legend className="text-sm font-medium">{field.label}</legend>
+        <fieldset disabled={disabled} className="m-0 min-w-0 space-y-2 border-0 p-0">
+          <legend className={cn("p-0 text-sm font-medium", location === "menu" && "sr-only")}>
+            {field.label}
+          </legend>
           {[0, 1].map((index) => {
             const key = index === 0 ? "from" : "to";
             const rangeValue = (draft as (number | null)[] | null)?.[index];
@@ -1108,10 +1163,17 @@ function ValueEditor({
         </fieldset>
       ) : (
         <>
-          <Label htmlFor={id} className="text-sm font-medium">
+          <Label
+            htmlFor={id}
+            className={cn(
+              "text-sm font-medium",
+              location === "menu" && "text-xs font-normal text-muted-foreground",
+            )}
+          >
             {field.searchLabel ?? field.label}
           </Label>
           <Textarea
+            className="resize-y"
             id={id}
             ref={(node) => {
               input.current = node;
@@ -1136,16 +1198,30 @@ function ValueEditor({
           />
         </>
       )}
-      {message && (
-        <p role="alert" id={`${id}-error`} className="text-sm text-destructive">
-          {message}
-        </p>
-      )}
-      {field.kind !== "numberRange" && (
-        <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-          Enter to save. Shift+Enter for a new line.
-        </p>
-      )}
+      <ValueEditorFeedback message={message} id={id} hasHint={field.kind !== "numberRange"} />
     </div>
+  );
+}
+
+function ValueEditorFeedback({
+  message,
+  id,
+  hasHint,
+}: {
+  message?: string;
+  id: string;
+  hasHint: boolean;
+}) {
+  if (message)
+    return (
+      <p role="alert" id={`${id}-error`} className="text-xs text-destructive">
+        {message}
+      </p>
+    );
+  if (!hasHint) return null;
+  return (
+    <p id={`${id}-hint`} className="text-xs text-muted-foreground">
+      Enter to save. Shift+Enter for a new line.
+    </p>
   );
 }

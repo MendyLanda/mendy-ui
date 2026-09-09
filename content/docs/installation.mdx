@@ -114,3 +114,11 @@ npm update @mendylanda/ui
 Review the [changelog](https://github.com/MendyLanda/mendy-ui/blob/main/CHANGELOG.md), test, and deploy the consuming project. Its lockfile controls the installed version. Updating the dependency brings in the shared implementation without copying or merging component files.
 
 For a project previously using the registry, replace imports with the package exports, import the stylesheet, and remove the copied Mendy UI implementation after migrating its callers. Keep your definitions, queries, and custom editors. Move local visual changes to the documented customization points.
+
+### Large collections
+
+The built-in menus initially render up to 100 rows. **Show more** reveals another 100, and search matches the complete supplied collection. Option search appears automatically for large collections. Filter lists with more than 20 entries include **Find a filter**. Arrow keys, Home, End, Page Up, and Page Down reach filter entries beyond the first batch.
+
+Selected values stay intact even when their rows are outside the current batch. Chips keep the complete value in their accessible description. Long option labels wrap; oversized header labels scroll independently so the editor stays usable. The menu also adapts to increased root text size.
+
+Remote option sources should still paginate. Revealing every batch eventually mounts the full collection. For a custom virtualized editor, use `renderEditor`; the controller and URL state do not depend on the built-in list rendering.

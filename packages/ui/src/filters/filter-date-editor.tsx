@@ -24,10 +24,12 @@ export function FilterDateEditor({
   draftKey,
   autoFocus = true,
   showLabel = true,
+  showClear = true,
 }: {
   draftKey?: string;
   autoFocus?: boolean;
   showLabel?: boolean;
+  showClear?: boolean;
   field: RuntimeField;
   value: unknown;
   disabled?: boolean;
@@ -50,6 +52,7 @@ export function FilterDateEditor({
     >
       {showLabel && <p className="px-3 pt-3 text-sm font-medium">{field.label}</p>}
       <Calendar
+        className="mx-auto [--cell-size:min(2rem,calc((100vw-3.5rem)/7))] pointer-coarse:[--cell-size:min(2.5rem,calc((100vw-3.5rem)/7))]"
         mode="range"
         autoFocus={autoFocus}
         selected={range}
@@ -73,20 +76,23 @@ export function FilterDateEditor({
             {error}
           </p>
         )}
-        <div data-mendy-ui="" className="flex gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            disabled={disabled}
-            onClick={() => {
-              setRange(undefined);
-              apply(field.clearValue);
-            }}
-          >
-            Clear date
-          </Button>
-        </div>
+        {showClear && (
+          <div data-mendy-ui="" className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="-ms-2 px-2"
+              disabled={disabled || !range}
+              onClick={() => {
+                setRange(undefined);
+                apply(field.clearValue);
+              }}
+            >
+              Clear date
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,96 @@
+import { createRoot } from "react-dom/client";
+import {
+  defineFilters,
+  filter,
+  FilterBar,
+  useFilters,
+  remoteOptions,
+} from "@mendylanda/ui/filters";
+import "@mendylanda/ui/styles.css";
+import "./style.css";
+
+const params = new URLSearchParams(location.search);
+const count = Math.min(2000, Number(params.get("fields") ?? 6));
+const optionCount = Math.min(50000, Number(params.get("options") ?? 4));
+const long = params.has("long");
+const title = long ? "CustomerAccountReference".repeat(12) : "Assignee";
+const choices = Array.from({ length: optionCount }, (_, i) => ({
+  value: String(i),
+  label:
+    long && i === 0
+      ? "International customer success and implementation " + "Reference".repeat(30)
+      : `Person ${String(i).padStart(5, "0")}`,
+}));
+let failedOnce = false;
+const remote = remoteOptions({
+  scope: "stress",
+  params: null,
+  debounceMs: 0,
+  async search({ query, cursor }) {
+    await new Promise((resolve) => setTimeout(resolve, query === "slow" ? 300 : 20));
+    if (query === "error" && !failedOnce) {
+      failedOnce = true;
+      throw new Error("Temporary failure");
+    }
+    return {
+      items: [
+        { value: `${query}${cursor ?? ""}`, label: `Remote ${query || "initial"}${cursor ?? ""}` },
+      ],
+      cursor: cursor ? null : "next",
+    };
+  },
+  async resolve({ ids }) {
+    return ids.map((value) => ({ value, label: `Remote ${value}` }));
+  },
+  getValue: (item) => item.value,
+  getLabel: (item) => item.label,
+});
+const definitions = defineFilters({
+  people: filter.multiSelect({
+    label: title,
+    options: params.has("remote") ? remote : choices,
+    searchable: true,
+    searchLabel: "Search people",
+  }),
+  date: filter.dateRange({ label: "Created date" }),
+  text: filter.text({ label: "Title", searchLabel: "Title contains" }),
+  amount: filter.numberRange({ label: "Estimate" }),
+  status: filter.select({
+    label: "Status",
+    options: [
+      { value: "open", label: "Open" },
+      { value: "closed", label: "Closed" },
+    ],
+    suggestion: { value: "open" },
+  }),
+  ...Object.fromEntries(
+    Array.from({ length: Math.max(0, count - 5) }, (_, i) => [
+      `field${i}`,
+      filter.text({ label: `Field ${String(i).padStart(4, "0")}`, disabled: i % 17 === 16 }),
+    ]),
+  ),
+});
+document.documentElement.classList.toggle("dark", params.get("theme") === "dark");
+document.documentElement.style.setProperty("--radius", params.get("radius") ?? "0.5rem");
+if (params.has("font")) document.documentElement.style.fontSize = `${params.get("font")}px`;
+if (params.has("rtl")) document.documentElement.dir = "rtl";
+function Fixture() {
+  const filters = useFilters(definitions, {
+    defaultValues: params.has("active")
+      ? { people: choices.slice(0, Number(params.get("active") || 1)).map((item) => item.value) }
+      : undefined,
+  });
+  return (
+    <main style={{ maxWidth: Number(params.get("container") ?? 1000) }}>
+      <p className="fixture-note">Synthetic data · actual npm package components</p>
+      <section aria-label="Stress fixture">
+        <FilterBar filters={filters} />
+      </section>
+      <button type="button" id="after">
+        After filters
+      </button>
+      <output id="values">{JSON.stringify(filters.values)}</output>
+    </main>
+  );
+}
+createRoot(document.getElementById("root")!).render(<Fixture />);

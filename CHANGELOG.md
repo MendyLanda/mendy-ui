@@ -68,3 +68,10 @@
 - Text drafts with validation, single selection, and searchable multiple selection.
 - A complete issue-table example and custom-editor recipe.
 - Cloudflare static hosting at ui.mendylanda.com.
+
+### Design and stress testing
+
+- Contain long option names and chips, narrow search containers, and independently scrolling filter lists. Scale menu proportions with root text size and mirror search controls in RTL.
+- Center calendars, distinguish today from selection, remove duplicate date-clear controls, and refine text labels, search density, and chip value contrast.
+- Initially render 100 filter or option rows, with full-collection search and incremental reveal. Add filter-type search above 20 entries and Page Up/Down navigation. Avoid mounting inactive chips and remove quadratic work from selection summaries.
+- Add production-package stress checks for 1,000 filters, 50,000 options, 10,000 selected values, long labels, async races, and repeated opening/closing. Run with `pnpm test:stress`.

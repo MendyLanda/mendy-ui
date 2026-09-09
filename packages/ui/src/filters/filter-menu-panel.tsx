@@ -3,7 +3,8 @@
 import type { PointerEvent, ReactNode, RefObject } from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { Button } from "../customization.js";
+import { Button, Input } from "../customization.js";
+import { useValueDraft } from "./use-value-draft.js";
 import { DropdownMenuContent } from "../primitives/dropdown-menu.js";
 import { useMendyUI } from "../customization.js";
 import { focusMenuEditor, handleMenuTab } from "./filter-menu-focus.js";
@@ -32,9 +33,17 @@ const desktopQuery = "(min-width: 640px)";
 function subscribeViewport(listener: () => void) {
   const media = window.matchMedia(desktopQuery);
   media.addEventListener("change", listener);
-  return () => media.removeEventListener("change", listener);
+  const observer = new ResizeObserver(listener);
+  observer.observe(document.documentElement);
+  window.addEventListener("resize", listener);
+  return () => {
+    media.removeEventListener("change", listener);
+    window.removeEventListener("resize", listener);
+    observer.disconnect();
+  };
 }
-const isDesktop = () => window.matchMedia(desktopQuery).matches;
+const isDesktop = () =>
+  window.innerWidth >= 40 * parseFloat(getComputedStyle(document.documentElement).fontSize);
 const serverDesktop = () => false;
 
 /** One dialog contains the filter list and its editor, with a single-panel layout on phones. */
@@ -76,8 +85,15 @@ export function FilterMenuPanel({
     const update = () => {
       const bounds = button.getBoundingClientRect();
       const target = anchor?.current?.getBoundingClientRect();
+      const rtl = getComputedStyle(button).direction === "rtl";
       // Desktop starts at the search field's edge; mobile stays close to the icon.
-      setAlignOffset(desktop ? (target?.left ?? bounds.left) - bounds.left : 0);
+      setAlignOffset(
+        desktop
+          ? rtl
+            ? bounds.right - (target?.right ?? bounds.right)
+            : (target?.left ?? bounds.left) - bounds.left
+          : 0,
+      );
     };
     update();
     const observer = new ResizeObserver(update);
@@ -185,16 +201,16 @@ export function FilterMenuPanel({
         }
       }}
       className={cn(
-        "[--filter-menu-height:min(480px,var(--radix-dropdown-menu-content-available-height))] max-h-(--filter-menu-height) max-w-[calc(100vw-1.5rem)] overflow-hidden p-0 shadow-md animate-none! [&_*]:transition-none!",
-        desktop && selected ? "w-[var(--mendy-filter-menu-width,512px)]" : "w-[300px]",
+        "[--filter-menu-height:min(30rem,var(--radix-dropdown-menu-content-available-height))] max-h-(--filter-menu-height) max-w-[calc(100vw-1.5rem)] overflow-hidden p-0 shadow-md animate-none! [&_*]:transition-none!",
+        desktop && selected ? "w-[var(--mendy-filter-menu-width,32rem)]" : "w-[18.75rem]",
         classNames?.menu,
       )}
     >
       <div
         className={cn(
-          "max-h-(--filter-menu-height)",
+          "max-h-[calc(var(--filter-menu-height)-2px)]",
           desktop && selected
-            ? "grid grid-cols-[var(--mendy-filter-list-width,208px)_minmax(0,1fr)]"
+            ? "grid grid-rows-[minmax(0,1fr)] grid-cols-[min(var(--mendy-filter-list-width,13rem),50%)_minmax(0,1fr)]"
             : "flex flex-col",
         )}
       >
@@ -238,7 +254,7 @@ export function FilterMenuPanel({
                     variant="ghost"
                     size="sm"
                     onClick={back}
-                    className="-ml-2 gap-1.5 px-2 text-xs font-normal"
+                    className="-ms-2 gap-1.5 px-2 text-xs font-normal"
                   >
                     <ArrowLeft aria-hidden="true" className="size-3.5 rtl:rotate-180" />
                     Filters
@@ -248,9 +264,7 @@ export function FilterMenuPanel({
                   </span>
                 </>
               )}
-              <span className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere]">
-                {selected.label}
-              </span>
+              <MenuHeading label={selected.label} />
               {selected.clear && (
                 <Button
                   variant="ghost"
@@ -260,7 +274,7 @@ export function FilterMenuPanel({
                     requestAnimationFrame(focusEditor);
                   }}
                   aria-label={`Clear ${selected.label} filter`}
-                  className="h-6 px-1.5 text-xs font-normal text-muted-foreground"
+                  className="-me-1.5 h-6 px-1.5 text-xs font-normal text-muted-foreground"
                 >
                   Clear
                 </Button>
@@ -287,6 +301,39 @@ export function FilterMenuPanel({
   );
 }
 
+function MenuHeading({ label }: { label: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [overflow, setOverflow] = useState(false);
+  const [below, setBelow] = useState(false);
+  const measure = () => {
+    const element = ref.current;
+    if (!element) return;
+    setOverflow(element.scrollHeight > element.clientHeight + 1);
+    setBelow(element.scrollHeight - element.clientHeight - element.scrollTop > 1);
+  };
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    element.scrollTop = 0;
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [label]);
+  return (
+    <span
+      ref={ref}
+      onScroll={measure}
+      title={label}
+      tabIndex={overflow ? 0 : undefined}
+      data-more-below={below}
+      className="max-h-[min(6rem,calc(var(--filter-menu-height)*0.25))] min-w-0 flex-1 overflow-y-auto whitespace-normal [overflow-wrap:anywhere] [scrollbar-width:thin] data-[more-below=true]:[mask-image:linear-gradient(#000_calc(100%_-_1rem),transparent)] focus-visible:outline-1 focus-visible:outline-ring"
+    >
+      {label}
+    </span>
+  );
+}
+
 interface FilterMenuListProps {
   sections: FilterMenuSection[];
   selectedId?: string;
@@ -309,113 +356,175 @@ function FilterMenuList({
   onPointerMove,
 }: FilterMenuListProps) {
   const { classNames } = useMendyUI();
+  const [query, setQuery] = useValueDraft("types", () => "", "__menu:query");
+  const [window, setWindow] = useValueDraft(
+    "types",
+    () => ({ query, limit: 100 }),
+    "__menu:window",
+  );
+  const limit = window.query === query ? window.limit : 100;
+  const matches = sections.filter((section) =>
+    section.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
+  );
+  const shown = matches.slice(0, limit);
+  const tabStop =
+    shown.find((section) => section.id === selectedId && !section.disabled)?.id ??
+    shown.find((section) => !section.disabled)?.id;
+  function focusRow(id: string) {
+    const index = matches.findIndex((section) => section.id === id);
+    if (index >= limit) {
+      setWindow({ query, limit: Math.ceil((index + 1) / 100) * 100 });
+      requestAnimationFrame(() => rows.current.get(id)?.focus());
+    } else rows.current.get(id)?.focus();
+  }
   return (
-    <div
-      role="group"
-      aria-label="Filter types"
-      className={cn(
-        "min-h-0 overflow-y-auto overscroll-contain p-1",
-        desktop && selectedId && "border-r",
-        classNames?.menuList,
+    <div className={cn("flex min-h-0 flex-col", desktop && selectedId && "border-e")}>
+      {sections.length > 20 && (
+        <div className="shrink-0 border-b p-2">
+          <Input
+            type="search"
+            aria-label="Find a filter"
+            placeholder="Find a filter…"
+            value={query}
+            className="sm:pointer-fine:h-8"
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                const first = matches.find((section) => !section.disabled);
+                if (first) focusRow(first.id);
+              }
+              if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
+            }}
+          />
+        </div>
       )}
-    >
-      {sections.length === 0 && (
-        <p className="p-3 text-sm text-muted-foreground">No filters available.</p>
-      )}
-      {sections.map((section) => (
-        <Button
-          key={section.id}
-          ref={(node) => {
-            if (node) rows.current.set(section.id, node);
-            else rows.current.delete(section.id);
-          }}
-          variant="ghost"
-          type="button"
-          aria-label={section.label}
-          aria-description={section.active ? "Filter applied" : undefined}
-          aria-expanded={selectedId === section.id}
-          aria-controls={selectedId === section.id ? `${panelId}-${section.id}` : undefined}
-          tabIndex={
-            (selectedId ?? sections.find((item) => !item.disabled)?.id) === section.id ? 0 : -1
-          }
-          data-navigation={keyboardNavigation ? "keyboard" : "pointer"}
-          disabled={section.disabled}
-          className={cn(
-            "h-auto min-h-10 w-full justify-start gap-2 rounded-sm px-2 py-2 text-sm font-normal sm:pointer-fine:min-h-8 sm:pointer-fine:py-1.5 data-[navigation=pointer]:focus-visible:ring-0",
-            selectedId === section.id && "bg-accent text-accent-foreground",
-            classNames?.menuRow,
-          )}
-          onPointerMove={(event) => {
-            if (!section.disabled) onPointerMove(section.id, event);
-          }}
-          onFocus={() => {
-            if (desktop) choose(section.id);
-          }}
-          onClick={() => choose(section.id, true)}
-          onKeyDown={(event) => {
-            if (event.nativeEvent.isComposing) return;
-            const rtl = getComputedStyle(event.currentTarget).direction === "rtl";
-            if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
-              event.preventDefault();
-              event.stopPropagation();
-              const enabled = sections.filter((item) => !item.disabled);
-              const index = enabled.findIndex((item) => item.id === section.id);
-              const next =
-                event.key === "Home"
-                  ? enabled[0]
-                  : event.key === "End"
-                    ? enabled.at(-1)
-                    : enabled[
-                        (index + (event.key === "ArrowDown" ? 1 : -1) + enabled.length) %
-                          enabled.length
-                      ];
-              if (next) rows.current.get(next.id)?.focus();
-            } else if ([rtl ? "ArrowLeft" : "ArrowRight", "Enter", " "].includes(event.key)) {
-              event.preventDefault();
-              event.stopPropagation();
-              choose(section.id, true);
-            } else if (
-              event.key.length === 1 &&
-              !event.ctrlKey &&
-              !event.metaKey &&
-              !event.altKey
-            ) {
-              event.preventDefault();
-              event.stopPropagation();
-              const start = sections.findIndex((item) => item.id === section.id) + 1;
-              const next = [...sections.slice(start), ...sections.slice(0, start)].find(
-                (item) =>
-                  !item.disabled &&
-                  item.label.toLocaleLowerCase().startsWith(event.key.toLocaleLowerCase()),
-              );
-              if (next) {
+      <div
+        role="group"
+        aria-label="Filter types"
+        className={cn(
+          "min-h-0 overflow-y-auto overscroll-contain p-1",
+
+          classNames?.menuList,
+        )}
+      >
+        {matches.length === 0 && (
+          <p className="p-3 text-sm text-muted-foreground">
+            {sections.length ? "No matching filters." : "No filters available."}
+          </p>
+        )}
+        {shown.map((section) => (
+          <Button
+            key={section.id}
+            ref={(node) => {
+              if (node) rows.current.set(section.id, node);
+              else rows.current.delete(section.id);
+            }}
+            variant="ghost"
+            type="button"
+            aria-label={section.label}
+            aria-description={section.active ? "Filter applied" : undefined}
+            aria-expanded={selectedId === section.id}
+            aria-controls={selectedId === section.id ? `${panelId}-${section.id}` : undefined}
+            tabIndex={tabStop === section.id ? 0 : -1}
+            data-navigation={keyboardNavigation ? "keyboard" : "pointer"}
+            disabled={section.disabled}
+            className={cn(
+              "h-auto min-h-10 w-full justify-start gap-2 rounded-sm px-2 py-2 text-sm font-normal sm:pointer-fine:min-h-8 sm:pointer-fine:py-1.5 data-[navigation=pointer]:focus-visible:ring-0",
+              selectedId === section.id && "bg-accent text-accent-foreground",
+              classNames?.menuRow,
+            )}
+            onPointerMove={(event) => {
+              if (!section.disabled) onPointerMove(section.id, event);
+            }}
+            onFocus={() => {
+              if (desktop) choose(section.id);
+            }}
+            onClick={() => choose(section.id, true)}
+            onKeyDown={(event) => {
+              if (event.nativeEvent.isComposing) return;
+              const rtl = getComputedStyle(event.currentTarget).direction === "rtl";
+              if (
+                ["ArrowDown", "ArrowUp", "Home", "End", "PageDown", "PageUp"].includes(event.key)
+              ) {
                 event.preventDefault();
                 event.stopPropagation();
-                rows.current.get(next.id)?.focus();
+                const enabled = matches.filter((item) => !item.disabled);
+                const index = enabled.findIndex((item) => item.id === section.id);
+                const next =
+                  event.key === "Home"
+                    ? enabled[0]
+                    : event.key === "End"
+                      ? enabled.at(-1)
+                      : event.key === "PageDown"
+                        ? enabled[Math.min(index + 10, enabled.length - 1)]
+                        : event.key === "PageUp"
+                          ? enabled[Math.max(index - 10, 0)]
+                          : enabled[
+                              (index + (event.key === "ArrowDown" ? 1 : -1) + enabled.length) %
+                                enabled.length
+                            ];
+                if (next) focusRow(next.id);
+              } else if ([rtl ? "ArrowLeft" : "ArrowRight", "Enter", " "].includes(event.key)) {
+                event.preventDefault();
+                event.stopPropagation();
+                choose(section.id, true);
+              } else if (
+                event.key.length === 1 &&
+                !event.ctrlKey &&
+                !event.metaKey &&
+                !event.altKey
+              ) {
+                event.preventDefault();
+                event.stopPropagation();
+                const start = matches.findIndex((item) => item.id === section.id) + 1;
+                const next = [...matches.slice(start), ...matches.slice(0, start)].find(
+                  (item) =>
+                    !item.disabled &&
+                    item.label.toLocaleLowerCase().startsWith(event.key.toLocaleLowerCase()),
+                );
+                if (next) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  focusRow(next.id);
+                }
               }
-            }
-          }}
-        >
-          {section.icon && (
-            <span aria-hidden="true" className="shrink-0 text-muted-foreground [&_svg]:size-3.5">
-              {section.icon}
-            </span>
-          )}
-          <span
-            className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere] text-start"
-            title={section.label}
+            }}
           >
-            {section.label}
-          </span>
-          {section.active && (
-            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-current" />
-          )}
-          <ChevronRight
-            aria-hidden="true"
-            className="size-3.5 shrink-0 opacity-50 rtl:rotate-180"
-          />
-        </Button>
-      ))}
+            {section.icon && (
+              <span aria-hidden="true" className="shrink-0 text-muted-foreground [&_svg]:size-3.5">
+                {section.icon}
+              </span>
+            )}
+            <span
+              className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere] text-start"
+              title={section.label}
+            >
+              {section.label}
+            </span>
+            {section.active && (
+              <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-current" />
+            )}
+            <ChevronRight
+              aria-hidden="true"
+              className="size-3.5 shrink-0 opacity-50 rtl:rotate-180"
+            />
+          </Button>
+        ))}
+        {matches.length > shown.length && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full whitespace-normal"
+            onClick={() => {
+              setWindow({ query, limit: limit + 100 });
+              requestAnimationFrame(() => rows.current.get(matches[limit]!.id)?.focus());
+            }}
+          >
+            Show more ({matches.length - shown.length} remaining)
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

@@ -96,7 +96,12 @@ test("calendar and option panels fit small screens and keep theme corners", asyn
     expect(bounds!.x).toBeGreaterThanOrEqual(0);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
     expect(bounds!.height).toBeLessThanOrEqual(480);
-    await menu.getByRole("button", { name: "Clear date", exact: true }).click();
+    await expect(menu.getByRole("button", { name: "Clear date", exact: true })).toHaveCount(0);
+    await menu.locator('[data-slot="calendar"] button[data-day]').first().click();
+    await menu.getByRole("button", { name: "Clear Created date filter", exact: true }).click();
+    await expect(
+      menu.getByRole("button", { name: "Clear Created date filter", exact: true }),
+    ).toHaveCount(0);
     await expect(menu).toBeVisible();
   }
 });

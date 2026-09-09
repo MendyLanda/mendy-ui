@@ -183,6 +183,7 @@ test("remote search retries failures and uses the latest query", async ({ page }
 test("paste merges recognized tokens, keeps text, and asks about ambiguity", async ({ page }) => {
   await page.goto("/docs/advanced");
   await page.getByRole("searchbox", { name: "Search references" }).fill("existing");
+  await expect.poll(async () => (await values(page)).search).toBe("existing");
   // This case appends. WebKit can leave fill() text selected on touch devices.
   await page.getByRole("searchbox", { name: "Search references" }).evaluate((element) => {
     const input = element as HTMLInputElement;

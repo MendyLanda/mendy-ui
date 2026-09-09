@@ -2,9 +2,9 @@
 
 import { useId, useRef, useState } from "react";
 import { NuqsAdapter } from "nuqs/adapters/react";
-import { defineFilters, filter, remoteOptions } from "@/registry/new-york/filter-definition";
-import { FilterBar } from "@/registry/new-york/filter-bar";
-import { useUrlFilters } from "@/registry/new-york/use-url-filters";
+import { defineFilters, filter, remoteOptions } from "@mendylanda/ui/filters";
+import { FilterBar } from "@mendylanda/ui/filters";
+import { useUrlFilters } from "@mendylanda/ui/filters/nuqs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";

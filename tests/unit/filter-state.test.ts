@@ -6,13 +6,13 @@ import {
   filter,
   jsonCodec,
   valueIsActive,
-} from "../../registry/new-york/filter-definition";
+} from "@mendylanda/ui/filters";
 import {
   classifyPaste,
   decodeFilters,
   encodeFilters,
   validateDefinitions,
-} from "../../registry/new-york/filter-state";
+} from "@mendylanda/ui/filters";
 
 test("URL codecs preserve defaults, explicit clearing, reserved strings, and unrelated params", () => {
   const definitions = defineFilters({

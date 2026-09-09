@@ -2,9 +2,9 @@
 
 import { Circle, CircleCheck, Clock3, Flag, Users } from "lucide-react";
 import { NuqsAdapter } from "nuqs/adapters/react";
-import { defineFilters, filter } from "@/registry/new-york/filter-definition";
-import { FilterBar } from "@/registry/new-york/filter-bar";
-import { useUrlFilters } from "@/registry/new-york/use-url-filters";
+import { defineFilters, filter } from "@mendylanda/ui/filters";
+import { FilterBar } from "@mendylanda/ui/filters";
+import { useUrlFilters } from "@mendylanda/ui/filters/nuqs";
 
 const issues = [
   {

@@ -2,9 +2,9 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "../customization.js";
+import { Label } from "../customization.js";
+import { Textarea } from "../customization.js";
 
 export interface FilterTextEditorProps {
   label: string;
@@ -39,6 +39,7 @@ export function FilterTextEditor({
 
   return (
     <div
+      data-mendy-ui=""
       className="w-72 max-w-full space-y-2 p-3"
       onKeyDown={(event) => {
         if (event.key === "Tab") event.stopPropagation();

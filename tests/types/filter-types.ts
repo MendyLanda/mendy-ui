@@ -1,10 +1,5 @@
-import type { FilterValues } from "../../registry/new-york/filter-definition";
-import {
-  bindFilters,
-  defineFilters,
-  filter,
-  remoteOptions,
-} from "../../registry/new-york/filter-definition";
+import type { FilterValues } from "@mendylanda/ui/filters";
+import { bindFilters, defineFilters, filter, remoteOptions } from "@mendylanda/ui/filters";
 const definitions = defineFilters({
   status: filter.select({
     label: "Status",
@@ -67,3 +62,16 @@ const source = remoteOptions({
   getLabel: (item) => item.name,
 });
 filter.options({ label: "Remote", options: source });
+
+// Custom option renderers retain the original application's data type.
+filter.options({
+  label: "People",
+  options: [{ id: "person-1", name: "Mendy", team: "Design" }],
+  getValue: (person) => person.id,
+  getLabel: (person) => person.name,
+  renderOption: (person, { selected }) => {
+    // @ts-expect-error no unknown properties on the inferred record
+    void person.nonexistent;
+    return selected ? person.team : person.name;
+  },
+});

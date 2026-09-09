@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
-import { AppliedFilter } from "@/registry/new-york/filters";
-import { FilterTextEditor } from "@/registry/new-york/filter-text-editor";
-import { parseFilterValues } from "@/registry/new-york/filter-utils";
+import { AppliedFilter } from "@mendylanda/ui/filters";
+import { FilterTextEditor } from "@mendylanda/ui/filters";
+import { parseFilterValues } from "@mendylanda/ui/filters";
 import { Button } from "@/components/ui/button";
 
 export function TextFilterDemo() {

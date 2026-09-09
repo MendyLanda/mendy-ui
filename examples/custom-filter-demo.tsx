@@ -2,7 +2,7 @@
 import { useId, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { AppliedFilter } from "@/registry/new-york/filters";
+import { AppliedFilter } from "@mendylanda/ui/filters";
 
 export function CustomFilterDemo() {
   const [archived, setArchived] = useState(false);

@@ -1,43 +1,28 @@
 ---
 title: Installation
-description: Install the complete filter system in a shadcn application.
+description: Install the shared React package and its stylesheet.
 ---
 
 ## Install
 
-Use React 19, TypeScript, Tailwind CSS 4, and Radix-based shadcn components. Run this in your application:
+Use React 19. The package includes its controls and compiled CSS, so you do not need local shadcn files or a Tailwind build to use it.
 
 <InstallCommand />
 
-This installs the typed definitions, filter bar, local and controlled state hooks, dynamic option support, and nuqs persistence, together with the underlying filter components. Imports follow your `components.json` aliases.
-
-## Set up the URL adapter
-
-For Next.js App Router, wrap your app in `NuqsAdapter` from `nuqs/adapters/next/app`. For Vite, use `nuqs/adapters/react`. Follow the [nuqs adapter instructions](https://nuqs.dev/docs/adapters) for other supported routers. Statically rendered Next.js pages using URL hooks need a Suspense boundary around the filter component.
+Import the stylesheet once in your application's root layout or entry point:
 
 ```tsx
-import type { ReactNode } from "react";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
-
-export default function Layout({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
-        <NuqsAdapter>{children}</NuqsAdapter>
-      </body>
-    </html>
-  );
-}
+import "@mendylanda/ui/styles.css";
 ```
+
+The stylesheet is scoped to Mendy UI elements, including dropdowns. It uses your shadcn color variables and radius, with neutral defaults when those variables are absent. It inherits your font. It does not reset the rest of your application. No Tailwind `@source` entry for the package is needed.
 
 ## Define your filters
 
 ```tsx
 "use client";
 
-import { defineFilters, filter } from "@/components/ui/filter-definition";
-import { FilterBar } from "@/components/ui/filter-bar";
-import { useUrlFilters } from "@/components/ui/use-url-filters";
+import { defineFilters, filter, FilterBar, useFilters } from "@mendylanda/ui/filters";
 
 const definitions = defineFilters({
   status: filter.select({
@@ -56,57 +41,72 @@ const definitions = defineFilters({
 });
 
 export function IssueFilters() {
-  const filters = useUrlFilters(definitions, {
-    scope: "issues",
-    remember: "session",
-  });
-
+  const filters = useFilters(definitions);
   // filters.values.status is "open" | "closed" | null.
   // Use filters.values and filters.search in your data query.
   return <FilterBar filters={filters} />;
 }
 ```
 
-Use a scope that includes the organization or user when remembering scoped data, for example `issues:${organizationId}:${userId}`. Session restoration only runs when the URL has no managed filter parameters. Explicit URL values take precedence.
+Definitions and data queries stay in your app. Focus, editing, suggestions, paste recognition, menus, and chip summaries stay in the package.
 
-Opening an editor does not change the URL. Choosing a value applies it. Dates and number ranges apply immediately. Text and token drafts save with Enter. Suggested filters have dashed borders; clicking a suggestion with a preset applies it without opening the editor. Click the applied chip again to edit it. Other suggestions stay visible.
+## URL persistence
 
-The filter list and editor share one panel on desktop. On mobile, tap a filter and use Back to return to the list. Menu changes are instant. The menu stays open after applying so you can add several filters. Use `<FilterBar closeMenuOnApply />` to close it after each successful change.
+Install nuqs when you want URL state:
 
-## Local or existing state
+```sh
+npm install nuqs
+```
 
-Use `useFilters(definitions)` when the values should stay local. It returns the same filter-bar controller, including `values`, `search`, and the typed `set` method.
+Replace the local state hook with the optional adapter:
 
-Use `bindFilters<YourState>()` and `useControlledFilters` to connect existing query or persistence hooks. See [dynamic and custom filters](/docs/advanced) and the [system reference](/docs/system).
+```tsx
+import { useUrlFilters } from "@mendylanda/ui/filters/nuqs";
 
-## Install complete examples
+const filters = useUrlFilters(definitions, {
+  scope: `issues:${organizationId}:${userId}`,
+  remember: "session",
+});
+```
 
-<InstallCommand item="filters-demo" />
+Provide the nuqs adapter once at the application root. For Next.js App Router:
 
-<InstallCommand item="advanced-filters-demo" />
+```tsx
+import type { ReactNode } from "react";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import "@mendylanda/ui/styles.css";
 
-<InstallCommand item="project-filters-demo" />
-
-The issue and remote demos include their own React nuqs adapter so it can run in Next.js or Vite. Your app should normally provide the adapter once at its root. The example dataset and matching logic belong to the app.
-
-## Low-level components
-
-<InstallCommand item="filters" />
-
-Use this smaller item when you only need editable chips and the editor components. The complete system builds on the same implementation.
-
-## Optional namespace
-
-```json
-{
-  "registries": {
-    "@mendy-ui": "https://ui.mendylanda.com/r/{name}.json"
-  }
+export default function Layout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <NuqsAdapter>{children}</NuqsAdapter>
+      </body>
+    </html>
+  );
 }
 ```
 
-Then install with `npx shadcn@latest add @mendy-ui/filter-system`.
+Statically rendered Next.js pages using URL hooks need a Suspense boundary around the filter component. For Vite, use `nuqs/adapters/react`. Other routers can use the [nuqs adapters](https://nuqs.dev/docs/adapters).
 
-## Updating an installation
+The base package does not import nuqs or Next.js. Existing query-state hooks can instead connect through `bindFilters<YourState>()` and `useControlledFilters`. See [dynamic and custom filters](/docs/advanced).
 
-Installed source belongs to your app. Commit local changes before reinstalling, then review the diff. Keep your application definitions in a separate file so future component changes are easier to merge. Review the [changelog](https://github.com/MendyLanda/mendy-ui/blob/main/CHANGELOG.md) for behavior and migration notes.
+## Behavior
+
+Selections, dates, and number ranges apply immediately. Text and token drafts save with Enter. Predefined shortcuts apply on the first click and open their editor on the second. The menu stays open by default.
+
+The filter list and editor share a panel on desktop. On mobile, the editor replaces the list and offers Back. Menu changes are instant, and chip entry animations respect reduced motion.
+
+## Customization
+
+Use theme variables, named `classNames`, typed `renderOption`, `renderSummary`, and `renderEditor` callbacks, or compose your own layout. `MendyUIProvider` can replace controls and set a portal container. See the [customization guide](/docs/customization).
+
+## Updating
+
+```sh
+npm update @mendylanda/ui
+```
+
+Review the [changelog](https://github.com/MendyLanda/mendy-ui/blob/main/CHANGELOG.md), test, and deploy the consuming project. Its lockfile controls the installed version. Updating the dependency brings in the shared implementation without copying or merging component files.
+
+For a project previously using the registry, replace imports with the package exports, import the stylesheet, and remove the copied Mendy UI implementation after migrating its callers. Keep your definitions, queries, and custom editors. Move local visual changes to the documented customization points.

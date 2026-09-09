@@ -1,0 +1,112 @@
+---
+title: Customization
+description: Adjust styles, replace controls, and compose filters without copying the implementation.
+---
+
+## Theme and styles
+
+Import `@mendylanda/ui/styles.css` once. The package reads your shadcn semantic variables, including `--background`, `--foreground`, `--popover`, `--primary`, `--secondary`, `--muted`, `--accent`, `--border`, `--input`, `--ring`, and their foreground counterparts. Values must be complete CSS colors, such as `hsl(210 40% 98%)` or `oklch(0.97 0 0)`. `--radius: 0px` gives square corners. Typography inherits from your application.
+
+Internal class names and animation names are private to the package. Use the named styling points or `data-slot` attributes instead of targeting internal utility classes.
+
+Package CSS is in cascade layers with utilities in `components`, so your Tailwind utilities or unlayered CSS can override it. Your build only needs to generate classes used by your application, not scan the package.
+
+Supply named classes on one bar:
+
+```tsx
+<FilterBar
+  filters={filters}
+  classNames={{
+    search: "sm:w-[420px]",
+    menu: "[--mendy-filter-menu-width:560px] [--mendy-filter-list-width:240px]",
+    menuRow: "min-h-11",
+    chip: "bg-accent",
+    option: "py-3",
+  }}
+/>
+```
+
+The available parts are `root`, `search`, `searchInput`, `menuTrigger`, `menu`, `menuList`, `menuRow`, `menuHeader`, `editor`, `chip`, `chipTrigger`, `chipRemove`, `option`, and `clear`. Named classes reach portalled menus too. For shared defaults, pass `classNames` to `MendyUIProvider`. Nested providers merge their settings, and bar-level classes override the matching provider setting.
+
+## Render option content
+
+`renderOption` receives the original, inferred item type. The library keeps the selection control, keyboard interaction, disabled state, and accessible name around your content.
+
+```tsx
+const definitions = defineFilters({
+  owner: filter.options({
+    label: "Owner",
+    options: people,
+    getValue: (person) => person.id,
+    getLabel: (person) => person.name,
+    renderOption: (person, { selected }) => (
+      <span>
+        {person.name}
+        <small>{selected ? "Selected" : person.team}</small>
+      </span>
+    ),
+  }),
+});
+```
+
+`renderSummary` changes chip contents. `renderEditor` replaces the field editor and receives typed values, draft setters, apply, and close methods. These callbacks work with local, remote, and externally managed options. See the [system reference](/docs/system).
+
+## Replace a control
+
+Use a provider when an application has its own input, button, label, textarea, or calendar:
+
+```tsx
+import type { MendyUIComponents } from "@mendylanda/ui/filters";
+import { MendyUIProvider } from "@mendylanda/ui/filters";
+import { Input } from "./my-input";
+
+const components = { Input } satisfies Partial<MendyUIComponents>;
+
+<MendyUIProvider components={components}>
+  <FilterBar filters={filters} />
+</MendyUIProvider>;
+```
+
+Define replacements outside render. Forward the supplied ref, className, attributes, and event handlers to the actual control. Button replacements also need to honor `asChild`, `variant`, and `size`. Calendar replacements use the exported Calendar props. A replacement that drops these contracts can break focus or selection behavior.
+
+Default controls are exported from `@mendylanda/ui/primitives`, or individually from paths such as `@mendylanda/ui/primitives/button`. You can wrap one of these defaults in your replacement without recursively invoking the provider replacement.
+
+## Local themes and dialogs
+
+Dropdowns mount to `document.body` by default, so they inherit the document theme. If your theme is scoped to part of the page, supply an element inside it:
+
+```tsx
+const [container, setContainer] = useState<HTMLDivElement | null>(null);
+
+return (
+  <div ref={setContainer} className="project-theme">
+    <MendyUIProvider portalContainer={container}>
+      <FilterBar filters={filters} />
+    </MendyUIProvider>
+  </div>
+);
+```
+
+The same setting keeps menus inside a containing dialog when required. React provider settings continue through portals.
+
+## Compose a different layout
+
+`FilterRoot` supplies the shared controller to `FilterSearch`, `FilterMenu`, `FilterList`, `FilterField`, `FilterClear`, `FilterFeedback`, and `FilterFieldEditor`.
+
+```tsx
+<FilterRoot filters={filters}>
+  <FilterMenu asChild>
+    <button type="button">Choose filters</button>
+  </FilterMenu>
+  <FilterList />
+  <aside aria-label="Owner filter">
+    <FilterFieldEditor id="owner" autoFocus={false} />
+  </aside>
+  <FilterClear />
+  <FilterFeedback />
+</FilterRoot>
+```
+
+`FilterField` renders one chip or suggestion by ID. `FilterFieldEditor` renders the corresponding editor in your layout, including dynamic options and custom editor callbacks. An embedded editor stays mounted in its container; closing a popover does not remove it. Your layout controls its visibility.
+
+For a completely different UI, use `useFilters`, `useControlledFilters`, or `useFilterController` without `FilterBar`. Pure definitions, bindings, codecs, paste classification, and state helpers are also exported from `@mendylanda/ui/filters/core`. Importing that path does not load UI controls or the URL adapter.

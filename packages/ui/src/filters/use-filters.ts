@@ -5,10 +5,10 @@ import type {
   FilterDefinitions,
   FilterValues,
   RuntimeField,
-} from "@/registry/new-york/filter-definition";
-import type { FilterEntry, PasteResult } from "@/registry/new-york/filter-state";
+} from "./filter-definition.js";
+import type { FilterEntry, PasteResult } from "./filter-state.js";
 import { useLayoutEffect, useRef, useState } from "react";
-import { classifyPaste, initialValues } from "@/registry/new-york/filter-state";
+import { classifyPaste, initialValues } from "./filter-state.js";
 
 export interface FilterChange {
   source: "edit" | "remove" | "clear" | "paste" | "suggestion" | "search";

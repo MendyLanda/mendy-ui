@@ -461,7 +461,7 @@ test("chip summaries truncate without losing selected values or accessible descr
     "Alex Rivera, Jordan Lee, Mendy Landa, Sam Cohen, Taylor Morgan",
   );
   const chip = page.getByRole("button", { name: "Edit Issue ID filter" });
-  await expect(chip.locator("span.truncate")).toHaveCSS("text-overflow", "ellipsis");
+  await expect(chip.locator("span[title]")).toHaveCSS("text-overflow", "ellipsis");
   await expect(chip).toHaveAccessibleDescription(issueId.join(", "));
   await expect.poll(async () => (await values(page)).owner).toEqual(owners);
 });

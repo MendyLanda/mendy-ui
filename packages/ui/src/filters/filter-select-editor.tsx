@@ -2,11 +2,11 @@
 
 import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useId, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "../customization.js";
+import { Label } from "../customization.js";
 import { Search } from "lucide-react";
-import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
-import { FilterCheckboxItem } from "@/registry/new-york/filters";
+import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from "../primitives/dropdown-menu.js";
+import { FilterCheckboxItem } from "./filters.js";
 
 export interface FilterOption {
   value: string;
@@ -20,6 +20,17 @@ interface SharedProps {
   searchable?: boolean;
   searchPlaceholder?: string;
   emptyMessage?: string;
+}
+
+function handleSearchKey(event: KeyboardEvent<HTMLInputElement>) {
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    event.currentTarget
+      .closest("[data-slot=filter-options]")
+      ?.querySelector<HTMLElement>('[role^="menuitem"]:not([data-disabled])')
+      ?.focus();
+  }
+  if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
 }
 
 function SearchableOptions({
@@ -42,27 +53,17 @@ function SearchableOptions({
     option.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
   );
 
-  function handleSearchKey(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      event.currentTarget
-        .closest("[data-slot=filter-options]")
-        ?.querySelector<HTMLElement>('[role^="menuitem"]:not([data-disabled])')
-        ?.focus();
-    }
-    if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
-  }
-
   return (
     <div
       className="w-64 max-w-full"
+      data-mendy-ui=""
       data-slot="filter-options"
       onKeyDown={(event) => {
         if (event.key === "Tab") event.stopPropagation();
       }}
     >
       {searchable && (
-        <div className="relative border-b p-2">
+        <div data-mendy-ui="" className="relative border-b p-2">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 opacity-50"
             strokeWidth={1.5}
@@ -137,6 +138,7 @@ export function FilterMultiSelectEditor({
   onValuesChange,
   ...props
 }: FilterMultiSelectEditorProps) {
+  const selected = new Set(values);
   return (
     <SearchableOptions {...props}>
       {(options) => (
@@ -145,7 +147,7 @@ export function FilterMultiSelectEditor({
             <FilterCheckboxItem
               key={option.value}
               disabled={option.disabled}
-              checked={values.includes(option.value)}
+              checked={selected.has(option.value)}
               onCheckedChange={(checked) =>
                 onValuesChange(
                   checked

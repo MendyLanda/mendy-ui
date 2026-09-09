@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0 — npm package
+
+- Distribute one shared `@mendylanda/ui` package instead of copying source through the registry.
+- Include ESM builds, TypeScript declarations, shadcn controls, and scoped compiled CSS. Keep nuqs optional.
+- Add named styling points, typed option renderers, control replacements, configurable portals, and composed field editors.
+- Build the website against package exports and verify the packed archive in Vite and Next.js.
+
 ## Connected filter menu
 
 - The filter list and editor share one container on desktop. Hover reveals options; click or keyboard entry focuses the editor.

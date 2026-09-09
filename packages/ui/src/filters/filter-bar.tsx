@@ -1,9 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { Choice, RuntimeField, SummaryPolicy } from "@/registry/new-york/filter-definition";
-import type { FilterController } from "@/registry/new-york/use-filters";
-import type { FilterEntry, PasteAmbiguity } from "@/registry/new-york/filter-state";
+import type { Choice, RuntimeField, SummaryPolicy } from "./filter-definition.js";
+import type { FilterController } from "./use-filters.js";
+import type { FilterEntry, PasteAmbiguity } from "./filter-state.js";
 import {
   createContext,
   useContext,
@@ -26,22 +26,26 @@ import {
   SlidersHorizontal,
   Layers,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FilterDateEditor } from "@/registry/new-york/filter-date-editor";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "../customization.js";
+import { Input } from "../customization.js";
+import { Label } from "../customization.js";
+import { FilterDateEditor } from "./filter-date-editor.js";
+import { Textarea } from "../customization.js";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-} from "@/components/ui/dropdown-menu";
-import { AppliedFilter, FilterCheckboxItem } from "@/registry/new-york/filters";
-import { FilterOptionCache, useFilterOptions } from "@/registry/new-york/use-filter-options";
-import { classifyPaste, resolvePasteAmbiguity } from "@/registry/new-york/filter-state";
-import { cn } from "@/lib/utils";
-import { FilterMenuPanel } from "@/registry/new-york/filter-menu-panel";
+} from "../primitives/dropdown-menu.js";
+import { AppliedFilter, FilterCheckboxItem } from "./filters.js";
+import { FilterOptionCache, useFilterOptions } from "./use-filter-options.js";
+import { classifyPaste, resolvePasteAmbiguity } from "./filter-state.js";
+import { cn } from "../utils.js";
+import { FilterMenuPanel } from "./filter-menu-panel.js";
+
+import { useValueDraft } from "./use-value-draft.js";
+import { MendyUIProvider, useMendyUI } from "../customization.js";
+import type { FilterClassNames } from "../customization.js";
 
 export interface FilterMenuGroup {
   id: string;
@@ -69,6 +73,7 @@ function useRoot() {
   return context;
 }
 export interface FilterRootProps {
+  classNames?: FilterClassNames;
   filters: FilterController;
   summary?: SummaryPolicy;
   /** Keep the filter menu open for applying more filters by default. */
@@ -79,7 +84,14 @@ export interface FilterRootProps {
   className?: string;
   children: ReactNode;
 }
-export function FilterRoot({
+export function FilterRoot({ classNames, ...props }: FilterRootProps) {
+  return (
+    <MendyUIProvider classNames={classNames}>
+      <FilterRootContent {...props} />
+    </MendyUIProvider>
+  );
+}
+function FilterRootContent({
   filters,
   summary = defaultSummary,
   suggestions = "always",
@@ -89,6 +101,7 @@ export function FilterRoot({
   className,
   children,
 }: FilterRootProps) {
+  const { classNames } = useMendyUI();
   const [cache] = useState(() => new Map());
   const [ambiguous, setAmbiguous] = useState<PasteAmbiguity[]>([]);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -109,7 +122,12 @@ export function FilterRoot({
   return (
     <FilterOptionCache.Provider value={cache}>
       <Context.Provider value={context}>
-        <div className={cn("flex flex-wrap items-center gap-2", className)}>{children}</div>
+        <div
+          data-mendy-ui=""
+          className={cn("flex flex-wrap items-center gap-2", classNames?.root, className)}
+        >
+          {children}
+        </div>
       </Context.Provider>
     </FilterOptionCache.Provider>
   );
@@ -134,12 +152,13 @@ export function FilterSearch({
   placeholder?: string;
 }) {
   const { filters, trigger, disabled, setAmbiguous } = useRoot();
+  const { classNames } = useMendyUI();
   const anchor = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const shift = useRef(false);
   return (
     <DropdownMenu modal={false} open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
-      <div ref={anchor} className="relative w-full shrink-0 sm:w-[350px]">
+      <div ref={anchor} className={cn("relative w-full shrink-0 sm:w-[350px]", classNames?.search)}>
         <Search
           className="pointer-events-none absolute left-3 top-1/2 size-[17px] -translate-y-1/2"
           aria-hidden="true"
@@ -159,6 +178,7 @@ export function FilterSearch({
           className={cn(
             "w-full pl-9 text-sm [&::-webkit-search-cancel-button]:appearance-none",
             filters.search ? "pr-16" : "pr-9",
+            classNames?.searchInput,
           )}
           onKeyDown={(event) => {
             shift.current = event.shiftKey;
@@ -229,6 +249,7 @@ export function FilterSearch({
             className={cn(
               "absolute right-1 top-1/2 size-7 -translate-y-1/2 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:opacity-100",
               filters.active.length ? "opacity-100" : "opacity-50",
+              classNames?.menuTrigger,
             )}
           >
             <ListFilter className="size-[17px]" aria-hidden="true" />
@@ -240,12 +261,26 @@ export function FilterSearch({
   );
 }
 /** A standalone menu button for layouts without a search field. */
-export function FilterMenu({ children = "Add filter" }: { children?: ReactNode }) {
+export function FilterMenu({
+  children = "Add filter",
+  asChild = false,
+}: {
+  children?: ReactNode;
+  asChild?: boolean;
+}) {
   const { filters, trigger, disabled } = useRoot();
+  const { classNames } = useMendyUI();
   return (
     <DropdownMenu modal={false} open={filters.menuOpen} onOpenChange={filters.setMenuOpen}>
       <DropdownMenuTrigger asChild>
-        <Button ref={trigger} variant="outline" disabled={disabled} aria-haspopup="dialog">
+        <Button
+          ref={trigger}
+          asChild={asChild}
+          className={classNames?.menuTrigger}
+          variant="outline"
+          disabled={disabled}
+          aria-haspopup="dialog"
+        >
           {children}
         </Button>
       </DropdownMenuTrigger>
@@ -372,7 +407,30 @@ function summarize(field: RuntimeField, value: unknown, choices: Choice[]): stri
     return `${value.from ?? "Any"} – ${value.to ?? "Any"}`;
   return choices.find((choice) => choice.value === value)?.label ?? String(value ?? "");
 }
+export function FilterField({ id }: { id: string }) {
+  const { filters } = useRoot();
+  const entry = filters.entries.find((entry) => entry.id === id);
+  return entry ? <FieldChip entry={entry} /> : null;
+}
+
+/** Place a built-in or custom field editor in an application-defined layout. */
+export function FilterFieldEditor({ id, autoFocus = true }: { id: string; autoFocus?: boolean }) {
+  const { filters, disabled } = useRoot();
+  const entry = filters.entries.find((entry) => entry.id === id);
+  return entry ? (
+    <FieldEditor
+      key={id}
+      entry={entry}
+      active
+      autoFocus={autoFocus}
+      disabled={disabled || entry.field.disabled}
+      close={() => filters.edit(null)}
+      location="inline"
+    />
+  ) : null;
+}
 function FieldChip({ entry }: { entry: FilterEntry }) {
+  const { classNames } = useMendyUI();
   const { filters, summary, suggestions, disabled, trigger } = useRoot();
   const { id, field, value } = entry;
   const descriptionId = useId();
@@ -387,14 +445,18 @@ function FieldChip({ entry }: { entry: FilterEntry }) {
   return (
     <AppliedFilter
       label={field.label}
+      data-mendy-ui=""
       data-slot={active ? "filter-chip" : "filter-suggestion"}
       data-state={active ? "applied" : "suggested"}
       className={cn(
         !active && "border border-dashed border-muted-foreground/50 bg-transparent",
         (field.summary ?? summary).mode === "all" && "h-auto min-h-9",
+        classNames?.chip,
       )}
       disabled={chipDisabled(field, active, disabled)}
+      removeProps={{ className: classNames?.chipRemove }}
       contentProps={{
+        className: classNames?.editor,
         onCloseAutoFocus: (event) => {
           if (!currentlyActive.current) {
             event.preventDefault();
@@ -402,7 +464,7 @@ function FieldChip({ entry }: { entry: FilterEntry }) {
           }
         },
       }}
-      triggerProps={{ "aria-describedby": descriptionId }}
+      triggerProps={{ "aria-describedby": descriptionId, className: classNames?.chipTrigger }}
       editLabel={`${active ? "Edit" : "Apply"} ${field.label} filter`}
       open={filters.editField === id}
       onOpenChange={(open) => {
@@ -516,6 +578,7 @@ function ChipSummary({
   );
 }
 export function FilterClear({ children = "Clear all" }: { children?: ReactNode }) {
+  const { classNames } = useMendyUI();
   const { filters, disabled, trigger, setAmbiguous } = useRoot();
   if (!filters.active.length && !filters.search) return null;
   return (
@@ -524,7 +587,10 @@ export function FilterClear({ children = "Clear all" }: { children?: ReactNode }
       disabled={disabled}
       variant="ghost"
       size="sm"
-      className="h-9 px-2 font-normal text-muted-foreground underline hover:bg-transparent"
+      className={cn(
+        "h-9 px-2 font-normal text-muted-foreground underline hover:bg-transparent",
+        classNames?.clear,
+      )}
       onClick={() => {
         setAmbiguous([]);
         filters.clear();
@@ -551,6 +617,7 @@ export function FilterFeedback() {
       )}
       {ambiguous.map((item) => (
         <div
+          data-mendy-ui=""
           key={item.token}
           className="flex w-full flex-wrap items-center gap-2 rounded-md border p-2 text-sm"
         >
@@ -601,19 +668,22 @@ function FieldEditor({
   active: boolean;
   disabled?: boolean;
   close(): void;
-  location: "menu" | "chip";
+  location: "menu" | "chip" | "inline";
 }) {
   const { filters, trigger, closeMenuOnApply } = useRoot();
   const { field, value } = entry;
   const input = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const customRoot = useRef<HTMLDivElement>(null);
-  const [draft, updateDraft] = useState(value);
+  const [draft, updateDraft] = useValueDraft(value, (current) => current);
   const draftRef = useRef(value);
+  useLayoutEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
   function setDraft(next: unknown) {
     draftRef.current = next;
     updateDraft(next);
   }
-  const [text, setText] = useState(() =>
+  const [text, setText] = useValueDraft(value, (value) =>
     field.kind === "tokens"
       ? Array.isArray(value)
         ? value.join(", ")
@@ -655,6 +725,7 @@ function FieldEditor({
   if (field.renderEditor)
     return (
       <div
+        data-mendy-ui=""
         ref={customRoot}
         className="max-w-[calc(100vw-2rem)] p-3"
         onKeyDown={(event) => {
@@ -741,20 +812,22 @@ function ChoiceEditor({
   value: unknown;
   error?: string;
   options: ReturnType<typeof useFilterOptions>;
-  location: "menu" | "chip";
+  location: "menu" | "chip" | "inline";
 }) {
+  const { classNames } = useMendyUI();
   const selected = Array.isArray(value) ? value : value === null ? [] : [value];
   const selectedSet = new Set(selected);
   const searchLabel = field.searchLabel ?? `Search ${field.label.toLowerCase()}`;
   return (
     <div
+      data-mendy-ui=""
       className="w-64 max-w-full"
       onKeyDown={(event) => {
         if (event.key === "Tab") event.stopPropagation();
       }}
     >
       {field.searchable && (
-        <div className="relative border-b p-2">
+        <div data-mendy-ui="" className="relative border-b p-2">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 opacity-50"
             strokeWidth={1.5}
@@ -784,8 +857,37 @@ function ChoiceEditor({
           />
         </div>
       )}
-      <div role="menu" aria-label={field.label} className="p-1">
-        {field.kind === "single" ? (
+      <div role={location === "inline" ? "group" : "menu"} aria-label={field.label} className="p-1">
+        {location === "inline" ? (
+          options.items.map((choice) => (
+            <Button
+              key={choice.value}
+              variant="ghost"
+              type="button"
+              aria-label={choice.label}
+              aria-pressed={selectedSet.has(choice.value)}
+              disabled={disabled || choice.disabled}
+              className={cn(
+                "w-full justify-start",
+                selectedSet.has(choice.value) && "bg-accent",
+                classNames?.option,
+              )}
+              onClick={() => {
+                if (field.kind === "single") apply(choice.value, false);
+                else {
+                  const next = selectedSet.has(choice.value)
+                    ? selected.filter((item) => item !== choice.value)
+                    : [...selected, choice.value];
+                  apply(next.length ? next : field.clearValue, false);
+                }
+              }}
+            >
+              {field.renderOption
+                ? field.renderOption(choice, { selected: selectedSet.has(choice.value) })
+                : choice.label}
+            </Button>
+          ))
+        ) : field.kind === "single" ? (
           <DropdownMenuRadioGroup
             value={typeof value === "string" ? value : ""}
             onValueChange={(next) => apply(next || field.clearValue)}
@@ -802,11 +904,15 @@ function ChoiceEditor({
             {options.items.map((choice) => (
               <DropdownMenuRadioItem
                 key={choice.value}
+                aria-label={choice.label}
+                className={classNames?.option}
                 value={choice.value}
                 onSelect={(event) => event.preventDefault()}
                 disabled={disabled || choice.disabled}
               >
-                {choice.label}
+                {field.renderOption
+                  ? field.renderOption(choice, { selected: selectedSet.has(choice.value) })
+                  : choice.label}
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
@@ -814,6 +920,8 @@ function ChoiceEditor({
           options.items.map((choice) => (
             <FilterCheckboxItem
               key={choice.value}
+              aria-label={choice.label}
+              className={classNames?.option}
               disabled={disabled || choice.disabled}
               checked={selectedSet.has(choice.value)}
               onCheckedChange={(checked) => {
@@ -823,7 +931,9 @@ function ChoiceEditor({
                 apply(next.length ? next : field.clearValue, false);
               }}
             >
-              {choice.label}
+              {field.renderOption
+                ? field.renderOption(choice, { selected: selectedSet.has(choice.value) })
+                : choice.label}
             </FilterCheckboxItem>
           ))
         )}
@@ -857,7 +967,7 @@ function OptionFeedback({
         </p>
       )}
       {options.error && (
-        <div className="space-y-2 p-3">
+        <div data-mendy-ui="" className="space-y-2 p-3">
           <p role="alert" className="text-sm text-destructive">
             {options.error}
           </p>
@@ -912,6 +1022,7 @@ function ValueEditor({
   }
   return (
     <div
+      data-mendy-ui=""
       className="w-72 max-w-full space-y-2 p-3"
       onKeyDown={(event) => {
         if (event.key === "Tab") event.stopPropagation();

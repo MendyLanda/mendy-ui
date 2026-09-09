@@ -3,7 +3,7 @@ title: Introduction
 description: My personal collection of components I like to use.
 ---
 
-I'm Mendy Landa. I put these components here so I can reuse them across projects. You can install them with the shadcn CLI too.
+I'm Mendy Landa. I put these components here so I can reuse them across projects. I maintain one npm package and use it across my projects. You can use it too.
 
 There's one component so far, Filters. Define filters once to get editable chips, suggestions, dynamic options, paste recognition, and URL persistence.
 
@@ -17,16 +17,16 @@ There's one component so far, Filters. Define filters once to get editable chips
 
 Use the supplied local or URL state hook, or bind your existing application state. Your app decides how applied values affect its data.
 
-Changes to this registry do not automatically update source already installed in your app. Review the [changelog](https://github.com/MendyLanda/mendy-ui/blob/main/CHANGELOG.md) and compare local changes before reinstalling.
+Update the package dependency to bring shared improvements into a project. Review the [changelog](https://github.com/MendyLanda/mendy-ui/blob/main/CHANGELOG.md), test, and deploy that project.
 
 ## Supported stack
 
 - React 19 and TypeScript.
-- Tailwind CSS 4 with shadcn semantic color variables.
-- Radix-based shadcn components.
+- Compiled, scoped CSS with shadcn semantic color variables. Tailwind is optional in the consuming app.
+- Bundled Radix-based shadcn controls.
 - Next.js and Vite React applications.
 
-Base UI and older React or Tailwind versions are not part of the initial compatibility target.
+React 19, Next.js, and Vite are checked against the built npm tarball. Custom controls must satisfy the documented replacement contracts.
 
 ## License
 

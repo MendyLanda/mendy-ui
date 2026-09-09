@@ -1,7 +1,7 @@
 import { CopyButton } from "@/components/copy-button";
 
-export function InstallCommand({ item = "filter-system" }: { item?: string }) {
-  const command = `npx shadcn@latest add https://ui.mendylanda.com/r/${item}.json`;
+export function InstallCommand() {
+  const command = "npm install @mendylanda/ui";
   return (
     <div className="flex rounded-md border bg-muted">
       <pre

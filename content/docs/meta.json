@@ -1,4 +1,13 @@
 {
   "title": "Documentation",
-  "pages": ["index", "installation", "components", "examples", "advanced", "system", "api"]
+  "pages": [
+    "index",
+    "installation",
+    "components",
+    "examples",
+    "advanced",
+    "system",
+    "api",
+    "customization"
+  ]
 }

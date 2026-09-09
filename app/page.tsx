@@ -27,7 +27,7 @@ export default function HomePage() {
             Docs
           </Link>
           <a
-            href={`${SITE.github}/blob/main/registry/new-york/filter-bar.tsx`}
+            href={`${SITE.github}/blob/main/packages/ui/src/filters/filter-bar.tsx`}
             className="underline underline-offset-4"
           >
             Source

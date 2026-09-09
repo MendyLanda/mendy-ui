@@ -112,6 +112,7 @@ export interface RuntimeSource {
 }
 /** Runtime operations erase the value type only after the typed factory wraps callbacks. */
 export interface RuntimeField {
+  renderOption?: (choice: Choice, context: { selected: boolean }) => ReactNode;
   kind: "single" | "multi" | "text" | "tokens" | "numberRange" | "dateRange" | "custom";
   label: string;
   icon?: ReactNode;
@@ -214,6 +215,7 @@ function makeField<V>(
   };
 }
 interface SelectConfig<T, V> extends FieldConfig<V> {
+  renderOption?: (item: T, context: { selected: boolean; choice: Choice }) => ReactNode;
   options: readonly T[] | ExternalOptions<T> | RemoteOptions<T, unknown>;
   getValue?: (item: T) => string;
   getLabel?: (item: T) => string;
@@ -221,6 +223,11 @@ interface SelectConfig<T, V> extends FieldConfig<V> {
   loading?: boolean;
   error?: string | null;
   retry?: () => void;
+}
+function optionRenderer<T>(config: SelectConfig<T, unknown>): RuntimeField["renderOption"] {
+  return config.renderOption
+    ? (choice, context) => config.renderOption!(choice.data as T, { ...context, choice })
+    : undefined;
 }
 // Remote parameters are captured by the source; consumers never invoke a source with arbitrary params.
 export type OptionSource<T> = readonly T[] | ExternalOptions<T> | RemoteOptions<T, unknown>;
@@ -321,6 +328,7 @@ export const filter = {
     return {
       ...field,
       source: sourceFor(config as SelectConfig<T, unknown>),
+      renderOption: optionRenderer(config as SelectConfig<T, unknown>),
       searchable: config.searchable,
     };
   },
@@ -341,6 +349,7 @@ export const filter = {
         serialize: stringsCodec.serialize,
       }),
       source: sourceFor(config as SelectConfig<T, unknown>),
+      renderOption: optionRenderer(config as SelectConfig<T, unknown>),
       searchable: config.searchable,
     };
   },
@@ -348,6 +357,7 @@ export const filter = {
     return {
       ...makeField("multi", config, null, stringsCodec),
       source: sourceFor(config as SelectConfig<T, unknown>),
+      renderOption: optionRenderer(config as SelectConfig<T, unknown>),
       searchable: config.searchable,
     };
   },

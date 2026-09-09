@@ -1,5 +1,5 @@
-import type { FilterDefinitions, RuntimeField } from "@/registry/new-york/filter-definition";
-import { equalValues } from "@/registry/new-york/filter-definition";
+import type { FilterDefinitions, RuntimeField } from "./filter-definition.js";
+import { equalValues } from "./filter-definition.js";
 
 export interface FilterEntry {
   id: string;

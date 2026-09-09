@@ -1,14 +1,21 @@
 # Mendy UI
 
-My personal collection of components I like to use. Built with React and shadcn/ui. MIT licensed.
+My personal collection of components I like to use. One React package, maintained here and shared across projects. Built with shadcn controls and Tailwind. MIT licensed.
 
-[Documentation and demos](https://ui.mendylanda.com) · [Filters](https://ui.mendylanda.com/docs/components/filters)
+[Documentation and demos](https://ui.mendylanda.com)
 
 ```sh
-npx shadcn@latest add https://ui.mendylanda.com/r/filter-system.json
+npm install @mendylanda/ui
 ```
 
-Filters includes typed definitions, URL and session persistence, remote options, paste recognition, suggestions, and custom editors. Use the built-in state hooks or bind the UI to your existing state and queries. Controls use shadcn components and theme radius. Recognized IDs can become editable chips directly from search, without menu entries. Date filters use a calendar for a day or range. Your app filters its data. The demos use React 19, Tailwind CSS 4, and Radix-based shadcn.
+```tsx
+import "@mendylanda/ui/styles.css";
+import { defineFilters, filter, FilterBar, useFilters } from "@mendylanda/ui/filters";
+```
+
+Filters includes typed definitions, local and controlled state, dynamic options, paste recognition, predefined shortcuts, custom editors, and URL persistence through an optional nuqs adapter. The package supplies compiled, scoped CSS. Applications can use it without Tailwind or local copies of shadcn controls.
+
+Your app owns definitions, data queries, and business rules. Shared interaction behavior stays in the package. Customize it through theme variables, named classes, typed render callbacks, control replacements, or composition. See the [customization guide](https://ui.mendylanda.com/docs/customization).
 
 ## Development
 
@@ -19,7 +26,7 @@ pnpm install
 pnpm dev
 ```
 
-Source lives in `registry/new-york`. Both the live demos and generated registry use these files. Add new registry items in `registry.json`, examples in `examples`, and MDX documentation in `content/docs`.
+The implementation lives in `packages/ui/src`. The website and examples import the built package through a workspace dependency. After changing package source during development, run `pnpm package:build` to rebuild it. `pnpm dev` builds the package before starting Next.js.
 
 ```sh
 pnpm lint
@@ -29,22 +36,22 @@ pnpm typecheck
 pnpm exec playwright install chromium
 pnpm test:unit
 pnpm test
-pnpm verify:consumers https://ui.mendylanda.com --demo
+pnpm verify:consumers
 ```
 
-`pnpm build` generates registry JSON in `public/r` and a static site in `out`. The docs setup is adapted from startercn and uses Fumadocs MDX and Shiki. No server or database is needed at runtime.
+`pnpm build` builds the package and the static documentation site. `pnpm verify:consumers` packs the package and installs that tarball in fresh Vite and Next.js apps. It checks Vite without nuqs or Tailwind, Next.js with the URL adapter, exported types against the SimCall schema fixture, and browser interactions with customization. Fixtures and screenshots remain in the reported temporary directory.
 
-The consumer check creates fresh Next.js and Vite apps in your temporary directory, installs through the shadcn CLI, and builds them. Pass a local preview origin to test unpublished filter changes; `--demo` also checks the complete filter system and demo. Dependencies from this registry resolve against the supplied preview origin.
+## Package distribution
 
-## Deployment
+The package exports ESM JavaScript and TypeScript declarations. React 19 is a peer dependency. Nuqs is an optional peer used only by `@mendylanda/ui/filters/nuqs`. Pure helpers are available from `@mendylanda/ui/filters/core`; default controls are available from `@mendylanda/ui/primitives` and individual control paths.
 
-`pnpm deploy` builds and deploys to Cloudflare Workers Static Assets. The custom domain is configured in `wrangler.jsonc`. Use environment variables for `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+Run `pnpm package:pack` to create an installable archive in `artifacts/`. Read [RELEASING.md](RELEASING.md) before publishing a version. The source-copy registry is retired; existing copied installations keep working, but move to the package to receive future fixes through dependency updates.
 
-GitHub Actions checks the site and deploys successful main builds using repository secrets with those names. Pull requests run checks without deployment. Keep credentials out of source control; use a token scoped to this project's deployment requirements.
+## Website deployment
 
-## Updating installed components
+GitHub Actions checks the package, packed consumers, and site. Successful main builds deploy to Cloudflare Workers Static Assets using the existing repository secrets. Publishing an npm version is a separate release operation.
 
-Registry installation copies files into the consumer's app. Later changes here do not automatically update them. Review the [changelog](CHANGELOG.md), commit local modifications, and inspect installation diffs before accepting updates.
+The site must not advertise an unavailable release. Publish the initial package before merging the npm migration into main.
 
 ## Attribution
 

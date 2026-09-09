@@ -223,7 +223,7 @@ test("empty search can recover inside a submenu", async ({ page }) => {
   await expect(page.getByRole("menuitemcheckbox", { name: "Alex", exact: true })).toBeVisible();
 });
 
-test("public docs, previews, and registry are accessible without login", async ({
+test("public docs and package installation instructions are accessible without login", async ({
   page,
   request,
 }) => {
@@ -243,10 +243,10 @@ test("public docs, previews, and registry are accessible without login", async (
       ),
     ).toBe(true);
   }
-  const response = await request.get("/r/filters.json");
-  expect(response.ok()).toBe(true);
-  expect((await response.json()).files).toHaveLength(4);
-  expect(response.headers()["access-control-allow-origin"]).toBe("*");
+  await page.goto("/docs/installation");
+  await expect(page.getByLabel("Install command", { exact: true })).toContainText(
+    "npm install @mendylanda/ui",
+  );
   expect((await request.get("/does-not-exist")).status()).toBe(404);
 });
 
@@ -308,7 +308,7 @@ test("chips animate on entry and respect reduced motion", async ({ page }) => {
   await page.goto("/");
   await addStatus(page);
   const chip = page.locator('[data-slot="filter-chip"]');
-  await expect(chip).toHaveCSS("animation-name", "enter");
+  await expect(chip).toHaveCSS("animation-name", "mendy-enter");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(chip).toHaveCSS("animation-name", "none");
 });

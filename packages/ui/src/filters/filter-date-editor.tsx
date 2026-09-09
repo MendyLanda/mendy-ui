@@ -1,10 +1,10 @@
 "use client";
 
 import type { DateRange as CalendarRange } from "react-day-picker";
-import type { DateRange, RuntimeField } from "@/registry/new-york/filter-definition";
-import { useState } from "react";
-import { Calendar } from "@/components/ui/calendar";
-import { Button } from "@/components/ui/button";
+import type { DateRange, RuntimeField } from "./filter-definition.js";
+import { useValueDraft } from "./use-value-draft.js";
+import { Calendar } from "../customization.js";
+import { Button } from "../customization.js";
 
 // Use local calendar dates, without converting through a UTC timestamp.
 function calendarDate(value: string | null | undefined) {
@@ -32,17 +32,14 @@ export function FilterDateEditor({
   apply(value: unknown, shouldClose?: boolean): void;
   error?: string;
 }) {
-  const initial = value as DateRange | null;
-  const [range, setRange] = useState<CalendarRange | undefined>(() =>
-    initial
-      ? {
-          from: calendarDate(initial.from),
-          to: calendarDate(initial.to),
-        }
-      : undefined,
+  const [range, setRange] = useValueDraft(
+    value as DateRange | null,
+    (current): CalendarRange | undefined =>
+      current ? { from: calendarDate(current.from), to: calendarDate(current.to) } : undefined,
   );
   return (
     <div
+      data-mendy-ui=""
       onKeyDown={(event) => {
         // Calendar arrows navigate days. Escape still dismisses the surrounding editor.
         if (event.key !== "Escape") event.stopPropagation();
@@ -66,14 +63,14 @@ export function FilterDateEditor({
         defaultMonth={range?.from ?? range?.to}
         disabled={disabled}
       />
-      <div className="space-y-2 border-t p-3">
+      <div data-mendy-ui="" className="space-y-2 border-t p-3">
         <p className="text-xs text-muted-foreground">Pick a day, or two dates for a range.</p>
         {error && (
           <p role="alert" className="text-sm text-destructive">
             {error}
           </p>
         )}
-        <div className="flex gap-2">
+        <div data-mendy-ui="" className="flex gap-2">
           <Button
             type="button"
             size="sm"

@@ -13,16 +13,16 @@ export const readOptionalFromRoot = async (relativePath: string): Promise<string
   }
 };
 
-export const getRegistryUiSourceCandidates = ({ name }: { name: string }) => [
-  path.join("registry", "new-york", `${name}.tsx`),
-  path.join("registry", "new-york", `${name}.ts`),
+export const getPackageSourceCandidates = ({ name }: { name: string }) => [
+  path.join("packages", "ui", "src", "filters", `${name}.tsx`),
+  path.join("packages", "ui", "src", "filters", `${name}.ts`),
 ];
 
 export const getDemoSource = (name: string): Promise<string | null> =>
   readOptionalFromRoot(path.join("examples", `${name}.tsx`));
 
-export const getRegistrySource = async (name: string): Promise<string | null> => {
-  const candidates = getRegistryUiSourceCandidates({ name });
+export const getPackageSource = async (name: string): Promise<string | null> => {
+  const candidates = getPackageSourceCandidates({ name });
 
   for (const candidate of candidates) {
     const code = await readOptionalFromRoot(candidate);

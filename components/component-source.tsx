@@ -1,11 +1,11 @@
 import { CopyButton } from "@/components/copy-button";
 import { highlightCode } from "@/lib/highlight-code";
-import { getDemoSource, getRegistrySource } from "@/lib/registry";
+import { getDemoSource, getPackageSource } from "@/lib/component-source";
 
 export async function ComponentSource({ name }: { name: string }) {
-  const raw = (await getDemoSource(name)) ?? (await getRegistrySource(name));
+  const raw = (await getDemoSource(name)) ?? (await getPackageSource(name));
   if (!raw) throw new Error(`Missing component source: ${name}`);
-  const code = raw.replaceAll("@/registry/new-york/", "@/components/ui/");
+  const code = raw;
   const html = await highlightCode(code);
   return (
     <details className="my-4 rounded-lg border">

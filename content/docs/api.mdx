@@ -5,7 +5,7 @@ description: Props and behavior for the filter components.
 
 ## AppliedFilter
 
-Import from `@/components/ui/filters`.
+Import from `@mendylanda/ui/filters`.
 
 | Prop           | Type                       | Behavior                                                                    |
 | -------------- | -------------------------- | --------------------------------------------------------------------------- |
@@ -25,7 +25,7 @@ Use the low-level composition if you need custom trigger or remove-button markup
 
 ## FilterTextEditor
 
-Import from `@/components/ui/filter-text-editor`.
+Import from `@mendylanda/ui/filters`.
 
 | Prop           | Type                                     | Behavior                                                         |
 | -------------- | ---------------------------------------- | ---------------------------------------------------------------- |
@@ -40,7 +40,7 @@ The default `commitMode="enter"` saves with Enter and allows new lines with Shif
 
 ## Selection editors
 
-Import `FilterSelectEditor` and `FilterMultiSelectEditor` from `@/components/ui/filter-select-editor`.
+Import `FilterSelectEditor` and `FilterMultiSelectEditor` from `@mendylanda/ui/filters`.
 
 Both accept `label`, `options`, `searchable`, `searchPlaceholder`, and `emptyMessage`. An option has a unique string `value`, a string `label`, and an optional `disabled` flag. Search matches label substrings without case sensitivity. Pass your own strings for localization.
 
@@ -60,12 +60,12 @@ Both accept `label`, `options`, `searchable`, `searchPlaceholder`, and `emptyMes
 
 ## Parsing lists
 
-`parseFilterValues` from `@/components/ui/filter-utils` splits a string on commas, newlines, and tabs, trims each part, drops empty entries, and removes exact duplicates. It preserves order and case. It is not a CSV parser and does not perform domain-specific validation.
+`parseFilterValues` from `@mendylanda/ui/filters` splits a string on commas, newlines, and tabs, trims each part, drops empty entries, and removes exact duplicates. It preserves order and case. It is not a CSV parser and does not perform domain-specific validation.
 
 The editor popup uses dialog semantics so it can contain form fields. Built-in selection editors place their choices in a labeled menu inside it. When composing `FilterCheckboxItem` directly, wrap the options in a labeled `role="menu"` element. `FilterMenuItem` accepts `contentProps` for submenu props. For a submenu containing form fields, pass `role="dialog"`, an `aria-label`, and `aria-orientation={undefined}` through `contentProps`. The trigger then announces that it opens a dialog.
 
 ## Styling and localization
 
-Components use the consumer's shadcn semantic tokens. There is no Mendy UI stylesheet to install. Supply classes on the composition components to adjust layout and sizing.
+Components use the consumer's shadcn semantic tokens. Import `@mendylanda/ui/styles.css` once. Supply classes on composition components or named `classNames` on the bar. See [customization](/docs/customization) for control replacements and portal containers.
 
 Override `editLabel`, `removeLabel`, and `contentProps["aria-label"]` on `AppliedFilter`, plus editor labels, placeholders, empty messages, and `applyLabel`, to translate the interface.

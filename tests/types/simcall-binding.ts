@@ -1,6 +1,6 @@
 import type { LineFilters } from "./simcall-schema.fixture";
 import { lineStatuses } from "./simcall-schema.fixture";
-import { bindFilters, filter } from "../../registry/new-york/filter-definition";
+import { bindFilters, filter } from "@mendylanda/ui/filters";
 const line = bindFilters<LineFilters>();
 line.field("carrierId", filter.tokens({ label: "Carrier" }));
 line.field(

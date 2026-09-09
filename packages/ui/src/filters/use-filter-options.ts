@@ -1,6 +1,6 @@
 "use client";
 
-import type { Choice, OptionPage, RuntimeField } from "@/registry/new-york/filter-definition";
+import type { Choice, OptionPage, RuntimeField } from "./filter-definition.js";
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 interface Request {

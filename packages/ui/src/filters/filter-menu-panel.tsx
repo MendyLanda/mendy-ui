@@ -3,9 +3,10 @@
 import type { ReactNode, RefObject } from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DropdownMenuContent } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { Button } from "../customization.js";
+import { DropdownMenuContent } from "../primitives/dropdown-menu.js";
+import { useMendyUI } from "../customization.js";
+import { cn } from "../utils.js";
 
 export interface FilterMenuSection {
   id: string;
@@ -41,6 +42,7 @@ export function FilterMenuPanel({
   anchor,
   trigger,
 }: FilterMenuPanelProps) {
+  const { classNames } = useMendyUI();
   const desktop = useSyncExternalStore(subscribeViewport, isDesktop, serverDesktop);
   const selected =
     sections.find((section) => section.id === selectedId && !section.disabled) ??
@@ -109,6 +111,7 @@ export function FilterMenuPanel({
   return (
     <DropdownMenuContent
       ref={content}
+      data-mendy-ui=""
       data-slot="filter-menu-panel"
       role="dialog"
       aria-label="Filters"
@@ -152,13 +155,16 @@ export function FilterMenuPanel({
       }}
       className={cn(
         "[--filter-menu-height:min(480px,var(--radix-dropdown-menu-content-available-height))] max-h-(--filter-menu-height) max-w-[calc(100vw-1.5rem)] overflow-hidden p-0 shadow-md animate-none! [&_*]:transition-none!",
-        desktop && selected ? "w-[512px]" : "w-[300px]",
+        desktop && selected ? "w-[var(--mendy-filter-menu-width,512px)]" : "w-[300px]",
+        classNames?.menu,
       )}
     >
       <div
         className={cn(
           "max-h-(--filter-menu-height)",
-          desktop && selected ? "grid grid-cols-[208px_minmax(0,1fr)]" : "flex flex-col",
+          desktop && selected
+            ? "grid grid-cols-[var(--mendy-filter-list-width,208px)_minmax(0,1fr)]"
+            : "flex flex-col",
         )}
       >
         {showList && (
@@ -173,7 +179,12 @@ export function FilterMenuPanel({
         )}
         {selected && (
           <div className="flex min-h-0 min-w-0 flex-col">
-            <div className="flex min-h-10 shrink-0 items-center gap-2 border-b px-3 py-2 text-xs font-medium">
+            <div
+              className={cn(
+                "flex min-h-10 shrink-0 items-center gap-2 border-b px-3 py-2 text-xs font-medium",
+                classNames?.menuHeader,
+              )}
+            >
               {!desktop && (
                 <>
                   <Button
@@ -215,7 +226,10 @@ export function FilterMenuPanel({
               role="group"
               aria-label={selected.editorLabel}
               tabIndex={-1}
-              className="min-h-0 min-w-0 overflow-y-auto overscroll-contain outline-none [&>div]:w-full [&_[role^=menuitem]]:min-h-9"
+              className={cn(
+                "min-h-0 min-w-0 overflow-y-auto overscroll-contain outline-none [&>div]:w-full [&_[role^=menuitem]]:min-h-9",
+                classNames?.editor,
+              )}
             >
               {selected.content}
             </div>
@@ -243,6 +257,7 @@ function FilterMenuList({
   rows,
   choose,
 }: FilterMenuListProps) {
+  const { classNames } = useMendyUI();
   return (
     <div
       role="group"
@@ -250,6 +265,7 @@ function FilterMenuList({
       className={cn(
         "min-h-0 overflow-y-auto overscroll-contain p-1",
         desktop && selectedId && "border-r",
+        classNames?.menuList,
       )}
     >
       {sections.length === 0 && (
@@ -271,6 +287,7 @@ function FilterMenuList({
           className={cn(
             "h-auto min-h-10 w-full justify-start gap-2 rounded-sm px-2 py-2 text-sm font-normal",
             selectedId === section.id && "bg-accent text-accent-foreground",
+            classNames?.menuRow,
           )}
           onPointerEnter={(event) => {
             if (desktop && event.pointerType === "mouse" && !section.disabled) choose(section.id);

@@ -1,15 +1,11 @@
 "use client";
 
-import type { FilterDefinitions, FilterValues } from "@/registry/new-york/filter-definition";
-import type { FilterChange } from "@/registry/new-york/use-filters";
+import type { FilterDefinitions, FilterValues } from "./filter-definition.js";
+import type { FilterChange } from "./use-filters.js";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { parseAsString, useQueryStates } from "nuqs";
-import {
-  decodeFilters,
-  encodeFilters,
-  validateDefinitions,
-} from "@/registry/new-york/filter-state";
-import { useFilterController } from "@/registry/new-york/use-filters";
+import { decodeFilters, encodeFilters, validateDefinitions } from "./filter-state.js";
+import { useFilterController } from "./use-filters.js";
 
 export interface UrlFilterOptions {
   /** Include the current organization/user when remembering scoped data. */

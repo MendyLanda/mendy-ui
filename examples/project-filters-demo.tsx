@@ -1,17 +1,12 @@
 "use client";
 
-import type { EditorContext } from "@/registry/new-york/filter-definition";
+import type { EditorContext } from "@mendylanda/ui/filters";
 import { useId, useState } from "react";
-import {
-  bindFilters,
-  defineFilters,
-  filter,
-  jsonCodec,
-} from "@/registry/new-york/filter-definition";
+import { bindFilters, defineFilters, filter, jsonCodec } from "@mendylanda/ui/filters";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { FilterBar } from "@/registry/new-york/filter-bar";
-import { useControlledFilters } from "@/registry/new-york/use-filters";
+import { FilterBar } from "@mendylanda/ui/filters";
+import { useControlledFilters } from "@mendylanda/ui/filters";
 
 // Existing application state can keep its own field names and query shape.
 interface ProjectFilters {

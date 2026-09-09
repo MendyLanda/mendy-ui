@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@mendylanda/ui/styles.css";
+@source not "../packages/ui";
 
 @custom-variant dark (&:is(.dark *));
 

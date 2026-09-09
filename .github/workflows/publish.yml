@@ -1,0 +1,28 @@
+name: Publish npm package
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: mendy-ui-npm-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: npm install --global npm@11
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build && pnpm lint && pnpm format && pnpm typecheck
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:unit && pnpm test && pnpm verify:consumers
+      - run: pnpm package:pack
+      - run: npm publish ./artifacts/*.tgz --access public --provenance

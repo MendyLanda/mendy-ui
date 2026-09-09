@@ -5,7 +5,7 @@ description: Definitions, dynamic options, persistence, and controlled state.
 
 ## Definitions and types
 
-Import `defineFilters`, `filter`, `bindFilters`, `remoteOptions`, `externalOptions`, and `jsonCodec` from `@/components/ui/filter-definition`.
+Import `defineFilters`, `filter`, `bindFilters`, `remoteOptions`, `externalOptions`, and `jsonCodec` from `@mendylanda/ui/filters`.
 
 `defineFilters` preserves each field's value type. `FilterValues<typeof definitions>` extracts the state type. String literal options infer literal unions. Use `select` and `multiSelect` for known choices; their default URL codecs reject values outside a static options array. Use `options` for dynamically fetched IDs that may be absent from the current page. All built-in fields use `null` as their default cleared value; `defaultValue` and `clearValue` can override that. Zero and false are active values. An empty array is inactive unless you override `isActive`.
 
@@ -162,3 +162,5 @@ Set `<FilterBar closeMenuOnApply />` to close it after each successful change. A
 Group related fields under one menu with `groups={[{ id: "status-menu", label: "Status", fields: ["status", "openTasks", "reviews"] }]}`. Grouping does not change state ownership or chip removal.
 
 For another layout, compose `FilterRoot`, `FilterSearch` or `FilterMenu`, `FilterList`, `FilterClear`, and `FilterFeedback`. They share the same controller and behavior as `FilterBar`. Custom editors and summaries can use your own markup; underlying primitives use the application's shadcn tokens.
+
+Package styling, control replacements, option rendering, and custom layouts are documented in [customization](/docs/customization).

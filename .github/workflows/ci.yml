@@ -22,17 +22,25 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint && pnpm format && pnpm build && pnpm typecheck
       - run: pnpm exec playwright install --with-deps chromium firefox webkit
-      - run: pnpm test:unit && pnpm test && STRESS_BROWSERS=chromium,firefox,webkit pnpm test:stress && pnpm verify:consumers
+      - name: Unit tests
+        run: pnpm test:unit
+      - name: Browser interaction and accessibility
+        run: pnpm test
+      - name: Large-collection stress checks
+        run: STRESS_BROWSERS=chromium,firefox,webkit pnpm test:stress
+      - name: Fresh package consumers
+        run: pnpm verify:consumers
       - run: pnpm package:pack
       - uses: actions/upload-artifact@v4
         with:
           name: mendy-ui-package
           path: artifacts/*.tgz
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: always() && !cancelled()
         with:
           name: playwright-report
           path: playwright-report/
+          if-no-files-found: ignore
       - name: Deploy
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: pnpm exec wrangler deploy

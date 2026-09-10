@@ -54,6 +54,9 @@ export function externalOptions<T>(source: Omit<ExternalOptions<T>, "kind">): Ex
   return { ...source, kind: "external" };
 }
 export interface EditorContext<V> {
+  /** False while the menu previews an editor. The menu focuses it on click or Enter. */
+  autoFocus: boolean;
+  location: "menu" | "chip" | "inline";
   value: V;
   setValue(value: V): void;
   close(): void;
@@ -72,6 +75,11 @@ export interface FieldConfig<V> {
   validate?: (value: V) => string | undefined;
   codec?: FilterCodec<V>;
   suggestion?: { value?: V; label?: string; loading?: boolean; disabled?: boolean };
+  /** Hide a redundant chip label, or use a shorter visible label. Accessible names stay intact. */
+  chipLabel?: boolean | string;
+  /** Place this editor beside its label inside a grouped menu. */
+  menuLayout?: "stack" | "inline";
+  editorPadding?: "default" | "none";
   summary?: SummaryPolicy;
   renderSummary?: (value: V, choices: readonly Choice[]) => ReactNode;
   renderEditor?: (context: EditorContext<V>) => ReactNode;
@@ -123,6 +131,11 @@ export interface RuntimeField {
   validate(value: unknown): string | undefined;
   codec: FilterCodec<unknown>;
   suggestion?: { value?: unknown; label?: string; loading?: boolean; disabled?: boolean };
+  /** Hide a redundant chip label, or use a shorter visible label. Accessible names stay intact. */
+  chipLabel?: boolean | string;
+  /** Place this editor beside its label inside a grouped menu. */
+  menuLayout?: "stack" | "inline";
+  editorPadding?: "default" | "none";
   summary?: SummaryPolicy;
   renderSummary?: (value: unknown, choices: readonly Choice[]) => ReactNode;
   renderEditor?: (context: EditorContext<unknown>) => ReactNode;

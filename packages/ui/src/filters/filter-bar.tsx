@@ -55,6 +55,7 @@ export interface FilterMenuGroup {
   id: string;
   label: string;
   fields: string[];
+  separatorBefore?: boolean;
   icon?: ReactNode;
 }
 interface RootContext {
@@ -291,9 +292,12 @@ export function FilterSearch({
 export function FilterMenu({
   children = "Add filter",
   asChild = false,
+  anchor,
 }: {
   children?: ReactNode;
   asChild?: boolean;
+  /** Align a standalone trigger to an application-owned search field. */
+  anchor?: React.RefObject<HTMLDivElement | null>;
 }) {
   const { filters, trigger, disabled, direction } = useRoot();
   const { classNames } = useMendyUI();
@@ -316,7 +320,7 @@ export function FilterMenu({
           {children}
         </Button>
       </DropdownMenuTrigger>
-      {filters.menuOpen && <FilterMenuContent />}
+      {filters.menuOpen && <FilterMenuContent anchor={anchor} />}
     </DropdownMenu>
   );
 }
@@ -347,6 +351,7 @@ function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement
               label: entry.field.label,
               icon: entry.field.icon,
               entries: [entry],
+              separatorBefore: false,
             },
           ],
     ),
@@ -366,6 +371,7 @@ function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement
     );
     return {
       id: section.id,
+      separatorBefore: section.separatorBefore,
       label: section.label,
       icon: section.icon ?? <Icon />,
       editorLabel:
@@ -391,10 +397,24 @@ function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement
               }
             }
           : undefined,
-      content: section.entries.map((entry) => (
-        <div key={entry.id} className="[&>div]:w-full">
-          {!single && (
-            <p className="border-t px-3 pt-3 text-xs font-medium first:border-t-0">
+      content: section.entries.map((entry, index) => (
+        <div
+          key={entry.id}
+          className={cn(
+            "min-w-0",
+            entry.field.menuLayout === "inline"
+              ? "flex items-center justify-between gap-3 px-3 py-2"
+              : "[&>div]:w-full",
+            index > 0 && "border-t",
+          )}
+        >
+          {!single && (index > 0 || entry.field.label !== section.label) && (
+            <p
+              className={cn(
+                "text-sm",
+                entry.field.menuLayout !== "inline" && "px-3 pt-3 text-xs font-medium",
+              )}
+            >
               {entry.field.label}
             </p>
           )}
@@ -427,13 +447,20 @@ function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement
 }
 export function FilterList() {
   const { filters, suggestions } = useRoot();
+  let entranceIndex = 0;
   return (
     <>
       {filters.entries.flatMap((entry) =>
         !entry.field.hidden &&
         (entry.field.isActive(entry.value) ||
           showSuggestion(entry, suggestions, filters.active.length))
-          ? [<FieldChip key={entry.id} entry={entry} />]
+          ? [
+              <FieldChip
+                key={entry.id}
+                entry={entry}
+                entranceDelay={Math.min(entranceIndex++ * 0.06, 0.3)}
+              />,
+            ]
           : [],
       )}
     </>
@@ -472,7 +499,7 @@ export function FilterFieldEditor({ id, autoFocus = true }: { id: string; autoFo
     />
   ) : null;
 }
-function FieldChip({ entry }: { entry: FilterEntry }) {
+function FieldChip({ entry, entranceDelay = 0 }: { entry: FilterEntry; entranceDelay?: number }) {
   const { classNames } = useMendyUI();
   const { filters, summary, suggestions, disabled, trigger } = useRoot();
   const { id, field, value } = entry;
@@ -487,6 +514,7 @@ function FieldChip({ entry }: { entry: FilterEntry }) {
   if (field.hidden || (!active && !suggestion)) return null;
   return (
     <AppliedFilter
+      entranceDelay={entranceDelay}
       label={field.label}
       data-mendy-ui=""
       data-slot={active ? "filter-chip" : "filter-suggestion"}
@@ -579,6 +607,39 @@ function summaryText(
   }
   return text;
 }
+function ChipLabel({
+  field,
+  active,
+  hasValue,
+}: {
+  field: RuntimeField;
+  active: boolean;
+  hasValue: boolean;
+}) {
+  return (
+    <>
+      {" "}
+      {(field.chipLabel !== false || !active) && (
+        <span
+          className={cn(
+            "min-w-0 shrink truncate [unicode-bidi:isolate]",
+            hasValue && "max-w-[60%]",
+          )}
+          title={field.label}
+          dir="auto"
+        >
+          {!active && field.suggestion?.label
+            ? field.suggestion.label
+            : typeof field.chipLabel === "string"
+              ? field.chipLabel
+              : field.label}
+          {hasValue ? ":" : ""}
+        </span>
+      )}
+    </>
+  );
+}
+
 function ChipSummary({
   field,
   value,
@@ -598,14 +659,7 @@ function ChipSummary({
   const text = summaryText(field, shownValue, options.selected, policy);
   return (
     <>
-      <span
-        className={cn("min-w-0 shrink truncate [unicode-bidi:isolate]", full && "max-w-[60%]")}
-        title={field.label}
-        dir="auto"
-      >
-        {!active && field.suggestion?.label ? field.suggestion.label : field.label}
-        {full ? ":" : ""}
-      </span>
+      <ChipLabel field={field} active={active} hasValue={Boolean(full)} />
       {field.renderSummary ? (
         field.renderSummary(shownValue, options.selected)
       ) : (
@@ -782,7 +836,7 @@ function FieldEditor({
       <div
         data-mendy-ui=""
         ref={customRoot}
-        className="max-w-[calc(100vw-2rem)] p-3"
+        className={cn("min-w-0 max-w-full", field.editorPadding !== "none" && "p-3")}
         onKeyDown={(event) => {
           if (event.key === "Escape") return;
           if (
@@ -794,6 +848,8 @@ function FieldEditor({
         }}
       >
         {field.renderEditor({
+          autoFocus,
+          location,
           value,
           draft,
           setDraft,

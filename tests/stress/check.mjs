@@ -79,7 +79,7 @@ await check(
     const scroll = await page
       .locator('[aria-label="Filter types"]')
       .evaluate((e) => ({ top: e.scrollTop, h: e.clientHeight, full: e.scrollHeight }));
-    assert(scroll.top > 0 && scroll.h < 500 && scroll.full > scroll.h);
+    assert(scroll.top > 0 && scroll.h <= 44 * 16 && scroll.full > scroll.h);
     await page.keyboard.press("Home");
     await expect(rows.first()).toBeFocused();
     await page.keyboard.press("PageDown");
@@ -346,6 +346,55 @@ await check(
     await context.close();
   },
 );
+await check(
+  "Anchored editors fit their content, follow lower rows and preserve mobile Back",
+  async () => {
+    for (const width of [1280, 390]) {
+      const { context, page } = await fixture("fields=18&anchored", width);
+      if (width === 390) await page.getByRole("button", { name: "Filters", exact: true }).click();
+      const row = page.getByRole("button", { name: "Field 0012", exact: true });
+      await row.click();
+      const editor = page.locator('[data-slot="filter-menu-editor"]');
+      const bounds = await editor.boundingBox();
+      assert(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width);
+      if (width > 640) {
+        const list = page.getByRole("group", { name: "Filter types", exact: true });
+        assert(await list.evaluate((e) => e.scrollHeight <= e.clientHeight + 1));
+        const rowBounds = await row.boundingBox();
+        assert(bounds.y > 250 && bounds.y <= rowBounds.y + 4);
+        assert(bounds.height < 300);
+        assert(bounds.y + bounds.height <= 900 - 16);
+      } else {
+        await page.getByRole("button", { name: "Filters", exact: true }).click();
+        await expect(row).toBeFocused();
+      }
+      await context.close();
+    }
+  },
+);
+await check("Custom editor previews do not autofocus, activation does", async () => {
+  const { context, page } = await fixture("custom&anchored");
+  const field = page.getByRole("button", { name: "Title", exact: true });
+  await field.hover();
+  const row = page.getByRole("button", { name: "Assignee", exact: true });
+  await row.hover();
+  const input = page.getByRole("textbox", { name: "Custom search" });
+  await expect(input).toBeVisible();
+  await expect(input).not.toBeFocused();
+  await row.click();
+  await expect(input).toBeFocused();
+  await context.close();
+});
+await check("Hidden chip labels keep accessible names and custom summaries", async () => {
+  const { context, page } = await fixture("active=2&chip-label");
+  await page.keyboard.press("Escape");
+  const chip = page.getByRole("button", { name: "Edit Assignee filter", exact: true });
+  await expect(chip.locator('span[title="Assignee"]')).toHaveCount(0);
+  await expect(chip.locator("[data-color-summary]")).toHaveCSS("color", "rgb(22, 163, 74)");
+  await chip.click();
+  await expect(page.getByRole("searchbox", { name: "Search people" })).toBeFocused();
+  await context.close();
+});
 await browser.close();
 const output = process.env.STRESS_OUTPUT ?? "artifacts/ui-polish/design-stress";
 await mkdir(output, { recursive: true });

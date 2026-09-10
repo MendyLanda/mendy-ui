@@ -1,7 +1,8 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useImperativeHandle, useRef, useState } from "react";
+import { useAnimate, useReducedMotion } from "motion/react";
 
 import { XIcon } from "lucide-react";
 
@@ -25,15 +26,40 @@ export function FilterEditor(props: FilterEditorProps) {
   return <DropdownMenu modal={false} {...props} />;
 }
 
-export type FilterChipProps = ComponentProps<"div">;
+export type FilterChipProps = ComponentProps<"div"> & { entranceDelay?: number };
 
-export function FilterChip({ className, ...props }: FilterChipProps) {
+export function FilterChip({ className, ref, entranceDelay = 0, ...props }: FilterChipProps) {
+  const [scope, animate] = useAnimate<HTMLDivElement>();
+  const reducedMotion = useReducedMotion();
+  const initialDelay = useRef(entranceDelay);
+  useImperativeHandle(ref, () => scope.current);
+  useLayoutEffect(() => {
+    if (reducedMotion) {
+      scope.current.style.transform = "none";
+      scope.current.style.opacity = "1";
+      return;
+    }
+    const animation = animate(
+      scope.current,
+      { y: [10, 0], opacity: [0, 1] },
+      {
+        type: "spring",
+        stiffness: 100,
+        damping: 10,
+        mass: 1,
+        delay: initialDelay.current,
+        opacity: { duration: 0.2 },
+      },
+    );
+    return () => animation.stop();
+  }, [animate, scope, reducedMotion]);
   return (
     <div
       data-mendy-ui=""
+      ref={scope}
       data-slot="filter-chip"
       className={cn(
-        "inline-flex h-9 max-w-full overflow-hidden rounded-md items-center bg-secondary text-sm text-muted-foreground motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2.5 motion-safe:duration-200 motion-safe:fill-mode-backwards",
+        "inline-flex h-9 max-w-full overflow-hidden rounded-md items-center bg-secondary text-sm text-muted-foreground",
         className,
       )}
       {...props}

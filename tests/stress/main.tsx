@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
+  MendyUIProvider,
   defineFilters,
   filter,
   FilterBar,
@@ -49,6 +50,17 @@ const remote = remoteOptions({
 const definitions = defineFilters({
   people: filter.multiSelect({
     label: title,
+    chipLabel: params.has("chip-label") ? false : undefined,
+    renderSummary: params.has("chip-label")
+      ? () => (
+          <span data-color-summary style={{ color: "rgb(22, 163, 74)" }}>
+            Selected people
+          </span>
+        )
+      : undefined,
+    renderEditor: params.has("custom")
+      ? ({ autoFocus }) => <input aria-label="Custom search" autoFocus={autoFocus} />
+      : undefined,
     options: params.has("remote") ? remote : choices,
     searchable: true,
     searchLabel: "Search people",
@@ -114,7 +126,9 @@ function Fixture() {
     <main style={{ maxWidth: Number(params.get("container") ?? 1000) }}>
       <p className="fixture-note">Synthetic data · actual npm package components</p>
       <section aria-label="Stress fixture">
-        <FilterBar filters={filters} />
+        <MendyUIProvider menuLayout={params.has("anchored") ? "anchored" : "connected"}>
+          <FilterBar filters={filters} />
+        </MendyUIProvider>
       </section>
       <button type="button" id="after">
         After filters

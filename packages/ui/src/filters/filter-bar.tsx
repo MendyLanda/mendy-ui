@@ -40,7 +40,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from "../primitives/dropdown-menu.js";
-import { AppliedFilter, FilterCheckboxItem } from "./filters.js";
+import { AppliedFilter, FilterCheckboxItem, FilterChipList } from "./filters.js";
 import { FilterOptionCache, useFilterOptions } from "./use-filter-options.js";
 import { classifyPaste, resolvePasteAmbiguity } from "./filter-state.js";
 import { cn } from "../utils.js";
@@ -447,23 +447,16 @@ function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement
 }
 export function FilterList() {
   const { filters, suggestions } = useRoot();
-  let entranceIndex = 0;
   return (
-    <>
+    <FilterChipList>
       {filters.entries.flatMap((entry) =>
         !entry.field.hidden &&
         (entry.field.isActive(entry.value) ||
           showSuggestion(entry, suggestions, filters.active.length))
-          ? [
-              <FieldChip
-                key={entry.id}
-                entry={entry}
-                entranceDelay={Math.min(entranceIndex++ * 0.06, 0.3)}
-              />,
-            ]
+          ? [<FieldChip key={entry.id} entry={entry} />]
           : [],
       )}
-    </>
+    </FilterChipList>
   );
 }
 function summarize(field: RuntimeField, value: unknown, choices: Choice[]): string {
@@ -499,7 +492,7 @@ export function FilterFieldEditor({ id, autoFocus = true }: { id: string; autoFo
     />
   ) : null;
 }
-function FieldChip({ entry, entranceDelay = 0 }: { entry: FilterEntry; entranceDelay?: number }) {
+function FieldChip({ entry }: { entry: FilterEntry }) {
   const { classNames } = useMendyUI();
   const { filters, summary, suggestions, disabled, trigger } = useRoot();
   const { id, field, value } = entry;
@@ -514,7 +507,6 @@ function FieldChip({ entry, entranceDelay = 0 }: { entry: FilterEntry; entranceD
   if (field.hidden || (!active && !suggestion)) return null;
   return (
     <AppliedFilter
-      entranceDelay={entranceDelay}
       label={field.label}
       data-mendy-ui=""
       data-slot={active ? "filter-chip" : "filter-suggestion"}

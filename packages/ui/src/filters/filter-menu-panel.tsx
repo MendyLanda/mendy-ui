@@ -82,7 +82,7 @@ export function FilterMenuPanel({
   const editor = useRef<HTMLDivElement>(null);
   const rows = useRef(new Map<string, HTMLButtonElement>());
   const pendingEditorFocus = useRef(false);
-  const { alignOffset, side } = useMenuPlacement(anchor, trigger, desktop);
+  const { alignOffset, side, anchorStyle } = useMenuPlacement(anchor, trigger, desktop);
   const panelId = useId();
   const detached = desktop && menuLayout === "anchored";
   const editorPanel = useRef<HTMLDivElement>(null);
@@ -150,6 +150,7 @@ export function FilterMenuPanel({
       align={desktop ? "start" : "end"}
       alignOffset={alignOffset}
       side={side}
+      style={anchorStyle}
       sideOffset={7}
       collisionPadding={16}
       onEscapeKeyDown={(event) => {
@@ -186,7 +187,10 @@ export function FilterMenuPanel({
       }
       className={cn(
         "[--filter-menu-height:min(var(--mendy-filter-menu-max-height,44rem),var(--radix-dropdown-menu-content-available-height,44rem))] max-h-(--filter-menu-height) max-w-[calc(100vw-2rem)] overflow-hidden p-0 shadow-md animate-none! [&_*]:transition-none!",
-        desktop && selected ? "w-[var(--mendy-filter-menu-width,32rem)]" : "w-[18.75rem]",
+        "[--filter-list-width:var(--mendy-filter-list-width,var(--mendy-filter-anchor-width,13rem))]",
+        desktop && selected
+          ? "w-[var(--mendy-filter-menu-width,calc(var(--filter-list-width)_+_19rem))]"
+          : "w-[var(--mendy-filter-list-width,var(--mendy-filter-anchor-width,18.75rem))]",
         detached && "overflow-visible border-0 bg-transparent shadow-none",
         classNames?.menu,
       )}
@@ -195,9 +199,9 @@ export function FilterMenuPanel({
         className={cn(
           "max-h-[calc(var(--filter-menu-height)-2px)]",
           desktop && selected
-            ? "grid grid-rows-[minmax(0,1fr)] grid-cols-[min(var(--mendy-filter-list-width,13rem),50%)_minmax(0,1fr)]"
+            ? "grid grid-rows-[minmax(0,1fr)] grid-cols-[min(var(--filter-list-width),calc(100%_-_min(19rem,50%)))_minmax(0,1fr)]"
             : "flex flex-col",
-          detached && "items-start gap-1.5",
+          detached && "items-start",
         )}
       >
         {showList && (
@@ -390,6 +394,7 @@ function FilterMenuList({
   }
   return (
     <div
+      data-slot="filter-menu-list"
       className={cn(
         "flex min-h-0 flex-col",
         desktop && selectedId && !detached && "border-e",

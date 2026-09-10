@@ -57,3 +57,7 @@ Use `chipLabel: false` when the selected values explain themselves. A string suc
 `<MendyUIProvider menuLayout="anchored">` positions desktop editors beside the selected row at their own height. The default remains `connected`. Both use the single-panel mobile layout. A standalone `<FilterMenu anchor={searchRef}>` can align to a custom search field. The menu grows to the available viewport height, capped by `--mendy-filter-menu-max-height`, which defaults to `44rem`; large lists remain virtualized.
 
 Chips enter with a short, staggered Motion spring. Reduced-motion preferences disable their movement. Theme radius still controls their corners.
+
+Filter lists use the search anchor's width by default and shrink when the viewport cannot fit both columns. Override `--mendy-filter-list-width` or `--mendy-filter-menu-width` for a custom layout. In anchored mode, editors touch the list and move upward for lower rows so short editors stay within the list's height.
+
+`FilterList` uses the original SimCall Motion variants: a 60ms stagger on initial list entry and the default item transition from y=10/opacity=0 to y=0/opacity=1. New chips enter immediately, without a delay based on their list position. `FilterChipList` provides the same orchestration for custom compositions of `FilterChip`; standalone chips also animate.

@@ -364,6 +364,13 @@ await check(
         assert(bounds.y > 250 && bounds.y <= rowBounds.y + 4);
         assert(bounds.height < 300);
         assert(bounds.y + bounds.height <= 900 - 16);
+        const listBounds = await page.locator('[data-slot="filter-menu-list"]').boundingBox();
+        const searchBounds = await page
+          .getByRole("searchbox", { name: "Search", exact: true })
+          .boundingBox();
+        assert(Math.abs(listBounds.width - searchBounds.width) <= 1);
+        assert(Math.abs(listBounds.x + listBounds.width - bounds.x) <= 1);
+        assert(bounds.y + bounds.height <= listBounds.y + listBounds.height + 1);
       } else {
         await page.getByRole("button", { name: "Filters", exact: true }).click();
         await expect(row).toBeFocused();

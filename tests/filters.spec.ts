@@ -323,12 +323,15 @@ test("chips animate on entry and respect reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
   await addStatus(page);
-  const chip = page.locator('[data-slot="filter-chip"]');
-  await expect(chip).toHaveCSS("transform", "none");
-  await expect(chip).toHaveCSS("opacity", "1");
-  expect(
-    await chip.evaluate((el) => el.getAnimations().filter((a) => a.playState === "running").length),
-  ).toBe(0);
+  for (const chip of await page.locator('[data-slot="filter-chip-entrance"]').all()) {
+    await expect(chip).toHaveCSS("transform", "none");
+    await expect(chip).toHaveCSS("opacity", "1");
+    expect(
+      await chip.evaluate(
+        (el) => el.getAnimations().filter((a) => a.playState === "running").length,
+      ),
+    ).toBe(0);
+  }
 });
 
 test("arrow keys explore submenus without applying and clearing a chip returns focus", async ({

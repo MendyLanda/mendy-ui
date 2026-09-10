@@ -6,7 +6,7 @@ import { m, LazyMotion, domAnimation, useReducedMotion } from "motion/react";
 
 import { XIcon } from "lucide-react";
 
-import { Button } from "../customization.js";
+import { Button, useMendyUI } from "../customization.js";
 import { cn } from "../utils.js";
 
 import {
@@ -115,9 +115,18 @@ export function FilterEditorTrigger({ className, asChild, ...props }: FilterEdit
   );
 }
 
-export type FilterEditorContentProps = ComponentProps<typeof DropdownMenuContent>;
+export type FilterEditorContentProps = ComponentProps<typeof DropdownMenuContent> & {
+  /** Override the provider default for this popup. */
+  animate?: boolean;
+};
 
-export function FilterEditorContent({ className, onClick, ...props }: FilterEditorContentProps) {
+export function FilterEditorContent({
+  className,
+  onClick,
+  animate,
+  ...props
+}: FilterEditorContentProps) {
+  const { editorAnimation } = useMendyUI();
   return (
     <DropdownMenuContent
       data-mendy-ui=""
@@ -133,6 +142,7 @@ export function FilterEditorContent({ className, onClick, ...props }: FilterEdit
       }}
       className={cn(
         "w-[var(--mendy-filter-editor-width,19rem)] max-h-[var(--radix-dropdown-menu-content-available-height)] max-w-[calc(100vw-2rem)] overflow-y-auto p-0 data-[state=closed]:animate-none!",
+        !(animate ?? editorAnimation) && "animate-none!",
         className,
       )}
       {...props}

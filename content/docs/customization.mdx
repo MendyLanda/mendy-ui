@@ -30,6 +30,8 @@ The available parts are `root`, `search`, `searchInput`, `menuTrigger`, `menu`, 
 
 Chip editors and desktop menu editors default to `19rem`. Set `--mendy-filter-editor-width` on your theme root to change both. For one bar, set the variable through both `classNames.menu` and `classNames.editor`, since the popups are portalled. Widths stay within the viewport.
 
+Chip editor popups open instantly by default. Opt into their entrance animation with `<MendyUIProvider editorAnimation>` or set `animate` on a low-level `FilterEditorContent`. Chip entrance animations are independent of this setting.
+
 ## Render option content
 
 `renderOption` receives the original, inferred item type. The library keeps the selection control, keyboard interaction, disabled state, and accessible name around your content.

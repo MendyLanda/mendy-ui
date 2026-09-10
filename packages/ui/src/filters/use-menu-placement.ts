@@ -1,6 +1,6 @@
 "use client";
 import type { CSSProperties, RefObject } from "react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 /** Position the menu against the search field and the available viewport. */
 export function useMenuPlacement(
@@ -119,4 +119,28 @@ export function useEditorOffset({
   }, [detached, selectedId, editorPanel, content, rows]);
 
   return editorOffset;
+}
+
+/** Only the visible panels receive pointer events; the positioner's empty area does not. */
+export function useAnchoredPointerEvents(
+  content: RefObject<HTMLDivElement | null>,
+  detached: boolean,
+) {
+  const restore = useRef<(() => void) | undefined>(undefined);
+  return useCallback(
+    (node: HTMLDivElement | null) => {
+      restore.current?.();
+      restore.current = undefined;
+      content.current = node;
+      if (!detached) return;
+      const positioner = node?.parentElement;
+      if (!positioner?.hasAttribute("data-radix-popper-content-wrapper")) return;
+      const previous = positioner.style.pointerEvents;
+      positioner.style.pointerEvents = "none";
+      restore.current = () => {
+        positioner.style.pointerEvents = previous;
+      };
+    },
+    [content, detached],
+  );
 }

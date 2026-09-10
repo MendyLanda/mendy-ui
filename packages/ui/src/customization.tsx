@@ -34,6 +34,8 @@ export type FilterClassNames = Partial<Record<FilterPart, string>>;
 export interface MendyUIOptions {
   /** Desktop editor placement. Phones always use one panel with Back. */
   menuLayout?: "connected" | "anchored";
+  /** Animate chip editor popups. Off by default; chip entrance motion is independent. */
+  editorAnimation?: boolean;
   components?: Partial<MendyUIComponents>;
   classNames?: FilterClassNames;
   /** Mount dropdowns inside a local theme or dialog instead of document.body. */
@@ -48,16 +50,18 @@ export function MendyUIProvider({
   classNames,
   portalContainer,
   menuLayout,
+  editorAnimation,
 }: MendyUIOptions & { children: ReactNode }) {
   const parent = useContext(Context);
   const value = useMemo(
     () => ({
       menuLayout: menuLayout ?? parent.menuLayout,
+      editorAnimation: editorAnimation ?? parent.editorAnimation,
       components: { ...parent.components, ...components },
       classNames: { ...parent.classNames, ...classNames },
       portalContainer: portalContainer === undefined ? parent.portalContainer : portalContainer,
     }),
-    [parent, components, classNames, portalContainer, menuLayout],
+    [parent, components, classNames, portalContainer, menuLayout, editorAnimation],
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }

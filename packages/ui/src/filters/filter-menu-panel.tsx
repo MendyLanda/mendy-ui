@@ -15,7 +15,11 @@ import {
   handleMenuReturn,
   preserveOutsideFocus,
 } from "./filter-menu-focus.js";
-import { useMenuPlacement, useEditorOffset } from "./use-menu-placement.js";
+import {
+  useMenuPlacement,
+  useEditorOffset,
+  useAnchoredPointerEvents,
+} from "./use-menu-placement.js";
 import { useMenuPointer } from "./use-menu-pointer.js";
 import { cn } from "../utils.js";
 
@@ -78,6 +82,7 @@ export function FilterMenuPanel({
   const { alignOffset, side, anchorStyle } = useMenuPlacement(anchor, trigger, desktop);
   const panelId = useId();
   const detached = desktop && menuLayout === "anchored";
+  const setContent = useAnchoredPointerEvents(content, detached);
   const editorPanel = useRef<HTMLDivElement>(null);
   const editorOffset = useEditorOffset({
     detached,
@@ -134,7 +139,7 @@ export function FilterMenuPanel({
   const sideBySide = desktop && Boolean(selected);
   return (
     <DropdownMenuContent
-      ref={content}
+      ref={setContent}
       data-mendy-ui=""
       data-slot="filter-menu-panel"
       role="dialog"
@@ -185,7 +190,7 @@ export function FilterMenuPanel({
         sideBySide
           ? "w-[var(--mendy-filter-menu-width,calc(var(--filter-list-width)_+_var(--mendy-filter-editor-width,19rem)))]"
           : "w-[var(--mendy-filter-list-width,var(--mendy-filter-anchor-width,18.75rem))]",
-        detached && "overflow-visible border-0 bg-transparent shadow-none",
+        detached && "pointer-events-none overflow-visible border-0 bg-transparent shadow-none",
         classNames?.menu,
       )}
     >
@@ -235,7 +240,7 @@ export function FilterMenuPanel({
             className={cn(
               "flex min-h-0 min-w-0 max-h-[calc(var(--filter-menu-height)-2px)] flex-col",
               detached &&
-                "-ms-px overflow-hidden rounded-md rounded-s-none border bg-popover text-popover-foreground",
+                "pointer-events-auto -ms-px overflow-hidden rounded-md rounded-s-none border bg-popover text-popover-foreground",
             )}
           >
             <EditorHeading
@@ -392,7 +397,8 @@ function FilterMenuList({
       className={cn(
         "flex min-h-0 flex-col",
         desktop && selectedId && !detached && "border-e",
-        detached && "overflow-hidden rounded-md border bg-popover text-popover-foreground",
+        detached &&
+          "pointer-events-auto overflow-hidden rounded-md border bg-popover text-popover-foreground",
       )}
     >
       {sections.length > 20 && (

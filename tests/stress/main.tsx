@@ -71,6 +71,7 @@ const definitions = defineFilters({
   amount: filter.numberRange({ label: "Estimate" }),
   status: filter.select({
     label: "Status",
+    removable: !params.has("required"),
     searchable: false,
     options: [
       { value: "open", label: "Open" },
@@ -128,7 +129,10 @@ function Fixture() {
     <main style={{ maxWidth: Number(params.get("container") ?? 1000) }}>
       <p className="fixture-note">Synthetic data · actual npm package components</p>
       <section aria-label="Stress fixture">
-        <MendyUIProvider menuLayout={params.has("anchored") ? "anchored" : "connected"}>
+        <MendyUIProvider
+          menuLayout={params.has("anchored") ? "anchored" : "connected"}
+          editorAnimation={params.has("animate-editor")}
+        >
           <FilterBar
             filters={filters}
             groups={

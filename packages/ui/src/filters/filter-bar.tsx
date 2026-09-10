@@ -1021,11 +1021,11 @@ function ChoiceCollection({
   collection: React.RefObject<CollectionHandle | null>;
 }) {
   const { classNames } = useMendyUI();
-  const choices = (
-    field.kind === "single" && location === "chip" && field.removable !== false
-      ? [{ value: "", label: `Any ${field.label.toLowerCase()}` }, ...options.items]
-      : options.items
-  ).map((choice) => ({ ...choice, key: choice.value, disabled: disabled || choice.disabled }));
+  const choices = options.items.map((choice) => ({
+    ...choice,
+    key: choice.value,
+    disabled: disabled || choice.disabled,
+  }));
   const list = (
     <FilterCollection
       items={choices}
@@ -1063,7 +1063,8 @@ function ChoiceCollection({
                 classNames?.option,
               )}
               onClick={() => {
-                if (field.kind === "single") apply(choice.value, false);
+                if (field.kind === "single")
+                  apply(singleChoiceValue(field, value, choice.value), false);
                 else {
                   const next = selectedSet.has(choice.value)
                     ? selected.filter((item) => item !== choice.value)
@@ -1113,13 +1114,19 @@ function ChoiceCollection({
   return field.kind === "single" && location !== "inline" ? (
     <DropdownMenuRadioGroup
       value={typeof value === "string" ? value : ""}
-      onValueChange={(next) => apply(next || field.clearValue)}
+      onValueChange={(next) => apply(singleChoiceValue(field, value, next))}
     >
       {list}
     </DropdownMenuRadioGroup>
   ) : (
     list
   );
+}
+
+function singleChoiceValue(field: RuntimeField, current: unknown, next: string) {
+  return next === current && field.removable !== false
+    ? field.clearValue
+    : next || field.clearValue;
 }
 
 function OptionFeedback({

@@ -1,3 +1,4 @@
+import { editorInteractionChecks } from "./editor-interaction-checks.mjs";
 import { chipChecks } from "./chip-checks.mjs";
 import { chromium, firefox, webkit, expect } from "@playwright/test";
 import assert from "node:assert/strict";
@@ -34,6 +35,7 @@ async function fixture(query = "", width = 1280) {
   return { context, page };
 }
 await chipChecks(browser, check);
+await editorInteractionChecks(browser, check);
 await check("Unselected anchored menu keeps the full search width", async () => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();

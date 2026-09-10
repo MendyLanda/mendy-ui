@@ -354,7 +354,7 @@ test("arrow keys explore submenus without applying and clearing a chip returns f
   await page.keyboard.press("Enter");
   await dismissEditor(page);
   await page.getByRole("button", { name: "Edit Status filter" }).click();
-  await page.getByRole("menuitemradio", { name: "Any status", exact: true }).click();
+  await page.getByRole("menuitemradio", { name: "Todo", exact: true }).click();
   await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
   await expect(menu).toBeFocused();
 });

@@ -1,6 +1,6 @@
 "use client";
 import type { CSSProperties, RefObject } from "react";
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 /** Position the menu against the search field and the available viewport. */
 export function useMenuPlacement(
@@ -28,13 +28,15 @@ export function useMenuPlacement(
       // A short list can fit below the trigger while its editor cannot. Choose room
       // for the editor before Radix constrains its height to the current side.
       setSide(below < preferredHeight && above > below ? "top" : "bottom");
-      // Desktop starts at the search field's edge; mobile stays close to the icon.
+      // Follow the search edge in both layouts, including inset mobile triggers.
       setAlignOffset(
         desktop
           ? rtl
             ? bounds.right - (target?.right ?? bounds.right)
             : (target?.left ?? bounds.left) - bounds.left
-          : 0,
+          : rtl
+            ? (target?.left ?? bounds.left) - bounds.left
+            : bounds.right - (target?.right ?? bounds.right),
       );
     };
     update();
@@ -74,6 +76,7 @@ export function useEditorOffset({
   selectedId?: string;
 }) {
   const [editorOffset, setEditorOffset] = useState(0);
+  const measured = useRef({ id: selectedId, height: 0 });
   useLayoutEffect(() => {
     if (!detached) return;
     const panel = editorPanel.current;
@@ -81,11 +84,19 @@ export function useEditorOffset({
     if (!panel || !root) return;
     const update = () => {
       const row = rows.current.get(selectedId ?? "");
-      if (!row) return;
+      if (!row) {
+        setEditorOffset(0);
+        return;
+      }
       const rootTop = root.getBoundingClientRect().top;
       const list = root.querySelector('[data-slot="filter-menu-list"]');
       const listBottom = list?.getBoundingClientRect().bottom ?? rootTop;
-      const height = panel.getBoundingClientRect().height;
+      const currentHeight = panel.getBoundingClientRect().height;
+      if (measured.current.id !== selectedId) measured.current = { id: selectedId, height: 0 };
+      // Result filtering may shrink the editor. Keep its input in place instead
+      // of moving it down under the pointer on every query change.
+      measured.current.height = Math.max(measured.current.height, currentHeight);
+      const height = measured.current.height;
       const viewport = window.visualViewport;
       const viewportBottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight);
       // Keep short editors inside the list's vertical span. Lower rows therefore

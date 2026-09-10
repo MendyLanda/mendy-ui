@@ -252,7 +252,10 @@ test("public docs and package installation instructions are accessible without l
 });
 
 test("no accessibility violations in both themes and submenu editors", async ({ page }) => {
+  // Audit settled colors. Chip entrance behavior is covered separately below.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
+  await expect(page.getByRole("searchbox", { name: "Search issues" })).toBeEnabled();
   for (const dark of [false, true]) {
     if (dark) await page.getByRole("button", { name: "Toggle color theme" }).click();
     await expect(page.locator("html")).toHaveClass(dark ? /dark/ : /light/);
@@ -266,11 +269,6 @@ test("no accessibility violations in both themes and submenu editors", async ({ 
             .map((animation) => animation.finished),
         ),
       );
-      // Motion can animate through JavaScript rather than the Web Animations API.
-      // Audit the settled text color, not a partially transparent entrance frame.
-      for (const chip of await page.locator('[data-slot="filter-chip"]').all()) {
-        await expect(chip).toHaveCSS("opacity", "1");
-      }
       const result = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
         .analyze();

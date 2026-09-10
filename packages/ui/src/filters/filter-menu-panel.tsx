@@ -241,7 +241,7 @@ export function FilterMenuPanel({
             className={cn(
               "flex min-h-0 min-w-0 max-h-[calc(var(--filter-menu-height)-2px)] flex-col",
               detached &&
-                "overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+                "-ms-px overflow-hidden rounded-md rounded-s-none border bg-popover text-popover-foreground shadow-md",
             )}
           >
             <EditorHeading

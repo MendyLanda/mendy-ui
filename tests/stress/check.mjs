@@ -379,6 +379,16 @@ await check(
     }
   },
 );
+await check("Filtering out the selected category resets its editor offset", async () => {
+  const { context, page } = await fixture("fields=30&anchored", 1280);
+  await page.getByRole("button", { name: "Field 0012", exact: true }).click();
+  await page.getByRole("searchbox", { name: "Find a filter", exact: true }).fill("Assignee");
+  await expect(page.getByRole("button", { name: "Field 0012", exact: true })).toHaveCount(0);
+  const editor = await page.locator('[data-slot="filter-menu-editor"]').boundingBox();
+  const list = await page.locator('[data-slot="filter-menu-list"]').boundingBox();
+  assert(Math.abs(editor.y - list.y) <= 1);
+  await context.close();
+});
 await check("Custom editor previews do not autofocus, activation does", async () => {
   const { context, page } = await fixture("custom&anchored");
   const field = page.getByRole("button", { name: "Title", exact: true });

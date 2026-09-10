@@ -55,15 +55,8 @@ const isDesktop = () =>
   window.innerWidth >= 40 * parseFloat(getComputedStyle(document.documentElement).fontSize);
 const serverDesktop = () => false;
 
-function selectedSection(
-  sections: FilterMenuSection[],
-  selectedId: string | null,
-  desktop: boolean,
-) {
-  return (
-    sections.find((section) => section.id === selectedId && !section.disabled) ??
-    (desktop ? sections.find((section) => !section.disabled) : undefined)
-  );
+function selectedSection(sections: FilterMenuSection[], selectedId: string | null) {
+  return sections.find((section) => section.id === selectedId && !section.disabled);
 }
 
 /** One dialog contains the filter list and its editor, with a single-panel layout on phones. */
@@ -77,7 +70,7 @@ export function FilterMenuPanel({
 }: FilterMenuPanelProps) {
   const { classNames, menuLayout } = useMendyUI();
   const desktop = useSyncExternalStore(subscribeViewport, isDesktop, serverDesktop);
-  const selected = selectedSection(sections, selectedId, desktop);
+  const selected = selectedSection(sections, selectedId);
   const content = useRef<HTMLDivElement>(null);
   const editor = useRef<HTMLDivElement>(null);
   const rows = useRef(new Map<string, HTMLButtonElement>());
@@ -138,6 +131,7 @@ export function FilterMenuPanel({
     requestAnimationFrame(() => previous && rows.current.get(previous)?.focus());
   }
   const showList = desktop || !selected;
+  const sideBySide = desktop && Boolean(selected);
   return (
     <DropdownMenuContent
       ref={content}
@@ -188,7 +182,7 @@ export function FilterMenuPanel({
       className={cn(
         "[--filter-menu-height:min(var(--mendy-filter-menu-max-height,44rem),var(--radix-dropdown-menu-content-available-height,44rem))] max-h-(--filter-menu-height) max-w-[calc(100vw-2rem)] overflow-hidden p-0 shadow-md animate-none! [&_*]:transition-none!",
         "[--filter-list-width:var(--mendy-filter-list-width,var(--mendy-filter-anchor-width,13rem))]",
-        desktop && selected
+        sideBySide
           ? "w-[var(--mendy-filter-menu-width,calc(var(--filter-list-width)_+_19rem))]"
           : "w-[var(--mendy-filter-list-width,var(--mendy-filter-anchor-width,18.75rem))]",
         detached && "overflow-visible border-0 bg-transparent shadow-none",
@@ -198,10 +192,10 @@ export function FilterMenuPanel({
       <div
         className={cn(
           "max-h-[calc(var(--filter-menu-height)-2px)]",
-          desktop && selected
+          sideBySide
             ? "grid grid-rows-[minmax(0,1fr)] grid-cols-[min(var(--filter-list-width),calc(100%_-_min(19rem,50%)))_minmax(0,1fr)]"
             : "flex flex-col",
-          detached && "items-start drop-shadow-md",
+          detached && cn("drop-shadow-md", selected && "items-start"),
         )}
       >
         {showList && (
@@ -471,9 +465,6 @@ function FilterMenuList({
             )}
             onPointerMove={(event) => {
               if (!section.disabled) onPointerMove(section.id, event);
-            }}
-            onFocus={() => {
-              if (desktop) choose(section.id);
             }}
             onClick={() => choose(section.id, true)}
             onKeyDown={(event) => {

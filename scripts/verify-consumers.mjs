@@ -79,7 +79,7 @@ export default function App() {
   </main>;
 }
 `;
-for (const framework of ["vite", "next"]) {
+for (const framework of ["vite", "next", "tailwind3"]) {
   const dir = join(workspace, framework);
   const dependencies = {
     "@mendylanda/ui": `file:${tarball}`,
@@ -92,8 +92,13 @@ for (const framework of ["vite", "next"]) {
       versions[key],
     ]),
   );
-  if (framework === "vite") devDependencies.vite = versions.vite;
-  else {
+  if (framework !== "next") {
+    devDependencies.vite = versions.vite;
+    if (framework === "tailwind3") {
+      devDependencies.tailwindcss = "3.4.17";
+      devDependencies.postcss = "^8.5.6";
+    }
+  } else {
     dependencies.next = versions.next;
     // Exercise the minimum supported version used by SimCall. The site tests current nuqs.
     dependencies.nuqs = "2.8.8";
@@ -106,7 +111,7 @@ for (const framework of ["vite", "next"]) {
     name: `mendy-${framework}-consumer`,
     private: true,
     type: "module",
-    scripts: { build: framework === "vite" ? "tsc --noEmit && vite build" : "next build" },
+    scripts: { build: framework !== "next" ? "tsc --noEmit && vite build" : "next build" },
     dependencies,
     devDependencies,
     pnpm: { onlyBuiltDependencies: ["esbuild", "sharp"] },
@@ -132,7 +137,7 @@ for (const framework of ["vite", "next"]) {
     "app.css",
     `.outside { border: 7px solid rgb(255, 0, 0); padding: 13px; font-size: 19px; border-radius: 11px; } body { font-family: Arial, sans-serif; } .project-row { min-height: 48px; } .project-menu { --mendy-filter-list-width: 220px; }`,
   );
-  if (framework === "vite") {
+  if (framework !== "next") {
     write(dir, "vite-env.d.ts", '/// <reference types="vite/client" />\n');
     write(
       dir,
@@ -142,7 +147,10 @@ for (const framework of ["vite", "next"]) {
     write(
       dir,
       "main.tsx",
-      'import { createRoot } from "react-dom/client"; import App from "./app"; import "@mendylanda/ui/styles.css"; import "./app.css"; createRoot(document.getElementById("root")!).render(<App />);',
+      'import { createRoot } from "react-dom/client"; import App from "./app"; import "@mendylanda/ui/styles.css"; import "./app.css"; createRoot(document.getElementById("root")!).render(<App />);'.replace(
+        "styles.css",
+        framework === "tailwind3" ? "styles.tailwind3.css" : "styles.css",
+      ),
     );
   } else {
     write(dir, "next.config.mjs", 'export default { output: "export" };');
@@ -177,7 +185,16 @@ for (const framework of ["vite", "next"]) {
       write(dir, `examples/${file}`, source);
     }
   }
+  if (framework === "tailwind3") {
+    write(dir, "postcss.config.cjs", "module.exports = { plugins: { tailwindcss: {} } };");
+    write(dir, "tailwind.config.cjs", 'module.exports = { content: ["./app.tsx"], theme: {} };');
+    write(dir, "host.css", "@tailwind base; @tailwind components; @tailwind utilities;");
+    write(dir, "main.tsx", readFileSync(join(dir, "main.tsx"), "utf8") + '\nimport "./host.css";');
+  }
   await run(dir, ["install", "--no-frozen-lockfile"]);
+  const installed = readFileSync(join(dir, "pnpm-lock.yaml"), "utf8");
+  if (/radix-ui@|@radix-ui\/react-(accordion|menubar|navigation-menu)@/.test(installed))
+    throw new Error("Packed consumer installed unused Radix primitives.");
   if (
     framework === "vite" &&
     (existsSync(join(dir, "node_modules/nuqs")) ||
@@ -185,7 +202,7 @@ for (const framework of ["vite", "next"]) {
   )
     throw new Error("Base consumer unexpectedly installed optional integrations.");
   await run(dir, ["build"]);
-  const output = join(dir, framework === "vite" ? "dist" : "out");
+  const output = join(dir, framework !== "next" ? "dist" : "out");
   const server = createServer((req, res) => {
     const relative = new URL(req.url, "http://localhost").pathname;
     const file = resolve(output, relative === "/" ? "index.html" : relative.slice(1));

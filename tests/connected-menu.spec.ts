@@ -18,7 +18,7 @@ test("the connected menu opens immediately and preserves hover, click, and Back 
     await page.getByRole("button", { name: "Assignee", exact: true }).tap();
     await expect(page.getByRole("button", { name: "Status", exact: true })).toHaveCount(0);
   } else {
-    await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeVisible();
+    await expect(page.locator('[data-slot="filter-menu-editor"]')).toHaveCount(0);
     await page.getByRole("button", { name: "Assignee", exact: true }).hover();
     await expect(page.getByRole("searchbox", { name: "Search assignees" })).not.toBeFocused();
     await page.getByRole("button", { name: "Assignee", exact: true }).click();
@@ -106,7 +106,7 @@ test("calendar and option panels fit small screens and keep theme corners", asyn
   }
 });
 
-test("Tab enters the editor and Shift+Tab returns to the selected filter", async ({
+test("Right Arrow enters the editor and Shift+Tab returns to the selected filter", async ({
   page,
   isMobile,
 }) => {
@@ -118,7 +118,7 @@ test("Tab enters the editor and Shift+Tab returns to the selected filter", async
   await trigger.press("Enter");
   const status = page.getByRole("button", { name: "Status", exact: true });
   await expect(status).toBeFocused();
-  await status.press("Tab");
+  await status.press("ArrowRight");
   const todo = page.getByRole("menuitemradio", { name: "Todo", exact: true });
   await expect(todo).toBeFocused();
   await todo.press("Shift+Tab");
@@ -232,7 +232,7 @@ test("Tab exits in page order, Shift+Tab returns to the trigger, and outside foc
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(trigger).toBeFocused();
   await trigger.press("Enter");
-  await page.getByRole("button", { name: "Status", exact: true }).press("Tab");
+  await page.getByRole("button", { name: "Status", exact: true }).press("ArrowRight");
   await page.getByRole("menuitemradio", { name: "Todo", exact: true }).press("Tab");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(
@@ -372,4 +372,28 @@ test("empty text editors start neutral and validate an attempted save", async ({
   await expect(page.getByRole("button", { name: "Edit Title filter", exact: true })).toContainText(
     "Valid title",
   );
+});
+
+test("opening and focusing categories does not open an editor", async ({ page, isMobile }) => {
+  await page.goto("/");
+  const trigger = page.getByRole("button", { name: "Open filters", exact: true });
+  const editor = page.locator('[data-slot="filter-menu-editor"]');
+  for (const keyboard of [false, true]) {
+    if (keyboard) {
+      await trigger.focus();
+      await trigger.press("Enter");
+    } else await trigger.click();
+    const status = page.getByRole("button", { name: "Status", exact: true });
+    await expect(status).toBeFocused();
+    await expect(editor).toHaveCount(0);
+    await status.press("ArrowDown");
+    const priority = page.getByRole("button", { name: "Priority", exact: true });
+    await expect(priority).toBeFocused();
+    await expect(editor).toHaveCount(0);
+    await priority.press("Enter");
+    await expect(editor).toBeVisible();
+    await page.keyboard.press("Escape");
+    if (isMobile) await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
 });

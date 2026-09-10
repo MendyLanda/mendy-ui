@@ -61,3 +61,20 @@ Chips enter with a short, staggered Motion spring. Reduced-motion preferences di
 Filter lists use the search anchor's width by default and shrink when the viewport cannot fit both columns. Override `--mendy-filter-list-width` or `--mendy-filter-menu-width` for a custom layout. In anchored mode, editors touch the list and move upward for lower rows so short editors stay within the list's height.
 
 `FilterList` uses the original SimCall Motion variants: a 60ms stagger on initial list entry and the default item transition from y=10/opacity=0 to y=0/opacity=1. New chips enter immediately, without a delay based on their list position. `FilterChipList` provides the same orchestration for custom compositions of `FilterChip`; standalone chips also animate.
+
+### Existing search state
+
+`useFilterSearch(value, onChange, delay?)` keeps a responsive input draft while debouncing writes to an existing URL or query hook. It ignores acknowledgements of earlier writes while the user is typing, accepts external navigation, clears immediately, and cancels pending writes on unmount. The default delay is 300ms.
+
+```tsx
+const search = useFilterSearch(params.search, (value) => setParams({ search: value }));
+return <input value={search.value} onChange={(event) => search.setValue(event.target.value)} />;
+```
+
+### Tailwind 3
+
+Import `@mendylanda/ui/styles.tailwind3.css` instead of `@mendylanda/ui/styles.css` in Tailwind 3 projects. It contains the same scoped rules with compatible CSS layers. No package-specific PostCSS plugin is needed. Tailwind 4 projects and projects without Tailwind should use `styles.css`.
+
+The package expects complete CSS color values. A host that stores HSL channels still needs to map them to colors, including inside portals and any custom editors that use host styles.
+
+Opening the menu shows the category list without choosing a filter. Focusing a category does not open it. Hover previews its editor; click, Enter, Space or the entry arrow opens it and moves focus into the editor.

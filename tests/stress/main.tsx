@@ -128,7 +128,19 @@ function Fixture() {
       <p className="fixture-note">Synthetic data · actual npm package components</p>
       <section aria-label="Stress fixture">
         <MendyUIProvider menuLayout={params.has("anchored") ? "anchored" : "connected"}>
-          <FilterBar filters={filters} />
+          <FilterBar
+            filters={filters}
+            groups={
+              params.has("groups")
+                ? Object.entries(liveDefinitions).map(([id, field], index) => ({
+                    id,
+                    label: field.label,
+                    fields: [id],
+                    separatorBefore: index > 0 && index % 2 === 0,
+                  }))
+                : undefined
+            }
+          />
         </MendyUIProvider>
       </section>
       <button type="button" id="after">

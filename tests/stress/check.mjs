@@ -32,6 +32,39 @@ async function fixture(query = "", width = 1280) {
   return { context, page };
 }
 await check(
+  "Grouped virtual rows include divider height and preserve keyboard scrolling",
+  async () => {
+    const { context, page } = await fixture("fields=1000&groups&anchored");
+    const list = page.getByRole("group", { name: "Filter types", exact: true });
+    const first = list.getByRole("button").first();
+    await first.focus();
+    await page.keyboard.press("End");
+    await expect(list.getByRole("button", { name: "Field 0994", exact: true })).toBeFocused();
+    await page.keyboard.press("Home");
+    await expect(list.getByRole("button", { name: "Assignee", exact: true })).toBeFocused();
+    await page.keyboard.press("PageDown");
+    await expect.poll(() => list.getByRole("button").count()).toBeLessThan(60);
+    const geometry = await list.locator('[data-slot="filter-collection-row"]').evaluateAll((rows) =>
+      rows
+        .map((row) => {
+          const r = row.getBoundingClientRect();
+          return { index: Number(row.getAttribute("data-index")), top: r.top, bottom: r.bottom };
+        })
+        .sort((a, b) => a.index - b.index),
+    );
+    for (let index = 1; index < geometry.length; index++) {
+      const previous = geometry[index - 1],
+        next = geometry[index];
+      if (next.index === previous.index + 1)
+        expect(Math.abs(next.top - previous.bottom)).toBeLessThanOrEqual(1);
+    }
+    await page.getByRole("searchbox", { name: "Find a filter" }).fill("Field 0994");
+    await expect(list.getByRole("button")).toHaveCount(1);
+    await expect(list.locator('[data-slot="filter-menu-separator"]')).toHaveCount(0);
+    await context.close();
+  },
+);
+await check(
   "Default search and explicit opt-out remain consistent for small, large and remote options",
   async () => {
     for (const query of ["options=4", "options=1000", "remote"]) {

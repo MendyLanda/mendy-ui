@@ -17,7 +17,7 @@ export function FilterOptionSearch({ className, ...props }: ComponentProps<typeo
         {...props}
         type="search"
         className={cn(
-          "h-12 rounded-none border-0 bg-transparent ps-9 pe-3 shadow-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-search-cancel-button]:appearance-none",
+          "h-10 sm:pointer-fine:h-9 rounded-none border-0 bg-transparent ps-9 pe-3 shadow-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-search-cancel-button]:appearance-none",
           className,
         )}
       />

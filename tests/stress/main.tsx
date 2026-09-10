@@ -5,6 +5,10 @@ import {
   defineFilters,
   filter,
   FilterBar,
+  FilterRoot,
+  FilterSearch,
+  FilterList,
+  FilterClear,
   useFilters,
   remoteOptions,
 } from "@mendylanda/ui/filters";
@@ -133,19 +137,28 @@ function Fixture() {
           menuLayout={params.has("anchored") ? "anchored" : "connected"}
           editorAnimation={params.has("animate-editor")}
         >
-          <FilterBar
-            filters={filters}
-            groups={
-              params.has("groups")
-                ? Object.entries(liveDefinitions).map(([id, field], index) => ({
-                    id,
-                    label: field.label,
-                    fields: [id],
-                    separatorBefore: index > 0 && index % 2 === 0,
-                  }))
-                : undefined
-            }
-          />
+          {params.has("composed") ? (
+            <FilterRoot filters={filters}>
+              <FilterSearch />
+              <FilterList showClear={!params.has("no-clear")} />
+              {params.has("custom-clear") && <FilterClear>Reset view</FilterClear>}
+            </FilterRoot>
+          ) : (
+            <FilterBar
+              filters={filters}
+              showClear={!params.has("no-clear")}
+              groups={
+                params.has("groups")
+                  ? Object.entries(liveDefinitions).map(([id, field], index) => ({
+                      id,
+                      label: field.label,
+                      fields: [id],
+                      separatorBefore: index > 0 && index % 2 === 0,
+                    }))
+                  : undefined
+              }
+            />
+          )}
         </MendyUIProvider>
       </section>
       <button type="button" id="after">

@@ -97,6 +97,8 @@ The same setting keeps menus inside a containing dialog when required. React pro
 
 ## Compose a different layout
 
+`FilterList` and `FilterBar` include a trailing "Clear all" action by default whenever filters or search are active. It clears removable filters and search. Set `showClear={false}` to hide it. To place the action elsewhere, use `<FilterList showClear={false} />` and render `<FilterClear />` in that location.
+
 `FilterRoot` supplies the shared controller to `FilterSearch`, `FilterMenu`, `FilterList`, `FilterField`, `FilterClear`, `FilterFeedback`, and `FilterFieldEditor`.
 
 ```tsx
@@ -108,7 +110,6 @@ The same setting keeps menus inside a containing dialog when required. React pro
   <aside aria-label="Owner filter">
     <FilterFieldEditor id="owner" autoFocus={false} />
   </aside>
-  <FilterClear />
   <FilterFeedback />
 </FilterRoot>
 ```

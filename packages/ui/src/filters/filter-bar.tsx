@@ -153,14 +153,19 @@ function FilterRootContent({
     </FilterOptionCache.Provider>
   );
 }
-export function FilterBar(
-  props: Omit<FilterRootProps, "children"> & { searchLabel?: string; searchPlaceholder?: string },
-) {
+export function FilterBar({
+  showClear = true,
+  ...props
+}: Omit<FilterRootProps, "children"> & {
+  searchLabel?: string;
+  searchPlaceholder?: string;
+  /** Show Clear all after the applied chips. */
+  showClear?: boolean;
+}) {
   return (
     <FilterRoot {...props}>
       <FilterSearch label={props.searchLabel} placeholder={props.searchPlaceholder} />
-      <FilterList />
-      <FilterClear />
+      <FilterList showClear={showClear} />
       <FilterFeedback />
     </FilterRoot>
   );
@@ -446,7 +451,8 @@ function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement
     </FilterDraftCache.Provider>
   );
 }
-export function FilterList() {
+/** Applied chips followed by Clear all. Opt out when placing FilterClear elsewhere. */
+export function FilterList({ showClear = true }: { showClear?: boolean }) {
   const { filters, suggestions } = useRoot();
   return (
     <FilterChipList>
@@ -457,6 +463,7 @@ export function FilterList() {
           ? [<FieldChip key={entry.id} entry={entry} />]
           : [],
       )}
+      {showClear && <FilterClear />}
     </FilterChipList>
   );
 }

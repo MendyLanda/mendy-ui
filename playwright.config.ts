@@ -11,8 +11,16 @@ export default defineConfig({
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "firefox", use: { ...devices["Desktop Firefox"] } },
-    { name: "webkit", use: { ...devices["Desktop Safari"] } },
-    { name: "webkit-mobile", use: { ...devices["iPhone 13"] } },
+    // WebKit tracing disrupts scroll/hit testing in these animated pages.
+    // Keep failure screenshots without changing the interactions under test.
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"], trace: "off", screenshot: "only-on-failure" },
+    },
+    {
+      name: "webkit-mobile",
+      use: { ...devices["iPhone 13"], trace: "off", screenshot: "only-on-failure" },
+    },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
   webServer: {

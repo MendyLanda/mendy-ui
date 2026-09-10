@@ -431,6 +431,13 @@ function FilterMenuList({
         label="Filter types"
         collectionRef={collection}
         initialKey={initialKey}
+        renderBefore={(section, index) =>
+          index > 0 && section.separatorBefore && !query ? (
+            <div data-slot="filter-menu-separator" className="py-1">
+              <hr className="m-0 h-0 border-0 border-t" />
+            </div>
+          ) : null
+        }
         className={cn("max-h-[calc(var(--filter-menu-height)-2px)]", classNames?.menuList)}
       >
         {(section, index, row) => (
@@ -459,9 +466,6 @@ function FilterMenuList({
             disabled={section.disabled}
             className={cn(
               "h-auto min-h-10 w-full justify-start gap-2 rounded-sm px-2 py-2 text-sm font-normal sm:pointer-fine:min-h-8 sm:pointer-fine:py-1.5 data-[navigation=pointer]:focus-visible:ring-0",
-              section.separatorBefore &&
-                !query &&
-                "relative rounded-t-none before:absolute before:inset-x-0 before:top-0 before:border-t",
               selectedId === section.id && "bg-accent text-accent-foreground",
               classNames?.menuRow,
             )}

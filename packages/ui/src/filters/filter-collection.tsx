@@ -34,6 +34,7 @@ interface CollectionItem {
 export function FilterCollection<T extends CollectionItem>({
   items,
   children,
+  renderBefore,
   className,
   role,
   label,
@@ -42,6 +43,8 @@ export function FilterCollection<T extends CollectionItem>({
 }: {
   items: T[];
   children(item: T, index: number, props: RowProps): ReactNode;
+  /** Non-interactive content included in the measured row, outside its focus target. */
+  renderBefore?(item: T, index: number): ReactNode;
   className?: string;
   role: "menu" | "group";
   label: string;
@@ -145,26 +148,40 @@ export function FilterCollection<T extends CollectionItem>({
   });
   function render(index: number, start?: number) {
     const item = items[index]!;
-    return children(item, index, {
+    const rowStyle: CSSProperties | undefined = virtual
+      ? {
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          transform: `translateY(${start}px)`,
+        }
+      : undefined;
+    const row = children(item, index, {
       "data-index": index,
       tabIndex: item.key === focused && !item.disabled ? 0 : -1,
       "data-collection-key": item.key,
       ref(node) {
         if (node) {
           nodes.current.set(item.key, node);
-          if (virtual) virtualizer.measureElement(node);
+          if (virtual && !renderBefore) virtualizer.measureElement(node);
         } else nodes.current.delete(item.key);
       },
-      style: virtual
-        ? {
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            transform: `translateY(${start}px)`,
-          }
-        : undefined,
+      style: renderBefore ? undefined : rowStyle,
     });
+    if (!renderBefore) return row;
+    return (
+      <div
+        key={item.key}
+        data-index={index}
+        data-slot="filter-collection-row"
+        ref={virtual ? virtualizer.measureElement : undefined}
+        style={rowStyle}
+      >
+        {renderBefore(item, index)}
+        {row}
+      </div>
+    );
   }
   return (
     <div

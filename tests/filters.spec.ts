@@ -266,6 +266,11 @@ test("no accessibility violations in both themes and submenu editors", async ({ 
             .map((animation) => animation.finished),
         ),
       );
+      // Motion can animate through JavaScript rather than the Web Animations API.
+      // Audit the settled text color, not a partially transparent entrance frame.
+      for (const chip of await page.locator('[data-slot="filter-chip"]').all()) {
+        await expect(chip).toHaveCSS("opacity", "1");
+      }
       const result = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
         .analyze();

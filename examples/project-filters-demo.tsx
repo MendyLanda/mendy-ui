@@ -119,6 +119,7 @@ function useProjectDefinitions(value: ProjectFilters) {
       "status",
       filter.multiSelect({
         label: "Status",
+        searchable: false,
         options: [
           { value: "active", label: "Active" },
           { value: "paused", label: "Paused" },

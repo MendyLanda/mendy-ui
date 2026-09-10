@@ -201,7 +201,7 @@ export function FilterMenuPanel({
           desktop && selected
             ? "grid grid-rows-[minmax(0,1fr)] grid-cols-[min(var(--filter-list-width),calc(100%_-_min(19rem,50%)))_minmax(0,1fr)]"
             : "flex flex-col",
-          detached && "items-start",
+          detached && "items-start drop-shadow-md",
         )}
       >
         {showList && (
@@ -241,7 +241,7 @@ export function FilterMenuPanel({
             className={cn(
               "flex min-h-0 min-w-0 max-h-[calc(var(--filter-menu-height)-2px)] flex-col",
               detached &&
-                "-ms-px overflow-hidden rounded-md rounded-s-none border bg-popover text-popover-foreground shadow-md",
+                "-ms-px overflow-hidden rounded-md rounded-s-none border bg-popover text-popover-foreground",
             )}
           >
             <EditorHeading
@@ -398,8 +398,7 @@ function FilterMenuList({
       className={cn(
         "flex min-h-0 flex-col",
         desktop && selectedId && !detached && "border-e",
-        detached &&
-          "overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+        detached && "overflow-hidden rounded-md border bg-popover text-popover-foreground",
       )}
     >
       {sections.length > 20 && (

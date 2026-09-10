@@ -32,6 +32,30 @@ async function fixture(query = "", width = 1280) {
   return { context, page };
 }
 await check(
+  "Default search and explicit opt-out remain consistent for small, large and remote options",
+  async () => {
+    for (const query of ["options=4", "options=1000", "remote"]) {
+      for (const optOut of [false, true]) {
+        const { context, page } = await fixture(query + (optOut ? "&no-search" : ""));
+        const input = page.getByRole("searchbox", { name: "Search people" });
+        await expect(input).toHaveCount(optOut ? 0 : 1);
+        if (!optOut) {
+          await input.fill("unmatchedxyz");
+          await expect(input).toBeVisible();
+          await input.fill("");
+        } else {
+          const first = page.getByRole("menuitemcheckbox").first();
+          await expect(first).toBeVisible();
+          await first.focus();
+          await page.keyboard.press("Space");
+          await expect(first).toHaveAttribute("aria-checked", "true");
+        }
+        await context.close();
+      }
+    }
+  },
+);
+await check(
   "Large collections stay bounded throughout opening, including the first measured frame",
   async () => {
     for (const query of ["fields=1000", "options=50000", "fields=1000&options=50000"]) {

@@ -91,8 +91,18 @@ const definitions = defineFilters({
     menu: false,
     recognize: (token) => (/^UI-\d+$/i.test(token) ? [token.toUpperCase()] : undefined),
   }),
-  status: filter.select({ label: "Status", options: statuses, suggestion: { value: "todo" } }),
-  priority: filter.select({ label: "Priority", icon: <Flag />, options: priorities }),
+  status: filter.select({
+    label: "Status",
+    searchable: false,
+    options: statuses,
+    suggestion: { value: "todo" },
+  }),
+  priority: filter.select({
+    label: "Priority",
+    searchable: false,
+    icon: <Flag />,
+    options: priorities,
+  }),
   assignee: filter.multiSelect({
     label: "Assignee",
     icon: <Users />,

@@ -32,6 +32,7 @@ import {
 import { Button } from "../customization.js";
 import { Input } from "../customization.js";
 import { Label } from "../customization.js";
+import { FilterOptionSearch } from "./filter-option-search.js";
 import { FilterDateEditor } from "./filter-date-editor.js";
 import { Textarea } from "../customization.js";
 import {
@@ -905,12 +906,6 @@ interface CommitEditorProps {
   input: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
   apply(value: unknown, shouldClose?: boolean): void;
 }
-function useChoiceSearch(field: RuntimeField, count: number) {
-  const large = (field.source?.items.length ?? 0) > 100 || count > 100;
-  const [discovered, setDiscovered] = useState(large);
-  if (large && !discovered) setDiscovered(true);
-  return field.searchable || large || discovered;
-}
 
 function ChoiceEditor({
   field,
@@ -927,7 +922,7 @@ function ChoiceEditor({
   options: ReturnType<typeof useFilterOptions>;
   location: "menu" | "chip" | "inline";
 }) {
-  const searchable = useChoiceSearch(field, options.items.length);
+  const searchable = field.searchable !== false;
   const collection = useRef<CollectionHandle>(null);
   const selected = Array.isArray(value) ? value : value === null ? [] : [value];
   const selectedSet = new Set(selected);
@@ -942,31 +937,24 @@ function ChoiceEditor({
       }}
     >
       {searchable && (
-        <div data-mendy-ui="" className="relative border-b p-2">
-          <Search
-            className="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
-            ref={(node) => {
-              input.current = node;
-            }}
-            aria-label={searchLabel}
-            type="search"
-            disabled={disabled}
-            placeholder={searchLabel}
-            value={options.query}
-            className="ps-8 sm:pointer-fine:h-8 [&::-webkit-search-cancel-button]:appearance-none"
-            onChange={(event) => options.setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowDown") {
-                event.preventDefault();
-                collection.current?.focusFirst();
-              }
-              if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
-            }}
-          />
-        </div>
+        <FilterOptionSearch
+          ref={(node) => {
+            input.current = node;
+          }}
+          aria-label={searchLabel}
+          type="search"
+          disabled={disabled}
+          placeholder={searchLabel}
+          value={options.query}
+          onChange={(event) => options.setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              collection.current?.focusFirst();
+            }
+            if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
+          }}
+        />
       )}
       <ChoiceCollection
         field={field}

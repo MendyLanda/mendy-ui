@@ -461,7 +461,7 @@ function FilterMenuList({
               "h-auto min-h-10 w-full justify-start gap-2 rounded-sm px-2 py-2 text-sm font-normal sm:pointer-fine:min-h-8 sm:pointer-fine:py-1.5 data-[navigation=pointer]:focus-visible:ring-0",
               section.separatorBefore &&
                 !query &&
-                "relative rounded-t-none pt-3! before:absolute before:inset-x-0 before:top-0 before:border-t",
+                "relative rounded-t-none before:absolute before:inset-x-0 before:top-0 before:border-t",
               selectedId === section.id && "bg-accent text-accent-foreground",
               classNames?.menuRow,
             )}

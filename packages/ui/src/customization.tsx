@@ -32,6 +32,8 @@ export type FilterPart =
   | "clear";
 export type FilterClassNames = Partial<Record<FilterPart, string>>;
 export interface MendyUIOptions {
+  /** Desktop editor placement. Phones always use one panel with Back. */
+  menuLayout?: "connected" | "anchored";
   components?: Partial<MendyUIComponents>;
   classNames?: FilterClassNames;
   /** Mount dropdowns inside a local theme or dialog instead of document.body. */
@@ -45,15 +47,17 @@ export function MendyUIProvider({
   components,
   classNames,
   portalContainer,
+  menuLayout,
 }: MendyUIOptions & { children: ReactNode }) {
   const parent = useContext(Context);
   const value = useMemo(
     () => ({
+      menuLayout: menuLayout ?? parent.menuLayout,
       components: { ...parent.components, ...components },
       classNames: { ...parent.classNames, ...classNames },
       portalContainer: portalContainer === undefined ? parent.portalContainer : portalContainer,
     }),
-    [parent, components, classNames, portalContainer],
+    [parent, components, classNames, portalContainer, menuLayout],
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }

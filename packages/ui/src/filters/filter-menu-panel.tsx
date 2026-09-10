@@ -9,7 +9,13 @@ import { FilterCollection } from "./filter-collection.js";
 import { useValueDraft } from "./use-value-draft.js";
 import { DropdownMenuContent } from "../primitives/dropdown-menu.js";
 import { useMendyUI } from "../customization.js";
-import { focusMenuEditor, handleMenuTab } from "./filter-menu-focus.js";
+import {
+  focusMenuEditor,
+  handleMenuTab,
+  handleMenuReturn,
+  preserveOutsideFocus,
+} from "./filter-menu-focus.js";
+import { useMenuPlacement, useEditorOffset } from "./use-menu-placement.js";
 import { useMenuPointer } from "./use-menu-pointer.js";
 import { cn } from "../utils.js";
 
@@ -20,6 +26,7 @@ export interface FilterMenuSection {
   icon?: ReactNode;
   disabled: boolean;
   active: boolean;
+  separatorBefore?: boolean;
   clear?: () => void;
   content: ReactNode;
 }
@@ -48,6 +55,17 @@ const isDesktop = () =>
   window.innerWidth >= 40 * parseFloat(getComputedStyle(document.documentElement).fontSize);
 const serverDesktop = () => false;
 
+function selectedSection(
+  sections: FilterMenuSection[],
+  selectedId: string | null,
+  desktop: boolean,
+) {
+  return (
+    sections.find((section) => section.id === selectedId && !section.disabled) ??
+    (desktop ? sections.find((section) => !section.disabled) : undefined)
+  );
+}
+
 /** One dialog contains the filter list and its editor, with a single-panel layout on phones. */
 export function FilterMenuPanel({
   sections,
@@ -57,18 +75,24 @@ export function FilterMenuPanel({
   anchor,
   trigger,
 }: FilterMenuPanelProps) {
-  const { classNames } = useMendyUI();
+  const { classNames, menuLayout } = useMendyUI();
   const desktop = useSyncExternalStore(subscribeViewport, isDesktop, serverDesktop);
-  const selected =
-    sections.find((section) => section.id === selectedId && !section.disabled) ??
-    (desktop ? sections.find((section) => !section.disabled) : undefined);
+  const selected = selectedSection(sections, selectedId, desktop);
   const content = useRef<HTMLDivElement>(null);
   const editor = useRef<HTMLDivElement>(null);
   const rows = useRef(new Map<string, HTMLButtonElement>());
   const pendingEditorFocus = useRef(false);
-  const [alignOffset, setAlignOffset] = useState(0);
-  const [side, setSide] = useState<"top" | "bottom">("bottom");
+  const { alignOffset, side } = useMenuPlacement(anchor, trigger, desktop);
   const panelId = useId();
+  const detached = desktop && menuLayout === "anchored";
+  const editorPanel = useRef<HTMLDivElement>(null);
+  const editorOffset = useEditorOffset({
+    detached,
+    editorPanel,
+    content,
+    rows,
+    selectedId: selected?.id,
+  });
   const initialSelection = useRef(selected?.id);
   const lastSelection = useRef(selected?.id);
   const [keyboardNavigation, setKeyboardNavigation] = useState(
@@ -82,47 +106,6 @@ export function FilterMenuPanel({
       rows.current.get(id)?.focus({ preventScroll: true });
     },
   });
-
-  useLayoutEffect(() => {
-    const button = trigger.current;
-    if (!button) return;
-    const update = () => {
-      const bounds = button.getBoundingClientRect();
-      const target = anchor?.current?.getBoundingClientRect();
-      const rtl = getComputedStyle(button).direction === "rtl";
-      const viewport = window.visualViewport;
-      const viewportTop = viewport?.offsetTop ?? 0;
-      const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
-      const below = viewportBottom - bounds.bottom - 23;
-      const above = bounds.top - viewportTop - 23;
-      const preferredHeight = 30 * parseFloat(getComputedStyle(document.documentElement).fontSize);
-      // A short list can fit below the trigger while its editor cannot. Choose room
-      // for the editor before Radix constrains its height to the current side.
-      setSide(below < preferredHeight && above > below ? "top" : "bottom");
-      // Desktop starts at the search field's edge; mobile stays close to the icon.
-      setAlignOffset(
-        desktop
-          ? rtl
-            ? bounds.right - (target?.right ?? bounds.right)
-            : (target?.left ?? bounds.left) - bounds.left
-          : 0,
-      );
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(anchor?.current ?? button);
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-    window.visualViewport?.addEventListener("resize", update);
-    window.visualViewport?.addEventListener("scroll", update);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
-      window.visualViewport?.removeEventListener("resize", update);
-      window.visualViewport?.removeEventListener("scroll", update);
-    };
-  }, [anchor, desktop, trigger]);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -175,16 +158,7 @@ export function FilterMenuPanel({
           back();
         }
       }}
-      onCloseAutoFocus={(event) => {
-        const focused = document.activeElement;
-        if (
-          event.target instanceof HTMLElement &&
-          focused &&
-          focused !== document.body &&
-          !event.target.contains(focused)
-        )
-          event.preventDefault();
-      }}
+      onCloseAutoFocus={preserveOutsideFocus}
       onPointerDownCapture={() => {
         setKeyboardNavigation(false);
         pointer.cancel();
@@ -204,26 +178,16 @@ export function FilterMenuPanel({
           hasSelection: Boolean(selected),
         });
       }}
-      onKeyDown={(event) => {
-        const target = event.target;
-        const rtl = getComputedStyle(event.currentTarget).direction === "rtl";
-        if (
-          event.key === (rtl ? "ArrowRight" : "ArrowLeft") &&
-          target instanceof HTMLElement &&
-          !target.isContentEditable &&
-          !target.closest(
-            'input, textarea, select, [role="grid"], [role="slider"], [role="spinbutton"], [role="combobox"], [role="tablist"], [role="tree"], [role="listbox"]',
-          )
-        ) {
-          event.preventDefault();
-          event.stopPropagation();
+      onKeyDown={(event) =>
+        handleMenuReturn(event, () => {
           if (desktop) rows.current.get(selected?.id ?? "")?.focus();
           else back();
-        }
-      }}
+        })
+      }
       className={cn(
-        "[--filter-menu-height:min(30rem,var(--radix-dropdown-menu-content-available-height,30rem))] max-h-(--filter-menu-height) max-w-[calc(100vw-2rem)] overflow-hidden p-0 shadow-md animate-none! [&_*]:transition-none!",
+        "[--filter-menu-height:min(var(--mendy-filter-menu-max-height,44rem),var(--radix-dropdown-menu-content-available-height,44rem))] max-h-(--filter-menu-height) max-w-[calc(100vw-2rem)] overflow-hidden p-0 shadow-md animate-none! [&_*]:transition-none!",
         desktop && selected ? "w-[var(--mendy-filter-menu-width,32rem)]" : "w-[18.75rem]",
+        detached && "overflow-visible border-0 bg-transparent shadow-none",
         classNames?.menu,
       )}
     >
@@ -233,6 +197,7 @@ export function FilterMenuPanel({
           desktop && selected
             ? "grid grid-rows-[minmax(0,1fr)] grid-cols-[min(var(--mendy-filter-list-width,13rem),50%)_minmax(0,1fr)]"
             : "flex flex-col",
+          detached && "items-start gap-1.5",
         )}
       >
         {showList && (
@@ -242,6 +207,7 @@ export function FilterMenuPanel({
             initialKey={selected?.id ?? lastSelection.current}
             panelId={panelId}
             desktop={desktop}
+            detached={detached}
             rows={rows}
             choose={choose}
             keyboardNavigation={keyboardNavigation}
@@ -263,45 +229,23 @@ export function FilterMenuPanel({
           />
         )}
         {selected && (
-          <div onPointerEnter={pointer.cancel} className="flex min-h-0 min-w-0 flex-col">
-            <div
-              className={cn(
-                "flex min-h-10 shrink-0 items-center gap-2 border-b px-3 py-2 text-xs font-medium sm:pointer-fine:min-h-8 sm:pointer-fine:py-0.5",
-                classNames?.menuHeader,
-              )}
-            >
-              {!desktop && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={back}
-                    className="-ms-2 gap-1.5 px-2 text-xs font-normal"
-                  >
-                    <ArrowLeft aria-hidden="true" className="size-3.5 rtl:rotate-180" />
-                    Filters
-                  </Button>
-                  <span aria-hidden="true" className="text-muted-foreground">
-                    /
-                  </span>
-                </>
-              )}
-              <MenuHeading label={selected.label} />
-              {selected.clear && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    selected.clear?.();
-                    requestAnimationFrame(focusEditor);
-                  }}
-                  aria-label={`Clear ${selected.label} filter`}
-                  className="-me-1.5 h-6 px-1.5 text-xs font-normal text-muted-foreground"
-                >
-                  Clear
-                </Button>
-              )}
-            </div>
+          <div
+            ref={editorPanel}
+            data-slot="filter-menu-editor"
+            onPointerEnter={pointer.cancel}
+            style={detached ? { marginTop: editorOffset } : undefined}
+            className={cn(
+              "flex min-h-0 min-w-0 max-h-[calc(var(--filter-menu-height)-2px)] flex-col",
+              detached &&
+                "overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+            )}
+          >
+            <EditorHeading
+              section={selected}
+              desktop={desktop}
+              back={back}
+              onCleared={focusEditor}
+            />
             <div
               key={selected.id}
               ref={editor}
@@ -310,7 +254,7 @@ export function FilterMenuPanel({
               aria-label={selected.editorLabel}
               tabIndex={-1}
               className={cn(
-                "min-h-0 min-w-0 overflow-y-auto overscroll-contain outline-none [&>div]:w-full [&_[role^=menuitem]]:min-h-9 sm:pointer-fine:[&_[role^=menuitem]]:min-h-8",
+                "min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain outline-none [&>div]:w-full [&_[role^=menuitem]]:min-h-9 sm:pointer-fine:[&_[role^=menuitem]]:min-h-8",
                 classNames?.editor,
               )}
             >
@@ -320,6 +264,60 @@ export function FilterMenuPanel({
         )}
       </div>
     </DropdownMenuContent>
+  );
+}
+
+function EditorHeading({
+  section,
+  desktop,
+  back,
+  onCleared,
+}: {
+  section: FilterMenuSection;
+  desktop: boolean;
+  back(): void;
+  onCleared(): void;
+}) {
+  const { classNames } = useMendyUI();
+  return (
+    <div
+      className={cn(
+        "flex min-h-10 shrink-0 items-center gap-2 border-b px-3 py-2 text-xs font-medium sm:pointer-fine:min-h-8 sm:pointer-fine:py-0.5",
+        classNames?.menuHeader,
+      )}
+    >
+      {!desktop && (
+        <>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={back}
+            className="-ms-2 gap-1.5 px-2 text-xs font-normal"
+          >
+            <ArrowLeft aria-hidden="true" className="size-3.5 rtl:rotate-180" />
+            Filters
+          </Button>
+          <span aria-hidden="true" className="text-muted-foreground">
+            /
+          </span>
+        </>
+      )}
+      <MenuHeading label={section.label} />
+      {section.clear && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            section.clear?.();
+            requestAnimationFrame(onCleared);
+          }}
+          aria-label={`Clear ${section.label} filter`}
+          className="-me-1.5 h-6 px-1.5 text-xs font-normal text-muted-foreground"
+        >
+          Clear
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -362,6 +360,7 @@ interface FilterMenuListProps {
   initialKey?: string;
   panelId: string;
   desktop: boolean;
+  detached: boolean;
   rows: RefObject<Map<string, HTMLButtonElement>>;
   choose(id: string, enter?: boolean): void;
   keyboardNavigation: boolean;
@@ -374,6 +373,7 @@ function FilterMenuList({
   initialKey,
   panelId,
   desktop,
+  detached,
   rows,
   choose,
   keyboardNavigation,
@@ -389,7 +389,14 @@ function FilterMenuList({
       matches.push({ ...section, key: section.id });
   }
   return (
-    <div className={cn("flex min-h-0 flex-col", desktop && selectedId && "border-e")}>
+    <div
+      className={cn(
+        "flex min-h-0 flex-col",
+        desktop && selectedId && !detached && "border-e",
+        detached &&
+          "overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+      )}
+    >
       {sections.length > 20 && (
         <div className="shrink-0 border-b p-2">
           <Input
@@ -444,9 +451,13 @@ function FilterMenuList({
             aria-expanded={selectedId === section.id}
             aria-controls={selectedId === section.id ? `${panelId}-${section.id}` : undefined}
             data-navigation={keyboardNavigation ? "keyboard" : "pointer"}
+            data-separator={section.separatorBefore && !query ? "true" : undefined}
             disabled={section.disabled}
             className={cn(
               "h-auto min-h-10 w-full justify-start gap-2 rounded-sm px-2 py-2 text-sm font-normal sm:pointer-fine:min-h-8 sm:pointer-fine:py-1.5 data-[navigation=pointer]:focus-visible:ring-0",
+              section.separatorBefore &&
+                !query &&
+                "relative rounded-t-none pt-3! before:absolute before:inset-x-0 before:top-0 before:border-t",
               selectedId === section.id && "bg-accent text-accent-foreground",
               classNames?.menuRow,
             )}

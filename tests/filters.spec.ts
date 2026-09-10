@@ -306,12 +306,26 @@ test("toolbar search combines with filters and clears without resetting selectio
 });
 
 test("chips animate on entry and respect reduced motion", async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = Element.prototype.animate;
+    (window as any).chipAnimations = 0;
+    Element.prototype.animate = function (...args) {
+      if (this.getAttribute("data-slot")?.startsWith("filter-")) (window as any).chipAnimations++;
+      return original.apply(this, args);
+    };
+  });
   await page.goto("/");
   await addStatus(page);
-  const chip = page.locator('[data-slot="filter-chip"]');
-  await expect(chip).toHaveCSS("animation-name", "mendy-enter");
+  await expect.poll(() => page.evaluate(() => (window as any).chipAnimations)).toBeGreaterThan(0);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(chip).toHaveCSS("animation-name", "none");
+  await page.reload();
+  await addStatus(page);
+  const chip = page.locator('[data-slot="filter-chip"]');
+  await expect(chip).toHaveCSS("transform", "none");
+  await expect(chip).toHaveCSS("opacity", "1");
+  expect(
+    await chip.evaluate((el) => el.getAnimations().filter((a) => a.playState === "running").length),
+  ).toBe(0);
 });
 
 test("arrow keys explore submenus without applying and clearing a chip returns focus", async ({

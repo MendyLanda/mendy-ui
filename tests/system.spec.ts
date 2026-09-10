@@ -541,9 +541,13 @@ test("closing after applying is configurable for dates and multiselects", async 
 });
 
 test("suggestions keep their positions when applied and return when removed", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const status = page.getByRole("button", { name: "Apply Status filter" });
   const assignee = page.getByRole("button", { name: "Apply Assignee filter" });
+  await assignee.evaluate(async (el) => {
+    await Promise.all(el.parentElement!.getAnimations().map((a) => a.finished.catch(() => {})));
+  });
   const before = await assignee.boundingBox();
   await status.click();
   await expect(

@@ -97,3 +97,31 @@ export function handleMenuTab(
     onClose();
   }
 }
+
+/** Return from editor controls without consuming text, grid, or tree navigation keys. */
+export function handleMenuReturn(event: KeyboardEvent<HTMLDivElement>, back: () => void) {
+  const target = event.target;
+  const rtl = getComputedStyle(event.currentTarget).direction === "rtl";
+  if (event.key !== (rtl ? "ArrowRight" : "ArrowLeft")) return;
+  if (!(target instanceof HTMLElement) || target.isContentEditable) return;
+  if (
+    target.closest(
+      'input, textarea, select, [role="grid"], [role="slider"], [role="spinbutton"], [role="combobox"], [role="tablist"], [role="tree"], [role="listbox"]',
+    )
+  )
+    return;
+  event.preventDefault();
+  event.stopPropagation();
+  back();
+}
+
+export function preserveOutsideFocus(event: Event) {
+  const focused = document.activeElement;
+  if (
+    event.target instanceof HTMLElement &&
+    focused &&
+    focused !== document.body &&
+    !event.target.contains(focused)
+  )
+    event.preventDefault();
+}

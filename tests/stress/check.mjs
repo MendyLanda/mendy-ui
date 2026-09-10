@@ -27,10 +27,22 @@ async function fixture(query = "", width = 1280) {
   page.setDefaultTimeout(10000);
   await page.goto("http://127.0.0.1:8790/?" + query);
   await page.getByRole("button", { name: "Open filters", exact: true }).click();
-  if (width < 640)
-    await page.locator('[aria-label="Filter types"] button[aria-expanded]').first().click();
+  const first = page.locator('[aria-label="Filter types"] button[aria-expanded]').first();
+  if (width < 640) await first.click();
+  else await first.hover();
   return { context, page };
 }
+await check("Unselected anchored menu keeps the full search width", async () => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  await page.goto("http://127.0.0.1:8790/?fields=18&anchored");
+  await page.getByRole("button", { name: "Open filters", exact: true }).click();
+  await expect(page.locator('[data-slot="filter-menu-editor"]')).toHaveCount(0);
+  const list = await page.locator('[data-slot="filter-menu-list"]').boundingBox();
+  const panel = await page.locator('[data-slot="filter-menu-panel"]').boundingBox();
+  expect(Math.abs(list.width - panel.width)).toBeLessThanOrEqual(1);
+  await context.close();
+});
 await check(
   "Grouped virtual rows include divider height and preserve keyboard scrolling",
   async () => {
@@ -364,6 +376,7 @@ if (browserName === "chromium")
     const nodeCount = await page.locator("*").count();
     for (let i = 0; i < 30; i++) {
       await page.getByRole("button", { name: "Open filters", exact: true }).click();
+      await page.getByRole("button", { name: "Assignee", exact: true }).click();
       await page.getByRole("searchbox", { name: "Search people" }).fill("Person 09999");
       await page.keyboard.press("Escape");
     }

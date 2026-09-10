@@ -8,3 +8,4 @@ export * from "./filters.js";
 export * from "./filter-text-editor.js";
 export * from "./filter-select-editor.js";
 export * from "../customization.js";
+export * from "./use-filter-search.js";

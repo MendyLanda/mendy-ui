@@ -4,7 +4,7 @@ import * as React from "react";
 import { useMendyUI } from "../customization.js";
 import { cn } from "../utils.js";
 import { CheckIcon, ChevronRightIcon } from "lucide-react";
-import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 
 function DropdownMenu({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   return <DropdownMenuPrimitive.Root data-mendy-ui="" data-slot="dropdown-menu" {...props} />;

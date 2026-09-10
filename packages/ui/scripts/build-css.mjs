@@ -52,3 +52,17 @@ const css = result.root.toString().replaceAll("--tw-", "--mendy-tw-");
 await writeFile(new URL("../dist/styles.css", import.meta.url), css);
 
 await writeFile(new URL("../dist/styles.css.d.ts", import.meta.url), "export {};\n");
+
+// Tailwind 3 reserves @layer components for source compilation. Ship the same
+// compiled rules outside that layer, while leaving host preflight in control.
+const legacy = postcss.parse(css);
+legacy.walkAtRules("layer", (rule) => {
+  if (rule.params !== "components") return;
+  const first = rule.nodes?.[0];
+  if (first?.type === "rule" && first.selector.startsWith("*:where")) {
+    rule.params = "mendy-ui-base";
+  } else {
+    rule.replaceWith(...(rule.nodes ?? []));
+  }
+});
+await writeFile(new URL("../dist/styles.tailwind3.css", import.meta.url), legacy.toString());

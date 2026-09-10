@@ -1,7 +1,7 @@
 "use client";
 import { useId, useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Checkbox } from "@mendylanda/ui/primitives/checkbox";
+import { Label } from "@mendylanda/ui/primitives/label";
 import { AppliedFilter } from "@mendylanda/ui/filters";
 
 export function CustomFilterDemo() {

@@ -1,53 +1,53 @@
 ---
 title: Filters
-description: Filter chips with text, single-select, and multi-select editors.
+description: Define your filters once and reuse their menus, search, chips, and URL state.
 ---
 
 <FiltersDemo />
 
-The search field matches issue titles and IDs. Open the filter menu and hover or click a row to see its options in the attached panel. On mobile, tap a row and use Back to return to the list. Choosing a value adds a chip; exploring filters applies nothing. Click an applied chip to edit it later.
+Open the filter menu to choose a field. Hover previews its editor without taking focus; click or keyboard entry lets you change it. Selections apply immediately and the menu stays open. On phones, Back returns to the list.
 
-The demo uses typed definitions and persists applied values in the URL. Dashed suggestions apply a preset on the first click. Click the applied chip again to edit it. See the [system reference](/docs/system) for the complete API and [advanced examples](/docs/advanced) for remote data and existing state.
+The example filters issue data and saves applied values in the URL. Paste an ID such as `UI-042`, or type it and press Enter, to create an Issue ID chip. Dashed suggestions apply on the first click and open for editing on the next. Click Clear all after the chips to reset filters and search.
 
-## Installation
+## Start with definitions
 
 <InstallCommand />
 
-## How it works
+```tsx
+import { defineFilters, filter, FilterBar, useFilters } from "@mendylanda/ui/filters";
 
-`AppliedFilter` combines a chip, an edit trigger, an editor, and an optional remove button. Pass the current summary as children. Pass an editor as `editor`, and handle changes in your application state.
+const definitions = defineFilters({
+  status: filter.select({
+    label: "Status",
+    searchable: false,
+    options: [
+      { value: "open", label: "Open" },
+      { value: "closed", label: "Closed" },
+    ],
+  }),
+});
 
-- Editing and removal are separate buttons with separate accessible labels.
-- New chips slide up and fade in. Reduced-motion preferences turn this off.
-- Single selection applies immediately and closes the editor.
-- Multiple selection applies immediately and keeps the editor open.
-- Text stays in a local draft until Enter. Close without applying to discard it.
-- A required filter can omit `onRemove` and remain editable.
+export function IssueFilters() {
+  const filters = useFilters(definitions);
+  return <FilterBar filters={filters} />;
+}
+```
 
-The table above combines different filter fields with AND. Multiple assignees match with OR. Those choices belong to this demo's matching function; the components do not prescribe them.
+Import the stylesheet once using the [installation guide](/docs/installation). Use `filters.values` and `filters.search` in your data query. For URL state, replace `useFilters` with `useUrlFilters` from the optional nuqs entry point.
 
-## Built-in editors
+You get editing, removal, search, focus management, suggestions, loading summaries, and Clear all from the bar. See [defaults and app configuration](/docs/defaults) for the complete behavior and its overrides.
 
-Use `FilterSelectEditor` for one option, `FilterMultiSelectEditor` for several options, and `FilterTextEditor` for text. Both selection editors support optional search. [See the examples](/docs/examples).
+## Match your application
 
-## Custom editors
+- [Dynamic data and existing state](/docs/advanced): paginated options, selected-label resolution, grouped fields, tag colors, and composite bindings.
+- [System reference](/docs/system): types, recognition, state, URL persistence, and custom editors.
+- [Customization](/docs/customization): theme tokens, control replacements, and composed layouts.
+- [API reference](/docs/api): bar, controller, composition, and standalone editor props.
 
-Use `FilterChip`, `FilterEditor`, `FilterEditorTrigger`, `FilterEditorContent`, and `FilterRemove` to build a custom layout. Use `FilterMenuItem` for an options submenu and `FilterCheckboxItem` to keep it open after selection. For searchable or text editors in a submenu, pass `contentProps={{ role: "dialog", "aria-label": "Filter options", "aria-orientation": undefined }}`. Built-in selection editors supply the labeled menu inside that dialog.
+The table combines different fields with AND and several assignees with OR. That matching rule belongs to the demo's query, not the component.
 
-The core component does not depend on a table library, a router, or an API client. Connect `onValueChange`, `onValuesChange`, and `onApply` to your state or URL persistence layer.
+## Example source
 
-## Keyboard and focus
+<ComponentSource name="filters-demo" />
 
-- Tab to the edit or remove button.
-- Enter or Space opens the editor. Arrow keys navigate menu options.
-- In searchable editors, type in the search field; Arrow Down moves to the first available option.
-- Escape dismisses the editor and restores focus to its trigger.
-- Text inputs keep typing and cursor keys inside the field instead of triggering menu typeahead.
-
-If removing a chip also removes the focused element, your application should move focus to a sensible neighbor or the add-filter button. Custom editors must supply their own labels and keyboard behavior.
-
-## Source
-
-<ComponentSource name="filters" />
-
-See the [API reference](/docs/api) for props and customization points.
+For an unusual layout, compose `FilterRoot`, `FilterSearch`, `FilterList`, and `FilterFeedback` around the same controller. Standalone `AppliedFilter` and editor primitives are available when your app needs to own the interactions itself.

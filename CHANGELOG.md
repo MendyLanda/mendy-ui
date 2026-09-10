@@ -1,80 +1,66 @@
 # Changelog
 
+## 0.2.0
+
+This update changes presentation defaults. Existing projects can retain the previous layout with `menuLayout="connected"` and visible choice names with `chipLabel: true`.
+
+- Default to row-aligned desktop editors at their own height. Keep the single-panel mobile layout.
+- Omit redundant field names from choice chips by default, preserving accessible labels and explicit overrides.
+- Keep standalone single-select editors open by default and allow toggling the selected value off. Use `closeOnSelect` or `removable={false}` to override this behavior.
+- Add compact toggle buttons for built-in single-choice fields with `menuLayout: "inline"` in a grouped menu.
+- Document defaults, typed state, dynamic label resolution, composition, and Tailwind 3 integration. Update examples to use the standard behavior and generic project data.
+
+## 0.1.9
+
+- Include Clear all at the end of `FilterList` by default, including composed layouts. Add `showClear` to `FilterList` and `FilterBar` for opting out.
+
+## 0.1.8
+
+- Open chip editor popups instantly by default; add an animation opt-in.
+- Remove synthetic Any options. Selecting a current single choice clears it unless the field is non-removable.
+- Let clicks through empty space around row-aligned editors dismiss the menu and reach the page on the first click.
+
+## 0.1.7
+
+- Keep selected-label skeletons visible during pending resolution, including custom summaries. Retain known labels during refetches.
+- Use consistent widths for chip and menu editors and fix focus handoff when switching directly between chips.
+
+## 0.1.6
+
+- Add scoped Tailwind 3 compatibility styles and remove unnecessary package dependencies.
+- Add `useFilterSearch` for responsive drafts backed by existing query-state hooks.
+
+## 0.1.5
+
+- Restore balanced spacing around category dividers and reduce the option search row height.
+
+## 0.1.4
+
+- Center rows adjacent to category dividers.
+
+## 0.1.3
+
+- Match category-list width to the search anchor and position lower editors upward within the list.
+- Restore staggered chip entrances and keep newly inserted chips immediate.
+- Integrate option search into panels, add search opt-outs, use checkmarks for selection, and stabilize editor placement while searching.
+
+## 0.1.2
+
+- Add optional row-aligned desktop editors, grouped sections, chip-label overrides, and custom option rendering.
+- Improve preview focus, menu alignment, compact controls, and handling of long lists and content.
+
 ## 0.1.1
 
-- Keep server-rendered controls disabled until hydration can handle edits, preventing early search text from being erased on slow startup.
-- Reserve room for editors near viewport edges and update placement when scrolling or the mobile viewport changes.
-- Start empty text editors without an error; show validation on invalid edits or an attempted save, and associate keyboard instructions with the input.
-
-- Use 32px filter and option rows on fine-pointer desktops, with the existing touch spacing.
-- Keep drafts and option searches while browsing an open menu. Closing discards unapplied drafts; clearing one filter preserves the others' drafts.
-- Keep hover and keyboard focus on the same filter. Protect focused text inputs from hover changes and allow diagonal movement into the editor.
-- Fix Tab entry and dismissal, focus checked options on entry, isolate list typeahead, and announce applied filters.
-- Preserve the trigger's text direction in the portalled menu and reverse entry/return arrows for RTL layouts.
-
-### Design and stress testing
-
-- Contain long option names and chips, narrow search containers, and independently scrolling filter lists. Scale menu proportions with root text size and mirror search controls in RTL.
-- Center calendars, distinguish today from selection, remove duplicate date-clear controls, and refine text labels, search density, and chip value contrast.
-- Virtualize collections above 100 rows with measured wrapping, full-list keyboard navigation, and focus preservation during scrolling and data replacement. Add filter-type search above 20 entries. Avoid mounting inactive chips and remove quadratic work from selection summaries.
-- Run interaction and accessibility checks in Chromium, Firefox, and WebKit, including phone layouts. Keep clipboard test data intact in Firefox and create stress report directories on clean CI checkouts.
-- Add production-package stress checks for 1,000 filters, 50,000 options, 10,000 selected values, long labels, async races, and repeated opening/closing. Run with `pnpm test:stress`.
-
-## 0.1.0 — npm package
-
-- Distribute one shared `@mendylanda/ui` package instead of copying source through the registry.
-- Include ESM builds, TypeScript declarations, shadcn controls, and scoped compiled CSS. Keep nuqs optional.
-- Add named styling points, typed option renderers, control replacements, configurable portals, and composed field editors.
-- Build the website against package exports and verify the packed archive in Vite and Next.js.
-
-## Connected filter menu
-
-- The filter list and editor share one container on desktop. Hover reveals options; click or keyboard entry focuses the editor.
-- On mobile, the editor replaces the list and offers Back. Menus open and change immediately without animation.
-- Grouped fields, remote options, custom editors, URL persistence, and immediate selections use the same behavior. Clear removes a panel's applied values without closing it.
-- Filter definitions and groups accept an optional `icon`.
-
-## Predefined shortcuts
-
-- Clicking a predefined filter applies it without opening the editor. A second click edits the applied chip. Suggestions without preset values still open an editor.
-
-## Immediate selection and appearance preview
-
-- Dates and number ranges apply each valid change immediately; date chip editors stay open for range selection.
-- Text editors save with Enter by default. Explicit buttons remain available through `FilterTextEditor commitMode="apply"` or custom editors.
-- The site's Appearance menu previews square, small, default, or rounded corners.
-- Removed the Done button from the member example.
-
-## Theme controls and recognized input
-
-- Chips and controls follow the theme radius. Checkboxes, buttons, inputs, and calendars use shadcn.
-- Date ranges use a calendar with single-day selection and an explicit Apply action.
-- `menu: false` hides an entry while keeping recognition and chip editing. Enter recognizes typed input, just like paste.
-- Public examples use issue IDs, email addresses, projects, and teams. The existing-state example is now `project-filters-demo`.
-
-## Unreleased
-
-- Keep the filter menu open after applying by default; add `closeMenuOnApply` on the bar and individual fields.
-- Keep unapplied suggestions visible when another filter is applied. Removing a suggested filter restores its shortcut.
-
-- Add the complete filter system: typed definitions, controlled and local state, nuqs/session persistence, dynamic options, paste recognition, suggested filters, composite bindings, custom editors, and summary policies.
-- Make the full system the default installation. Existing `filters` primitives remain available.
-- Add dynamic-data and SimCall-style controlled examples.
-
-- Restore arrow submenus that apply values before creating chips.
-- Restore the chip entry animation and respect reduced motion.
-
-- Add SimCall's search field and embedded filter button to the table demo.
-- Match the selection editor's search row to SimCall's dropdown.
-
-- Restore the flat filter chips and compact styling used in SimCall.
-- Use Geist and the original theme colors in the demos.
-- Simplify the site and describe it as a personal component collection.
+- Disable server-rendered controls until hydration can handle edits.
+- Improve viewport placement, draft retention, keyboard navigation, focus restoration, and RTL behavior.
+- Use compact desktop rows and larger touch targets.
+- Virtualize large collections with measured wrapping and preserve selected values outside the visible rows.
+- Add interaction, accessibility, and performance checks for large lists, long labels, asynchronous requests, and narrow screens.
 
 ## 0.1.0
 
-- Initial public filters registry and interactive documentation.
-- Independent edit and remove controls, including editable required filters.
-- Text drafts with validation, single selection, and searchable multiple selection.
-- A complete issue-table example and custom-editor recipe.
-- Cloudflare static hosting at ui.mendylanda.com.
+- Distribute one shared React npm package with ESM, TypeScript declarations, bundled shadcn controls, and scoped CSS.
+- Include typed definitions, local and controlled state, optional nuqs/session persistence, dynamic options, recognition, suggestions, composite bindings, custom editors, and summary policies.
+- Add configurable immediate application, theme radius, reduced-motion support, and examples using issues, projects, and people.
+
+Earlier source-copy registry experiments were superseded by the npm package.

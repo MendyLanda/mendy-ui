@@ -100,7 +100,7 @@ for (const framework of ["vite", "next", "tailwind3"]) {
     }
   } else {
     dependencies.next = versions.next;
-    // Exercise the minimum supported version used by SimCall. The site tests current nuqs.
+    // Exercise the minimum supported version supported by the package. The site tests current nuqs.
     dependencies.nuqs = "2.8.8";
     dependencies.zod = versions.zod;
     dependencies["lucide-react"] = versions["lucide-react"];
@@ -142,7 +142,7 @@ for (const framework of ["vite", "next", "tailwind3"]) {
     write(
       dir,
       "index.html",
-      '<html lang="en"><head><title>Package consumer</title></head><body><div id="root"></div><script type="module" src="/main.tsx"></script></body></html>',
+      '<html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Package consumer</title></head><body><div id="root"></div><script type="module" src="/main.tsx"></script></body></html>',
     );
     write(
       dir,
@@ -256,7 +256,10 @@ for (const framework of ["vite", "next", "tailwind3"]) {
       await page.getByRole("button", { name: "Open filters", exact: true }).first().click();
       const menu = page.getByRole("dialog", { name: "Filters", exact: true });
       await expect(page.locator("#local-theme").getByRole("dialog")).toBeVisible();
-      await expect(menu).toHaveCSS("background-color", "rgb(240, 250, 245)");
+      await expect(mobile ? menu : menu.locator('[data-slot="filter-menu-list"]')).toHaveCSS(
+        "background-color",
+        "rgb(240, 250, 245)",
+      );
       await expect(menu).toHaveCSS("animation-name", "none");
       const owner = menu.getByRole("button", { name: "Owner", exact: true });
       await expect(owner).toHaveCSS("min-height", "48px");

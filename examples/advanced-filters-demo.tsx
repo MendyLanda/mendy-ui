@@ -5,9 +5,9 @@ import { NuqsAdapter } from "nuqs/adapters/react";
 import { defineFilters, filter, remoteOptions } from "@mendylanda/ui/filters";
 import { FilterBar } from "@mendylanda/ui/filters";
 import { useUrlFilters } from "@mendylanda/ui/filters/nuqs";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Checkbox } from "@mendylanda/ui/primitives/checkbox";
+import { Label } from "@mendylanda/ui/primitives/label";
+import { Button } from "@mendylanda/ui/primitives/button";
 
 const people = [
   { id: "alex", name: "Alex Rivera" },
@@ -73,7 +73,6 @@ function RemoteFilters() {
     owner: filter.options({
       label: "Owner",
       options: source,
-      searchable: true,
       suggestion: { value: ["mendy"] },
       summary: { mode: "count", limit: 2 },
     }),

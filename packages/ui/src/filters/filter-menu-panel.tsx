@@ -81,7 +81,7 @@ export function FilterMenuPanel({
   const pendingEditorFocus = useRef(false);
   const { alignOffset, side, anchorStyle } = useMenuPlacement(anchor, trigger, desktop);
   const panelId = useId();
-  const detached = desktop && menuLayout === "anchored";
+  const detached = desktop && menuLayout !== "connected";
   const setContent = useAnchoredPointerEvents(content, detached);
   const editorPanel = useRef<HTMLDivElement>(null);
   const editorOffset = useEditorOffset({

@@ -1,17 +1,17 @@
-import type { LineFilters } from "./simcall-schema.fixture";
-import { lineStatuses } from "./simcall-schema.fixture";
+import type { ProjectFilters } from "./project-schema.fixture";
+import { projectStatuses } from "./project-schema.fixture";
 import { bindFilters, filter } from "@mendylanda/ui/filters";
-const line = bindFilters<LineFilters>();
-line.field("carrierId", filter.tokens({ label: "Carrier" }));
-line.field(
+const project = bindFilters<ProjectFilters>();
+project.field("workspaceId", filter.tokens({ label: "Workspace" }));
+project.field(
   "status",
   filter.multiSelect({
     label: "Status",
-    options: lineStatuses.map((value) => ({ value, label: value })),
+    options: projectStatuses.map((value) => ({ value, label: value })),
     clearValue: [],
   }),
 );
-line.field(
+project.field(
   "hasTag",
   filter.select({
     label: "Tagged",
@@ -22,12 +22,12 @@ line.field(
   }),
   { update: (hasTag) => ({ hasTag, ...(hasTag === "without" ? { tagId: null } : {}) }) },
 );
-line.composite(["activeStart", "activeEnd"], {
-  field: filter.dateRange({ label: "Activation" }),
-  read: (state) => ({ from: state.activeStart ?? null, to: state.activeEnd ?? null }),
-  write: (value) => ({ activeStart: value?.from ?? null, activeEnd: value?.to ?? null }),
+project.composite(["createdAfter", "createdBefore"], {
+  field: filter.dateRange({ label: "Created" }),
+  read: (state) => ({ from: state.createdAfter ?? null, to: state.createdBefore ?? null }),
+  write: (value) => ({ createdAfter: value?.from ?? null, createdBefore: value?.to ?? null }),
 });
-line.composite(["groupMemberCount"], {
+project.composite(["memberCount"], {
   field: filter.numberRange({
     label: "Members",
     validate: (value) =>
@@ -36,23 +36,23 @@ line.composite(["groupMemberCount"], {
         : undefined,
   }),
   read: (state) =>
-    state.groupMemberCount?.length === 2
-      ? ([state.groupMemberCount[0]!, state.groupMemberCount[1]!] as [number, number])
+    state.memberCount?.length === 2
+      ? ([state.memberCount[0]!, state.memberCount[1]!] as [number, number])
       : null,
   write: (value) => ({
-    groupMemberCount: value && value[0] !== null && value[1] !== null ? [value[0], value[1]] : null,
+    memberCount: value && value[0] !== null && value[1] !== null ? [value[0], value[1]] : null,
   }),
 });
 // @ts-expect-error typo must not widen the state to a generic dictionary
-line.field("carrierTypo", filter.tokens({ label: "Carrier" }));
+project.field("workspaceTypo", filter.tokens({ label: "Workspace" }));
 // @ts-expect-error string tokens cannot edit numeric member ranges
-line.field("groupMemberCount", filter.tokens({ label: "Members" }));
-line.field(
+project.field("memberCount", filter.tokens({ label: "Members" }));
+project.field(
   "status",
-  // @ts-expect-error preserve the actual backend status enum
+  // @ts-expect-error preserve the declared status enum
   filter.multiSelect({ label: "Status", options: [{ value: "wrong", label: "Wrong" }] }),
 );
-line.field(
+project.field(
   "hasTag",
   filter.select({
     label: "Tagged",

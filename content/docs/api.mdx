@@ -3,23 +3,86 @@ title: API reference
 description: Props and behavior for the filter components.
 ---
 
+## FilterBar and FilterRoot
+
+Start with `FilterBar`. It renders search, the filter menu, applied chips, suggestions, Clear all, and feedback around a typed controller.
+
+| Prop                      | Default / behavior                                                                |
+| ------------------------- | --------------------------------------------------------------------------------- |
+| `filters`                 | Required controller from `useFilters`, `useUrlFilters`, or `useControlledFilters` |
+| `searchLabel`             | `Search`; accessible label for the search input                                   |
+| `searchPlaceholder`       | `Search or filter`                                                                |
+| `showClear`               | `true`; include Clear all after the chips                                         |
+| `summary`                 | `{ mode: "count", limit: 3 }`; individual fields can override it                  |
+| `suggestions`             | `"always"`; also accepts `"when-empty"` and `"never"`                             |
+| `closeMenuOnApply`        | `false`; individual fields can override it                                        |
+| `groups`                  | Array of `{ id, label, fields, separatorBefore?, icon? }`                         |
+| `disabled`                | Disable the whole bar                                                             |
+| `className`, `classNames` | Root class and named styling overrides                                            |
+
+`FilterRoot` accepts the shared props and `children`. It supplies the controller to a custom layout; it does not render controls itself. `searchLabel`, `searchPlaceholder`, and `showClear` belong to `FilterBar` or its composed controls.
+
+| Component           | Props / behavior                                                               |
+| ------------------- | ------------------------------------------------------------------------------ |
+| `FilterSearch`      | `label`, `placeholder`; search with the embedded menu trigger                  |
+| `FilterMenu`        | `children?`, `asChild?`, `anchor?`; use `anchor` for a custom search container |
+| `FilterList`        | `showClear = true`; chips, suggestions, and trailing Clear all                 |
+| `FilterClear`       | `children = "Clear all"`; clears removable visible fields and search           |
+| `FilterFeedback`    | Validation, persistence, and ambiguous recognition feedback                    |
+| `FilterField`       | `id`; render a single chip or suggestion                                       |
+| `FilterFieldEditor` | `id`, `autoFocus = true`; put a field editor in your own layout                |
+
+When placing `FilterClear` elsewhere, set `<FilterList showClear={false} />` to avoid two clear actions.
+
+## State hooks
+
+| Hook                                                             | Use                                                                                       |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `useFilters(definitions, options?)`                              | Local applied values and search; accepts `defaultValues`, `defaultSearch`, and `onChange` |
+| `useUrlFilters(definitions, options)`                            | Optional nuqs adapter from `@mendylanda/ui/filters/nuqs`; requires a persistence `scope`  |
+| `useControlledFilters({ definitions, value, onPatch, search? })` | Bind existing state without changing its shape                                            |
+| `useFilterController({ entries, value, search, apply })`         | Lower-level controller when you already have runtime entries                              |
+| `useFilterSearch(value, onChange, delay?)`                       | Responsive draft for an existing debounced search; clears immediately                     |
+
+Controllers expose `values`, `search`, `entries`, `active`, `commit`, `batch`, `remove`, `clear`, `setSearch`, and `paste`, plus menu/editor state and feedback. `batch` applies one patch with optional search and source metadata. `clear` respects hidden, disabled, and non-removable fields. See [state and persistence](/docs/system#state-and-url-persistence) for URL settings and [binding existing state](/docs/system#binding-existing-state) for typed mappings.
+
+## Definitions
+
+Use `defineFilters` to preserve inferred types. Factories are `select`, `multiSelect`, `options`, `text`, `tokens`, `numberRange`, `dateRange`, and `custom`. [The system reference](/docs/system) covers field settings, data sources, codecs, recognition, groups, and custom render callbacks.
+
+## MendyUIProvider
+
+| Prop              | Default / behavior                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| `menuLayout`      | `"anchored"`; row-aligned desktop editors. `"connected"` uses a full-height attached editor |
+| `editorAnimation` | `false`; applies to chip editor popups, independently of chip entrance motion               |
+| `classNames`      | Named classes shared by descendant filter components                                        |
+| `components`      | Typed replacements for Button, Input, Textarea, Label, and Calendar                         |
+| `portalContainer` | `document.body`; provide a local theme or dialog element when needed                        |
+
+Nested providers inherit settings; local values override matching keys. [Customization](/docs/customization) describes control contracts and theme tokens.
+
+## Standalone primitives
+
+The following components let an application own applied state and editor lifecycle directly. Prefer the typed system above for new filter bars. A standalone chip does not provide query fetching, URL persistence, recognition, or summary resolution by itself.
+
 ## AppliedFilter
 
 Import from `@mendylanda/ui/filters`.
 
-| Prop           | Type                       | Behavior                                                                    |
-| -------------- | -------------------------- | --------------------------------------------------------------------------- |
-| `label`        | `string`                   | Required field name used to build default accessible labels.                |
-| `children`     | `ReactNode`                | The visible summary.                                                        |
-| `editor`       | `ReactNode`                | Enables editing. Omit for a static summary.                                 |
-| `onRemove`     | `() => void`               | Enables a separate remove button. Your app clears values or hides the chip. |
-| `disabled`     | `boolean`                  | Disables edit and remove controls.                                          |
-| `open`         | `boolean`                  | Optional controlled editor state.                                           |
-| `onOpenChange` | `(open: boolean) => void`  | Reports opening and dismissal.                                              |
-| `editLabel`    | `string`                   | Overrides the default edit accessible label.                                |
-| `removeLabel`  | `string`                   | Overrides the default remove accessible label.                              |
-| `contentProps` | `FilterEditorContentProps` | Controls alignment, focus callbacks, classes, and content label.            |
-| `className`    | `string`                   | Styles the chip. Other div props are forwarded to it.                       |
+| Prop           | Type                       | Behavior                                                                           |
+| -------------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| `label`        | `string`                   | Required field name used to build default accessible labels.                       |
+| `children`     | `ReactNode`                | The visible summary.                                                               |
+| `editor`       | `ReactNode`                | Enables editing. Omit for a static summary.                                        |
+| `onRemove`     | `() => void`               | Enables a separate remove button. Your app clears values or hides the chip.        |
+| `disabled`     | `boolean`                  | Disables edit and remove controls.                                                 |
+| `open`         | `boolean`                  | Optional controlled editor state.                                                  |
+| `onOpenChange` | `(open: boolean) => void`  | Reports opening and dismissal.                                                     |
+| `editLabel`    | `string`                   | Overrides the default edit accessible label.                                       |
+| `removeLabel`  | `string`                   | Overrides the default remove accessible label.                                     |
+| `contentProps` | `FilterEditorContentProps` | Controls alignment, focus callbacks, classes, content label, and opt-in `animate`. |
+| `className`    | `string`                   | Styles the chip. Other div props are forwarded to it.                              |
 
 Use the low-level composition if you need custom trigger or remove-button markup. Clicks on the convenience component's edit, remove, and editor content are stopped from bubbling into clickable parent containers.
 
@@ -42,9 +105,9 @@ The default `commitMode="enter"` saves with Enter and allows new lines with Shif
 
 Import `FilterSelectEditor` and `FilterMultiSelectEditor` from `@mendylanda/ui/filters`.
 
-Both accept `label`, `options`, `searchable`, `searchPlaceholder`, and `emptyMessage`. An option has a unique string `value`, a string `label`, and an optional `disabled` flag. Search is enabled by default; set `searchable={false}` to omit it. Search matches label substrings without case sensitivity. Pass your own strings for localization.
+Both accept `label`, `options`, `searchable`, `searchPlaceholder`, `emptyMessage`, and `autoFocus`. Pass `autoFocus={false}` during a hover preview. An option has a unique string `value`, a string `label`, and an optional `disabled` flag. Search is enabled by default; set `searchable={false}` to omit it. Search matches label substrings without case sensitivity. Pass your own strings for localization.
 
-`FilterSelectEditor` takes `value` and `onValueChange`. `FilterMultiSelectEditor` takes `values` and `onValuesChange`. Selection changes are immediate; single selection closes the menu, while multiple selection keeps it open. Unknown selected values are retained when toggling another option.
+`FilterSelectEditor` takes `value` and `onValueChange`. `FilterMultiSelectEditor` takes `values` and `onValuesChange`. Selection changes are immediate and both editors keep the menu open by default. Selecting the current single choice again calls `onValueChange` with `clearValue`, an empty string by default. Set `removable={false}` for a required choice or `closeOnSelect` to dismiss after selecting. These string-valued standalone callbacks differ from the typed factories, which clear to `null` by default. Unknown selected values are retained when toggling another option.
 
 ## Composition components
 

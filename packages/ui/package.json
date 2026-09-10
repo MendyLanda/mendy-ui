@@ -1,7 +1,7 @@
 {
   "name": "@mendylanda/ui",
-  "version": "0.1.9",
-  "description": "Mendy Landa\u2019s reusable React components. Typed filters with dynamic options, URL persistence, and customizable UI.",
+  "version": "0.2.0",
+  "description": "Mendy Landa’s reusable React components. Typed filters with dynamic options, URL persistence, and customizable UI.",
   "homepage": "https://ui.mendylanda.com",
   "license": "MIT",
   "author": "Mendy Landa",

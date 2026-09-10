@@ -9,6 +9,8 @@ import {
   FilterSearch,
   FilterList,
   FilterClear,
+  AppliedFilter,
+  FilterSelectEditor,
   useFilters,
   remoteOptions,
 } from "@mendylanda/ui/filters";
@@ -134,7 +136,7 @@ function Fixture() {
       <p className="fixture-note">Synthetic data · actual npm package components</p>
       <section aria-label="Stress fixture">
         <MendyUIProvider
-          menuLayout={params.has("anchored") ? "anchored" : "connected"}
+          menuLayout={params.has("connected") ? "connected" : undefined}
           editorAnimation={params.has("animate-editor")}
         >
           {params.has("composed") ? (
@@ -168,6 +170,38 @@ function Fixture() {
     </main>
   );
 }
+function StandaloneFixture() {
+  const [value, setValue] = useState("");
+  return (
+    <main>
+      <AppliedFilter
+        label="Stage"
+        editor={
+          <FilterSelectEditor
+            label="Stage"
+            value={value}
+            onValueChange={setValue}
+            removable={!params.has("required")}
+            closeOnSelect={params.has("close-on-select")}
+            options={[
+              { value: "draft", label: "Draft" },
+              { value: "ready", label: "Ready" },
+            ]}
+          />
+        }
+      >
+        {value || "Choose a stage"}
+      </AppliedFilter>
+      <output id="selection">{value}</output>
+    </main>
+  );
+}
 createRoot(document.getElementById("root")!).render(
-  params.has("chip-regressions") ? <ChipFixture /> : <Fixture />,
+  params.has("standalone") ? (
+    <StandaloneFixture />
+  ) : params.has("chip-regressions") ? (
+    <ChipFixture />
+  ) : (
+    <Fixture />
+  ),
 );

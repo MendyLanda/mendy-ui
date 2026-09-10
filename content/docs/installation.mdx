@@ -37,7 +37,6 @@ const definitions = defineFilters({
   owner: filter.multiSelect({
     label: "Owner",
     options: [{ value: "mendy", label: "Mendy" }],
-    searchable: true,
   }),
 });
 
@@ -50,6 +49,12 @@ export function IssueFilters() {
 ```
 
 Definitions and data queries stay in your app. Focus, editing, suggestions, paste recognition, menus, and chip summaries stay in the package.
+
+## Tailwind 3
+
+Use `@mendylanda/ui/styles.tailwind3.css` instead of `styles.css`. The compatibility build keeps package utilities overridable in Tailwind 3. No package source scanning or custom PostCSS plugin is needed.
+
+Both stylesheets expect complete CSS colors. If your shadcn theme stores HSL channels such as `--background: 0 0% 100%`, map them to `hsl(...)` on package elements, including portals. The [customization guide](/docs/customization#hsl-channel-themes) shows the mapping.
 
 ## URL persistence
 
@@ -94,9 +99,11 @@ The base package does not import nuqs or Next.js. Existing query-state hooks can
 
 ## Behavior
 
+[Defaults and app configuration](/docs/defaults) lists the included interactions and their overrides. Clear all follows the applied chips by default. Selecting the current single-choice value again clears it without an extra "Any" option. Choice chips omit redundant field names; `chipLabel: true` restores them.
+
 Selections, dates, and number ranges apply immediately. Text and token drafts save with Enter. Predefined shortcuts apply on the first click and open their editor on the second. The menu stays open by default.
 
-The filter list and editor share a panel on desktop. On mobile, the editor replaces the list and offers Back. Menu changes are instant, and chip entry animations respect reduced motion.
+On desktop, the list matches the search field width and editors sit beside their selected row at their own height. Lower editors shift upward to stay within the list when possible. On mobile, the editor replaces the list and offers Back. Menu changes are instant, and chip entry animations respect reduced motion.
 
 Hover previews a filter on desktop. While a text input has focus, click another filter to switch. Unapplied drafts and option searches survive switching filters or using mobile Back; closing the menu discards them.
 
@@ -118,7 +125,7 @@ For a project previously using the registry, replace imports with the package ex
 
 ### Large collections
 
-Collections with more than 100 rows use a measured scrolling list. Only the visible rows, a small buffer, and the keyboard-focused row stay mounted. Arrow keys, Home, End, Page Up, Page Down, and typeahead navigate the complete supplied collection. Option search appears automatically for large collections. Filter lists with more than 20 entries include **Find a filter**.
+Collections with more than 100 rows use a measured scrolling list. Only the visible rows, a small buffer, and the keyboard-focused row stay mounted. Arrow keys, Home, End, Page Up, Page Down, and typeahead navigate the complete supplied collection. Option search is enabled by default for every collection; `searchable: false` opts out even for large collections. Filter lists with more than 20 entries include **Find a filter**.
 
 Selected values stay intact when their rows scroll out of view. Long option labels wrap and are measured individually. Chips keep the complete value in their accessible description. Oversized header labels scroll independently so the editor stays usable, including with increased root text size.
 

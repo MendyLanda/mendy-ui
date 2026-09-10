@@ -3,6 +3,8 @@ title: Examples
 description: Text drafts, selections, and a custom editor you can adapt.
 ---
 
+Use the [typed filter demo](/docs/components/filters) for a new project. These smaller examples show standalone primitives when you need to own state or editor composition yourself.
+
 ## Text with Enter
 
 <TextFilterDemo />
@@ -23,7 +25,7 @@ Open the filter menu and choose Status or Assignee to see the options. Status ac
 
 <CustomFilterDemo />
 
-This editor uses a native checkbox. It updates immediately, and it has no remove action. Passing `editor` enables editing independently of `onRemove`.
+This editor uses the package's shadcn checkbox. It updates immediately, and it has no remove action. Passing `editor` enables editing independently of `onRemove`.
 
 When placing form fields in a dropdown, stop typing and cursor keys from reaching menu typeahead. Leave Escape available to dismiss the menu. Keep Tab native inside form editors so it moves between controls.
 

@@ -20,7 +20,7 @@ Import `defineFilters`, `filter`, `bindFilters`, `remoteOptions`, `externalOptio
 | `filter.dateRange`   | `{ from, to }` or null, with ISO date strings or null endpoints  |
 | `filter.custom`      | Your value type, with a required codec, default, and clear value |
 
-Shared settings include `label`, `icon`, `defaultValue`, `clearValue`, `isActive`, `normalize`, `validate`, `codec`, `urlKey`, `suggestion`, `summary`, `renderSummary`, `renderEditor`, `menu`, `hidden`, `disabled`, and `removable`. `searchLabel`, `editorLabel`, and `placeholder` customize editor labels. Application validation remains necessary at the API boundary.
+Shared settings include `label`, `icon`, `defaultValue`, `clearValue`, `isActive`, `normalize`, `validate`, `codec`, `urlKey`, `suggestion`, `chipLabel`, `menuLayout`, `editorPadding`, `summary`, `renderSummary`, `renderEditor`, `menu`, `hidden`, `disabled`, and `removable`. `searchLabel`, `editorLabel`, and `placeholder` customize editor labels. Application validation remains necessary at the API boundary.
 
 `validate` returns an error string or undefined. Normalization runs before validation. Removing and clearing use the declared clear value. A custom codec parses and serializes the field's value; JSON codecs can use `jsonCodec` with a type guard.
 
@@ -30,13 +30,15 @@ Shared settings include `label`, `icon`, `defaultValue`, `clearValue`, `isActive
 
 `FilterBar` keeps unapplied suggestions visible alongside applied chips by default. Applying one turns it into an applied chip in the same position; other suggestions stay available. Removing it restores the dashed suggestion. Set `suggestions="when-empty"` for empty-state shortcuts only, or `suggestions="never"` to hide them.
 
+Choice fields omit their chip label by default. Text, tokens, dates, ranges, and custom fields retain it. Override with `chipLabel: true`, `false`, or a shorter string; the accessible field name stays intact.
+
 Set a global `summary` on the bar and override it on individual definitions:
 
 - `{ mode: "count", limit: 3 }` shows three values and an additional count.
 - `{ mode: "ellipsis", maxWidth: 180 }` truncates the displayed text to a width.
 - `{ mode: "all" }` shows every value and allows wrapping.
 
-The full values remain selected and available in the editor. `renderSummary(value, choices)` supports domain summaries, such as displaying a vendor name when all its companies are selected. Resolved choices include their original record as `data`.
+The full values remain selected and available in the editor. `renderSummary(value, choices)` supports domain summaries, such as displaying a team name when all its members are selected. Resolved choices include their original record as `data`.
 
 ## Existing query hooks
 
@@ -59,7 +61,7 @@ The application continues owning its query hooks. A project query reads the curr
 | `getValue`, `getLabel`                      | Map records to stable string IDs and labels                      |
 | `debounceMs`                                | Search delay; defaults to 200 ms                                 |
 
-Requests are shared within a filter bar, canceled when unused, and cached briefly. Changing scope or request parameters changes request identity. Stale results do not replace the current query. Missing selected records remain removable and display as unavailable once resolution succeeds. A failed lookup preserves the selection and offers retry.
+Requests are shared within a filter bar, canceled when unused, and cached briefly. Changing scope or request parameters changes request identity. Stale results do not replace the current query. Selected labels show skeletons while resolution is pending. Known labels remain visible during refetches. After a successful lookup confirms a missing record, or a lookup fails, unresolved values fall back to their IDs and remain removable. Failed lookups offer retry in the editor.
 
 Use stable IDs and JSON-serializable parameters. Do not put credentials in scope or parameters. Authorization belongs to your data-fetching layer.
 
@@ -108,7 +110,7 @@ Applied changes update the URL; drafts and open menus do not. Nuqs handles brows
 
 If a selection exceeds the URL budget, the full values are saved in session storage and the URL contains a session reference. Recent references are retained for navigation. `shareable` becomes false and `persistenceMessage` explains the limitation. Opening that reference in a different session reports that the values are unavailable. `createLink(base)` returns null when the complete current selection cannot be represented by the URL.
 
-The pure `encodeFilters` and `decodeFilters` functions from `filter-state` can be used with server-readable definitions. Keep those definitions free of client-only imports when using them on a server.
+The pure `encodeFilters` and `decodeFilters` functions from `@mendylanda/ui/filters/core` can be used with server-readable definitions. Keep those definitions free of client-only imports when using them on a server.
 
 ## Binding existing state
 
@@ -143,9 +145,21 @@ const filters = useControlledFilters({
 
 An existing state's field type must match its definition. Use `filter.options` for general string IDs, and literal option types for existing enums. Optional state fields read as the definition's default when undefined.
 
+## Existing debounced search
+
+`useFilterSearch(value, onChange, delay = 300)` keeps the input responsive while writes to an existing URL hook are debounced. It clears immediately, cancels pending writes on unmount, and keeps older URL acknowledgements from replacing newer typing.
+
+When replacing `controller.search` and `controller.setSearch` with this draft, also wrap `clear` to call `search.setValue("")` and `controller.clear()`. A custom search input with its own debounce must cancel pending writes on `meta.source === "clear"`. New projects using `useFilters` or `useUrlFilters` do not need this separate draft adapter.
+
+## Grouped fields
+
+`groups` combines related field IDs into one menu category. A group accepts `id`, `label`, `fields`, optional `icon`, and `separatorBefore`. Definitions not assigned to a group appear first, followed by groups in their configured order. Hidden fields are excluded.
+
+Within a group, `menuLayout: "inline"` places the label beside its editor. Built-in single-choice fields render compact toggle buttons in this layout, with no search row; use short option labels such as Yes and No and a `renderSummary` that explains the selected meaning. Other field types keep their normal editor. A group has one Clear action for all removable fields, and duplicate headings are omitted.
+
 ## Menu behavior
 
-On desktop, the filter list and editor share one container. Hover or focus a row to reveal its options without applying anything. Clicking a row or pressing Enter or Right Arrow moves focus into its editor. Up and Down Arrow navigate the filter list; Left Arrow returns from an option to the list. Text inputs and calendars keep their own arrow-key behavior.
+On desktop, each editor sits beside its selected row at its own height. The list matches the search field width and adjusts when the viewport cannot fit both panels. Opening the menu shows categories without selecting one. Focus alone does not open a category. Hover previews its editor; click, Enter, Space, or the arrow toward the editor moves focus inside. Use `MendyUIProvider menuLayout="connected"` for a full-height attached editor. Up and Down Arrow navigate the filter list; Left Arrow returns from an option to the list. Text inputs and calendars keep their own arrow-key behavior.
 
 Below 640px, tapping a filter replaces the list with its editor. The Back button or Escape returns to the list; a second Escape closes it. The menu opens and switches editors without animation, and long lists and editors scroll within the available space.
 
@@ -157,9 +171,7 @@ Set `<FilterBar closeMenuOnApply />` to close it after each successful change. A
 
 ## Custom editors and layout
 
-`renderEditor` receives typed `value`, `setValue`, `draft`, `setDraft`, `apply`, and `close`. `setValue` applies immediately and updates the draft. In the filter menu, it follows `closeMenuOnApply`; in a chip, it stays open unless the value is cleared. `setDraft` changes only the local draft. `apply()` commits the draft and follows the menu's `closeMenuOnApply` setting; inside a chip it closes. Closing an editor discards an unfinished draft. Built-in date and number ranges apply each valid change immediately. Text and token editors save with Enter; Shift+Enter adds a line. For explicit submission, supply a custom `renderEditor`, for example `FilterTextEditor` with `commitMode="apply"`.
-
-Group related fields under one menu with `groups={[{ id: "status-menu", label: "Status", fields: ["status", "openTasks", "reviews"] }]}`. Grouping does not change state ownership or chip removal.
+`renderEditor` receives typed `value`, `setValue`, `draft`, `setDraft`, `apply`, `close`, `autoFocus`, and `location`. Honor `autoFocus: false` during hover previews; focus moves into the editor on explicit entry. `location` is `"menu"`, `"chip"`, or `"inline"`. `setValue` applies immediately and updates the draft. In the filter menu, it follows `closeMenuOnApply`; in a chip, it stays open unless the value is cleared. `setDraft` changes only the local draft. `apply()` commits the draft and follows the menu's `closeMenuOnApply` setting; inside a chip it closes. Closing an editor discards an unfinished draft. Built-in date and number ranges apply each valid change immediately. Text and token editors save with Enter; Shift+Enter adds a line. For explicit submission, supply a custom `renderEditor`, for example `FilterTextEditor` with `commitMode="apply"`.
 
 For another layout, compose `FilterRoot`, `FilterSearch` or `FilterMenu`, `FilterList`, `FilterClear`, and `FilterFeedback`. They share the same controller and behavior as `FilterBar`. Custom editors and summaries can use your own markup; underlying primitives use the application's shadcn tokens.
 

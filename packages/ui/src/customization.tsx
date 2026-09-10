@@ -41,7 +41,7 @@ export interface MendyUIOptions {
   /** Mount dropdowns inside a local theme or dialog instead of document.body. */
   portalContainer?: HTMLElement | null;
 }
-const Context = createContext<MendyUIOptions>({});
+const Context = createContext<MendyUIOptions>({ menuLayout: "anchored" });
 
 /** Nested providers inherit defaults; local settings override matching keys. */
 export function MendyUIProvider({

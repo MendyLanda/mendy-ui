@@ -200,6 +200,7 @@ function makeField<V>(
   return {
     ...config,
     kind,
+    chipLabel: config.chipLabel ?? (kind === "single" || kind === "multi" ? false : undefined),
     defaultValue: config.defaultValue === undefined ? fallback : config.defaultValue,
     clearValue: config.clearValue === undefined ? fallback : config.clearValue,
     normalize,

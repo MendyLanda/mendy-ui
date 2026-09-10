@@ -39,7 +39,7 @@ pnpm test
 pnpm verify:consumers
 ```
 
-`pnpm build` builds the package and the static documentation site. `pnpm verify:consumers` packs the package and installs that tarball in fresh Vite and Next.js apps. It checks Vite without nuqs or Tailwind, Next.js with the URL adapter, exported types against the SimCall schema fixture, and browser interactions with customization. Fixtures and screenshots remain in the reported temporary directory.
+`pnpm build` builds the package and the static documentation site. `pnpm verify:consumers` packs the package and installs that tarball in fresh Vite and Next.js apps. It checks Vite without nuqs or Tailwind, Next.js with the URL adapter, exported types against a synthetic project schema fixture, and browser interactions with customization. Fixtures and screenshots remain in the reported temporary directory.
 
 ## Package distribution
 

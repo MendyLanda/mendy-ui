@@ -107,7 +107,6 @@ const definitions = defineFilters({
     label: "Assignee",
     icon: <Users />,
     options: people,
-    searchable: true,
     searchLabel: "Search assignees",
     editorLabel: "Choose assignees",
     suggestion: { value: ["Mendy"] },

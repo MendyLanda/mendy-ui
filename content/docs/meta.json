@@ -3,6 +3,7 @@
   "pages": [
     "index",
     "installation",
+    "defaults",
     "components",
     "examples",
     "advanced",

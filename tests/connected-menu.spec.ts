@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("the connected menu opens immediately and preserves hover, click, and Back behavior", async ({
+test("the default menu opens immediately and preserves hover, click, and Back behavior", async ({
   page,
   isMobile,
 }) => {
@@ -70,9 +70,12 @@ test("a grouped editor applies and clears its fields without closing the menu", 
   await page.getByRole("button", { name: "Status", exact: true }).click();
   const menu = page.getByRole("dialog", { name: "Filters", exact: true });
   await menu.getByRole("menuitemcheckbox", { name: "Active", exact: true }).click();
-  const optionMenus = menu.getByRole("menu");
-  await expect(optionMenus).toHaveCount(3);
-  await optionMenus.nth(1).getByRole("menuitemradio").first().click();
+  await expect(menu.getByRole("menu")).toHaveCount(1);
+  const yes = menu
+    .getByRole("group", { name: "Open tasks", exact: true })
+    .getByRole("button", { name: "Yes", exact: true });
+  await yes.click();
+  await expect(yes).toHaveAttribute("aria-pressed", "true");
   await expect(project.locator('[data-slot="filter-chip"]')).toHaveCount(2);
   await menu.getByRole("button", { name: "Clear Status filter", exact: true }).click();
   await expect(project.locator('[data-slot="filter-chip"]')).toHaveCount(0);

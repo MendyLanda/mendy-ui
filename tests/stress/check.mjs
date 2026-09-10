@@ -1,3 +1,4 @@
+import { defaultChecks } from "./default-checks.mjs";
 import { editorInteractionChecks } from "./editor-interaction-checks.mjs";
 import { chipChecks } from "./chip-checks.mjs";
 import { chromium, firefox, webkit, expect } from "@playwright/test";
@@ -34,6 +35,7 @@ async function fixture(query = "", width = 1280) {
   else await first.hover();
   return { context, page };
 }
+await defaultChecks(browser, check);
 await chipChecks(browser, check);
 await editorInteractionChecks(browser, check);
 await check("Unselected anchored menu keeps the full search width", async () => {
@@ -458,9 +460,13 @@ await check("Filtering out the selected category resets its editor offset", asyn
   await page.getByRole("button", { name: "Field 0012", exact: true }).click();
   await page.getByRole("searchbox", { name: "Find a filter", exact: true }).fill("Assignee");
   await expect(page.getByRole("button", { name: "Field 0012", exact: true })).toHaveCount(0);
-  const editor = await page.locator('[data-slot="filter-menu-editor"]').boundingBox();
-  const list = await page.locator('[data-slot="filter-menu-list"]').boundingBox();
-  assert(Math.abs(editor.y - list.y) <= 1);
+  await expect
+    .poll(async () => {
+      const editor = await page.locator('[data-slot="filter-menu-editor"]').boundingBox();
+      const list = await page.locator('[data-slot="filter-menu-list"]').boundingBox();
+      return Math.abs(editor.y - list.y);
+    })
+    .toBeLessThanOrEqual(1);
   await context.close();
 });
 await check("Custom editor previews do not autofocus, activation does", async () => {

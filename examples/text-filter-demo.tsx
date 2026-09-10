@@ -3,7 +3,7 @@ import { useState } from "react";
 import { AppliedFilter } from "@mendylanda/ui/filters";
 import { FilterTextEditor } from "@mendylanda/ui/filters";
 import { parseFilterValues } from "@mendylanda/ui/filters";
-import { Button } from "@/components/ui/button";
+import { Button } from "@mendylanda/ui/primitives/button";
 
 export function TextFilterDemo() {
   const [values, setValues] = useState(["design", "frontend"]);

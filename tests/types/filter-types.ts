@@ -18,16 +18,16 @@ void good;
 const bad: Values = { status: "made-up", ids: null, range: null };
 void bad;
 type Existing = {
-  carrierId: string[] | null;
+  workspaceId: string[] | null;
   status: ("active" | "closed")[] | null;
   from: string | null;
   to: string | null;
   count: number[] | null;
 };
 const bound = bindFilters<Existing>();
-bound.field("carrierId", filter.tokens({ label: "Carriers" }));
+bound.field("workspaceId", filter.tokens({ label: "Workspaces" }));
 // @ts-expect-error unknown state key
-bound.field("carrierTypo", filter.tokens({ label: "Carriers" }));
+bound.field("workspaceTypo", filter.tokens({ label: "Workspaces" }));
 // @ts-expect-error string tokens cannot bind numeric state
 bound.field("count", filter.tokens({ label: "Count" }));
 bound.field(
@@ -52,10 +52,10 @@ bound.composite(["from", "to"], {
 });
 const source = remoteOptions({
   scope: "org:1",
-  params: { carrier: "one" },
+  params: { workspace: "one" },
   search: async ({ params, signal }) => {
     void signal;
-    return { items: [{ id: params.carrier, name: "One" }] };
+    return { items: [{ id: params.workspace, name: "One" }] };
   },
   resolve: async ({ ids }) => ids.map((id) => ({ id, name: id })),
   getValue: (item) => item.id,

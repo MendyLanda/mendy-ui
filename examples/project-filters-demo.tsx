@@ -3,8 +3,8 @@
 import type { EditorContext } from "@mendylanda/ui/filters";
 import { useId, useState } from "react";
 import { bindFilters, defineFilters, filter, jsonCodec } from "@mendylanda/ui/filters";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Checkbox } from "@mendylanda/ui/primitives/checkbox";
+import { Label } from "@mendylanda/ui/primitives/label";
 import { FilterBar } from "@mendylanda/ui/filters";
 import { useControlledFilters } from "@mendylanda/ui/filters";
 
@@ -55,7 +55,7 @@ const members = [
 function MemberEditor({ value, setValue }: EditorContext<string[] | null>) {
   const id = useId();
   return (
-    <fieldset className="w-56 space-y-2">
+    <fieldset className="min-w-0 w-full space-y-2">
       <legend className="mb-2 text-sm font-medium">Team members</legend>
       {members.map((member) => (
         <div key={member.id} className="flex items-center gap-2">
@@ -112,7 +112,6 @@ function useProjectDefinitions(value: ProjectFilters) {
           items: availableProjects,
           selectedItems: projects.filter((project) => value.projectId?.includes(project.value)),
         },
-        searchable: true,
       }),
     ),
     status: project.field(
@@ -133,9 +132,12 @@ function useProjectDefinitions(value: ProjectFilters) {
       "hasOpenTasks",
       filter.select({
         label: "Open tasks",
+        searchable: false,
+        menuLayout: "inline",
+        renderSummary: (value) => (value === "with" ? "Open tasks" : "No open tasks"),
         options: [
-          { value: "with", label: "With open tasks" },
-          { value: "without", label: "Without open tasks" },
+          { value: "with", label: "Yes" },
+          { value: "without", label: "No" },
         ],
       }),
     ),
@@ -143,9 +145,12 @@ function useProjectDefinitions(value: ProjectFilters) {
       "hasReviews",
       filter.select({
         label: "Reviews",
+        searchable: false,
+        menuLayout: "inline",
+        renderSummary: (value) => (value === "with" ? "Reviews" : "No reviews"),
         options: [
-          { value: "with", label: "With reviews" },
-          { value: "without", label: "Without reviews" },
+          { value: "with", label: "Yes" },
+          { value: "without", label: "No" },
         ],
       }),
     ),
@@ -161,9 +166,19 @@ function useProjectDefinitions(value: ProjectFilters) {
       "tagId",
       filter.options({
         label: "Tags",
+        renderOption: (tag) => (
+          <span className="flex items-center gap-2">
+            <span
+              aria-hidden="true"
+              className="size-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: tag.color }}
+            />
+            {tag.label}
+          </span>
+        ),
         options: [
-          { value: "priority", label: "Priority" },
-          { value: "review", label: "Review" },
+          { value: "priority", label: "Priority", color: "#2563eb" },
+          { value: "review", label: "Review", color: "#16a34a" },
         ],
       }),
       {
@@ -177,9 +192,12 @@ function useProjectDefinitions(value: ProjectFilters) {
       "hasTag",
       filter.select({
         label: "Tagged",
+        searchable: false,
+        menuLayout: "inline",
+        renderSummary: (value) => (value === "with" ? "Tagged" : "No tagged"),
         options: [
-          { value: "with", label: "Has tags" },
-          { value: "without", label: "No tags" },
+          { value: "with", label: "Yes" },
+          { value: "without", label: "No" },
         ],
       }),
       { update: (hasTag) => ({ hasTag, ...(hasTag === "without" ? { tagId: null } : {}) }) },
@@ -223,8 +241,13 @@ function ProjectSet({ label, defaults }: { label: string; defaults: ProjectFilte
       <FilterBar
         filters={filters}
         groups={[
-          { id: "status-menu", label: "Status", fields: ["status", "tasks", "reviews"] },
-          { id: "tags-menu", label: "Tags", fields: ["tags", "tagged"] },
+          {
+            id: "status-menu",
+            label: "Status",
+            fields: ["status", "tasks", "reviews"],
+            separatorBefore: true,
+          },
+          { id: "tags-menu", label: "Tags", fields: ["tags", "tagged"], separatorBefore: true },
         ]}
       />
       <details>

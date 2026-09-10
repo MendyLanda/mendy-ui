@@ -19,6 +19,8 @@ interface SharedProps {
   searchable?: boolean;
   searchPlaceholder?: string;
   emptyMessage?: string;
+  /** Disable during hover previews; focus on explicit entry instead. */
+  autoFocus?: boolean;
 }
 
 function handleSearchKey(event: KeyboardEvent<HTMLInputElement>) {
@@ -38,15 +40,16 @@ function SearchableOptions({
   searchable = true,
   searchPlaceholder,
   emptyMessage = "No options found.",
+  autoFocus = true,
   children,
 }: SharedProps & { children: (options: readonly FilterOption[]) => ReactNode }) {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (!searchable) return;
+    if (!searchable || !autoFocus) return;
     const frame = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(frame);
-  }, [searchable]);
+  }, [searchable, autoFocus]);
   const filtered = !searchable
     ? options
     : options.filter((option) =>
@@ -55,7 +58,7 @@ function SearchableOptions({
 
   return (
     <div
-      className="w-64 max-w-full"
+      className="w-full"
       data-mendy-ui=""
       data-slot="filter-options"
       onKeyDown={(event) => {
@@ -88,23 +91,34 @@ function SearchableOptions({
 export interface FilterSelectEditorProps extends SharedProps {
   value: string;
   onValueChange: (value: string) => void;
+  /** Empty string by default, preserving the string-valued callback. */
+  clearValue?: string;
+  removable?: boolean;
+  closeOnSelect?: boolean;
 }
 
-/** Single selection applies immediately and closes the dropdown. */
-export function FilterSelectEditor({ value, onValueChange, ...props }: FilterSelectEditorProps) {
+/** Apply immediately, toggle the current choice off, and keep the dropdown open by default. */
+export function FilterSelectEditor({
+  value,
+  onValueChange,
+  clearValue = "",
+  removable = true,
+  closeOnSelect = false,
+  ...props
+}: FilterSelectEditorProps) {
   return (
     <SearchableOptions {...props}>
       {(options) => (
-        <DropdownMenuRadioGroup
-          value={value}
-          onValueChange={onValueChange}
-          aria-label={props.label}
-        >
+        <DropdownMenuRadioGroup value={value} aria-label={props.label}>
           {options.map((option) => (
             <DropdownMenuRadioItem
               key={option.value}
               value={option.value}
               disabled={option.disabled}
+              onSelect={(event) => {
+                if (!closeOnSelect) event.preventDefault();
+                onValueChange(removable && value === option.value ? clearValue : option.value);
+              }}
             >
               {option.label}
             </DropdownMenuRadioItem>

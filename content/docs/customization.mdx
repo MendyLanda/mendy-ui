@@ -30,7 +30,31 @@ The available parts are `root`, `search`, `searchInput`, `menuTrigger`, `menu`, 
 
 Chip editors and desktop menu editors default to `19rem`. Set `--mendy-filter-editor-width` on your theme root to change both. For one bar, set the variable through both `classNames.menu` and `classNames.editor`, since the popups are portalled. Widths stay within the viewport.
 
+Desktop editors are row-aligned by default. Use `<MendyUIProvider menuLayout="connected">` for the full-height attached layout. Both switch to one panel with Back on phones.
+
 Chip editor popups open instantly by default. Opt into their entrance animation with `<MendyUIProvider editorAnimation>` or set `animate` on a low-level `FilterEditorContent`. Chip entrance animations are independent of this setting.
+
+## HSL channel themes
+
+Older shadcn themes may store color channels rather than complete colors. Capture the host tokens before mapping them on package elements. For example:
+
+```css
+:root,
+.dark {
+  --app-background: var(--background);
+  --app-foreground: var(--foreground);
+  --app-popover: var(--popover);
+  --app-popover-foreground: var(--popover-foreground);
+}
+[data-mendy-ui] {
+  --background: hsl(var(--app-background));
+  --foreground: hsl(var(--app-foreground));
+  --popover: hsl(var(--app-popover));
+  --popover-foreground: hsl(var(--app-popover-foreground));
+}
+```
+
+Apply the same mapping to the other semantic colors your theme defines: primary, secondary, muted, accent, destructive, border, input, ring, and their foreground counterparts. Include both light and dark theme declarations. Portals inherit from the document unless `portalContainer` is supplied. Custom editors styled by the host's Tailwind 3 utilities need their original channel tokens restored inside their wrapper; package controls expect the mapped complete colors.
 
 ## Render option content
 

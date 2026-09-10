@@ -38,7 +38,7 @@
 }
 
 /*
- * Colors follow SimCall's palette. Muted and error text are darker in light
+ * Neutral colors for the documentation examples. Muted and error text are darker in light
  * mode so chip labels and validation messages meet AA contrast.
  */
 :root {
@@ -69,8 +69,7 @@
 }
 
 /*
- * Dark values match SimCall except muted text. SimCall uses 38% gray there,
- * which fails AA contrast on the 7% background. 64.9% keeps it readable.
+ * Muted text uses 64.9% gray to remain readable on the dark background.
  */
 .dark {
   --background: hsl(0 0% 7%);

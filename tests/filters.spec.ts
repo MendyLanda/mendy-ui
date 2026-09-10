@@ -232,6 +232,7 @@ test("public docs and package installation instructions are accessible without l
     "/",
     "/docs",
     "/docs/installation",
+    "/docs/defaults",
     "/docs/components/filters",
     "/docs/examples",
     "/docs/api",

@@ -315,7 +315,10 @@ test("grouped tags enforce mutually exclusive values and custom members retain t
   await lines.getByRole("button", { name: "Open filters" }).click();
   await page.getByRole("button", { name: "Tags", exact: true }).click();
   await page.getByRole("menuitemcheckbox", { name: "Priority", exact: true }).click();
-  await page.getByRole("menuitemradio", { name: "No tags", exact: true }).click();
+  await page
+    .getByRole("group", { name: "Tagged", exact: true })
+    .getByRole("button", { name: "No", exact: true })
+    .click();
   await expect
     .poll(() => values(page, "Project filters values"))
     .toMatchObject({ tagId: null, hasTag: "without" });

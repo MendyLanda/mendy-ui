@@ -21,6 +21,7 @@ import { defineFilters, filter, FilterBar, useFilters } from "@mendylanda/ui/fil
 const definitions = defineFilters({
   status: filter.select({
     label: "Status",
+    searchable: false,
     options: [
       { value: "open", label: "Open" },
       { value: "closed", label: "Closed" },
@@ -50,17 +51,17 @@ Update the dependency and redeploy a project to receive shared fixes. MIT licens
 
 ### Chip and menu presentation
 
-Use `chipLabel: false` when the selected values explain themselves. A string such as `chipLabel: "SIM"` shortens the visible label while retaining the field's full accessible name. `renderSummary` supplies custom chip content independently of `renderOption`.
+Choice fields omit redundant chip labels by default. Set `chipLabel: true` to show the field name. Text, tokens, dates, ranges, and custom fields keep their labels by default. A string such as `chipLabel: "ID"` shortens the visible label while retaining the field's full accessible name. `renderSummary` supplies custom chip content independently of `renderOption`.
 
 `FilterMenuGroup.separatorBefore` separates related categories. Within a group, `menuLayout: "inline"` puts a field's editor beside its label. Custom editors can set `editorPadding: "none"` when they own their spacing. Honor the `autoFocus` value supplied to `renderEditor`: it is false during menu previews, and the menu moves focus on click or keyboard activation.
 
-`<MendyUIProvider menuLayout="anchored">` positions desktop editors beside the selected row at their own height. The default remains `connected`. Both use the single-panel mobile layout. A standalone `<FilterMenu anchor={searchRef}>` can align to a custom search field. The menu grows to the available viewport height, capped by `--mendy-filter-menu-max-height`, which defaults to `44rem`; large lists remain virtualized.
+Desktop editors sit beside the selected row at their own height by default. Set `<MendyUIProvider menuLayout="connected">` to use a full-height attached editor. Both use the single-panel mobile layout. A standalone `<FilterMenu anchor={searchRef}>` can align to a custom search field. The menu grows to the available viewport height, capped by `--mendy-filter-menu-max-height`, which defaults to `44rem`; large lists remain virtualized.
 
 Chips enter with a short, staggered Motion spring. Reduced-motion preferences disable their movement. Theme radius still controls their corners.
 
 Filter lists use the search anchor's width by default and shrink when the viewport cannot fit both columns. Override `--mendy-filter-list-width` or `--mendy-filter-menu-width` for a custom layout. In anchored mode, editors touch the list and move upward for lower rows so short editors stay within the list's height.
 
-`FilterList` uses the original SimCall Motion variants: a 60ms stagger on initial list entry and the default item transition from y=10/opacity=0 to y=0/opacity=1. New chips enter immediately, without a delay based on their list position. `FilterChipList` provides the same orchestration for custom compositions of `FilterChip`; standalone chips also animate.
+`FilterList` uses Motion variants with a 60ms stagger on initial list entry and the default item transition from y=10/opacity=0 to y=0/opacity=1. New chips enter immediately, without a delay based on their list position. `FilterChipList` provides the same orchestration for custom compositions of `FilterChip`; standalone chips also animate.
 
 ### Existing search state
 
@@ -78,3 +79,9 @@ Import `@mendylanda/ui/styles.tailwind3.css` instead of `@mendylanda/ui/styles.c
 The package expects complete CSS color values. A host that stores HSL channels still needs to map them to colors, including inside portals and any custom editors that use host styles.
 
 Opening the menu shows the category list without choosing a filter. Focusing a category does not open it. Hover previews its editor; click, Enter, Space or the entry arrow opens it and moves focus into the editor.
+
+### Defaults and clearing
+
+`FilterBar` and composed `FilterList` include Clear all after the chips. It clears filters and search. Set `showClear={false}` to opt out. Choice search is enabled by default; use `searchable: false` for short lists. Menu selections keep the menu open, and selecting the current single choice again clears it. Chip editor popups open instantly; `editorAnimation` opts into their animation.
+
+See [defaults and app configuration](https://ui.mendylanda.com/docs/defaults) for the full behavior and [system reference](https://ui.mendylanda.com/docs/system) for query adapters, selected-label loading, grouped fields, and custom editors.

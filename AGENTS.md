@@ -6,10 +6,10 @@ Use shadcn controls and theme tokens, including theme radius on chips and contro
 
 Show Mendy's preferred interaction in every example: selections apply immediately, text saves with Enter, and editors stay open for further selections. Predefined shortcuts apply on the first click; clicking the applied chip opens its editor. Explicit Apply/Done actions belong in opt-in custom implementations.
 
-Use the connected filter menu: adjacent list and editor on desktop, one panel with Back on mobile, and instant menu changes. Keep chip entry animations.
+Use row-aligned desktop editors at their own height by default, with the list matching the search width. Phones use one panel with Back. Keep menu changes instant and preserve chip entry animations. The full-height connected layout is opt-in.
 
 The npm package in `packages/ui` owns the implementation. The website and examples import its built exports. Keep application definitions and data matching outside the package. Preserve optional nuqs integration, scoped compiled CSS, and typed customization interfaces.
 
-For UI changes, inspect desktop and mobile screenshots in both themes and run the existing interaction checks. For package changes, build and install the packed tarball in fresh consumers before publishing. Run `pnpm verify:consumers` to check Vite without Tailwind or nuqs, Next.js with nuqs, and the SimCall type fixtures.
+For UI changes, inspect desktop and mobile screenshots in both themes and run the existing interaction checks. For package changes, build and install the packed tarball in fresh consumers before publishing. Run `pnpm verify:consumers` to check Vite without Tailwind or nuqs, Next.js with nuqs, and the project type fixtures.
 
 Keep internal utility strings in static `className`, `cn`, or `cva` expressions so the package build can give them private class names. Test new styling patterns in packed consumers with and without Tailwind.

@@ -1,0 +1,51 @@
+---
+title: Defaults and app configuration
+description: What a new project gets from Filters, and what its definitions need to supply.
+---
+
+Start with `defineFilters`, a state hook, and `<FilterBar filters={filters} />`. You do not need a provider or custom CSS to get the standard interactions. The demos use these defaults.
+
+## Included behavior
+
+| Interaction                              | Default                                                                                                     | Override                                                                                 |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Desktop menu                             | List matches the search width; each editor sits beside its row at its own height, moving upward when needed | `MendyUIProvider menuLayout="connected"` for a full-height attached editor               |
+| Phone menu                               | One panel, with Back from the editor to the list                                                            | Automatic below 640px                                                                    |
+| Opening the menu                         | Shows the list without opening the first filter                                                             | Hover previews; click, Enter, Space, or the entry arrow enters an editor                 |
+| Hover and focus                          | Preview leaves input focus alone; an active input is protected from incidental hover                        | Custom editors receive `autoFocus`                                                       |
+| Applying in the menu                     | Applies immediately and keeps the menu open                                                                 | `closeMenuOnApply` on the bar or a field                                                 |
+| Single choice                            | Selecting the current value again clears it; no synthetic "Any" option                                      | `clearValue` and `removable: false`                                                      |
+| Option search                            | Integrated search row, enabled by default                                                                   | `searchable: false` for short lists                                                      |
+| Text and tokens                          | Enter saves; closing discards unapplied text                                                                | Custom editor or low-level `commitMode="apply"`                                          |
+| Dates                                    | One click applies a day; the next extends a range                                                           | Custom calendar or editor                                                                |
+| Suggestions                              | First click applies the preset; second click edits it; other suggestions remain                             | `suggestions="when-empty"` or `"never"`                                                  |
+| Selected labels                          | Skeleton while unresolved; known labels survive refetches; settled missing values fall back to IDs          | Supply query loading state and selected records                                          |
+| Choice chip labels                       | Selected option labels only; field name remains in accessible labels                                        | `chipLabel: true` or a shorter string                                                    |
+| Text, token, date, and range chip labels | Field name followed by the value                                                                            | `chipLabel: false` or a shorter string                                                   |
+| Long selections                          | Three values, then "and N more"                                                                             | Global or per-field `summary`                                                            |
+| Clearing                                 | Each chip has a remove button; Clear all follows the list and clears filters plus search                    | `removable: false`, `showClear={false}`, or a separately placed `FilterClear`            |
+| Motion                                   | Chip entrance stagger; instant menus and editor popups                                                      | `editorAnimation` opts chip popups into animation; reduced motion disables chip movement |
+| Dismissal                                | Outside click closes and reaches the underlying page; Escape restores trigger focus                         | Custom composition can supply focus callbacks                                            |
+| Large lists                              | Measured virtualization above 100 rows; Find a filter above 20 categories                                   | Paginate remote data to limit downloads                                                  |
+| Appearance                               | Compact desktop rows, larger touch targets, shadcn colors, application font and radius                      | Theme tokens, named classes, component replacements                                      |
+
+Editing an applied chip is a separate flow: single choice and Enter-saved text close on completion; multi-select, dates, and number ranges stay open. Clearing a chip closes its editor and moves focus to the filter trigger. Switching directly to another chip opens that chip without an intervening dismissal.
+
+## Configure once for your data
+
+The package supplies the interaction. A definition tells it what a value means:
+
+- **Data sources.** Supply an array, `externalOptions` for your existing query hooks, or `remoteOptions` for package-managed requests. Provide loading state and a way to resolve selected IDs outside the current page.
+- **Recognized input.** Add `recognize` to fields such as issue IDs or email addresses. Use `menu: false` when recognition makes a menu entry unnecessary. Parsing, merging, validation, ambiguity handling, and chip editing are shared.
+- **Groups.** List related field IDs in `groups`; use `separatorBefore` to separate categories. `menuLayout: "inline"` places an editor beside its label inside a group; single-choice fields use compact toggle buttons.
+- **Relationships.** Derive source parameters from current values. Use a binding's `update` callback to clear dependent values or enforce mutual exclusion in one patch. Selections are retained unless your rule explicitly clears them.
+- **Custom content.** `renderOption` adds tag colors or avatars while the package keeps selection and keyboard handling. `renderSummary` can describe a whole team when all members are selected. `renderEditor` supports a hierarchy or another application-specific interaction.
+- **Persistence.** Choose `useUrlFilters` for a new URL-backed view. Its `scope` separates users or organizations. `remember: "session"` restores saved filters; oversized URLs fall back to session storage. Existing query-state hooks can use `useControlledFilters`.
+
+[Dynamic data and existing-state examples](/docs/advanced) show these together. [The system reference](/docs/system) documents their typed contracts.
+
+## Theme compatibility
+
+Square filter corners are an application preference, not a requirement. Set `--radius: 0px` on the filter theme to get them; otherwise the component follows your theme. Tailwind 3 projects use the compatibility stylesheet and may need to convert HSL channel tokens to complete colors. See [installation](/docs/installation#tailwind-3) and [customization](/docs/customization).
+
+The package does not choose API authorization, matching logic, timezone boundaries, or team/member relationships. Those remain in the app. A custom editor owns its internal hierarchy and keyboard interaction; the library still supplies its placement, lifecycle, value updates, and chip.

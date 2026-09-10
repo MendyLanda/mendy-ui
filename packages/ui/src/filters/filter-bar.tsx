@@ -962,6 +962,33 @@ function ChoiceEditor({
   const selected = Array.isArray(value) ? value : value === null ? [] : [value];
   const selectedSet = new Set(selected);
   const searchLabel = field.searchLabel ?? `Search ${field.label.toLowerCase()}`;
+  if (location === "menu" && field.menuLayout === "inline" && field.kind === "single")
+    return (
+      <div data-mendy-ui="" className="min-w-0">
+        <div
+          role="group"
+          aria-label={field.label}
+          className="inline-flex max-w-full flex-wrap overflow-hidden rounded-md border"
+        >
+          {options.items.map((choice) => (
+            <Button
+              key={choice.value}
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled || choice.disabled}
+              aria-pressed={selectedSet.has(choice.value)}
+              className="h-8 rounded-none border-s first:border-s-0 px-3 font-normal text-muted-foreground aria-pressed:bg-accent aria-pressed:text-accent-foreground"
+              onClick={() => apply(singleChoiceValue(field, value, choice.value), false)}
+            >
+              {field.renderOption?.(choice, { selected: selectedSet.has(choice.value) }) ??
+                choice.label}
+            </Button>
+          ))}
+        </div>
+        <OptionFeedback options={options} error={error} />
+      </div>
+    );
   return (
     <div
       data-mendy-ui=""

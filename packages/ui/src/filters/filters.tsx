@@ -132,7 +132,7 @@ export function FilterEditorContent({ className, onClick, ...props }: FilterEdit
         onClick?.(event);
       }}
       className={cn(
-        "max-h-[var(--radix-dropdown-menu-content-available-height)] max-w-[calc(100vw-2rem)] overflow-y-auto p-0 data-[state=closed]:animate-none!",
+        "w-[var(--mendy-filter-editor-width,19rem)] max-h-[var(--radix-dropdown-menu-content-available-height)] max-w-[calc(100vw-2rem)] overflow-y-auto p-0 data-[state=closed]:animate-none!",
         className,
       )}
       {...props}

@@ -10,6 +10,7 @@ import {
 } from "@mendylanda/ui/filters";
 import "@mendylanda/ui/styles.css";
 import "./style.css";
+import { ChipFixture } from "./chip-fixture";
 
 const params = new URLSearchParams(location.search);
 const count = Math.min(2000, Number(params.get("fields") ?? 6));
@@ -150,4 +151,6 @@ function Fixture() {
     </main>
   );
 }
-createRoot(document.getElementById("root")!).render(<Fixture />);
+createRoot(document.getElementById("root")!).render(
+  params.has("chip-regressions") ? <ChipFixture /> : <Fixture />,
+);

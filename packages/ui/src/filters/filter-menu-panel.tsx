@@ -183,7 +183,7 @@ export function FilterMenuPanel({
         "[--filter-menu-height:min(var(--mendy-filter-menu-max-height,44rem),var(--radix-dropdown-menu-content-available-height,44rem))] max-h-(--filter-menu-height) max-w-[calc(100vw-2rem)] overflow-hidden p-0 shadow-md animate-none! [&_*]:transition-none!",
         "[--filter-list-width:var(--mendy-filter-list-width,var(--mendy-filter-anchor-width,13rem))]",
         sideBySide
-          ? "w-[var(--mendy-filter-menu-width,calc(var(--filter-list-width)_+_19rem))]"
+          ? "w-[var(--mendy-filter-menu-width,calc(var(--filter-list-width)_+_var(--mendy-filter-editor-width,19rem)))]"
           : "w-[var(--mendy-filter-list-width,var(--mendy-filter-anchor-width,18.75rem))]",
         detached && "overflow-visible border-0 bg-transparent shadow-none",
         classNames?.menu,
@@ -193,7 +193,7 @@ export function FilterMenuPanel({
         className={cn(
           "max-h-[calc(var(--filter-menu-height)-2px)]",
           sideBySide
-            ? "grid grid-rows-[minmax(0,1fr)] grid-cols-[min(var(--filter-list-width),calc(100%_-_min(19rem,50%)))_minmax(0,1fr)]"
+            ? "grid grid-rows-[minmax(0,1fr)] grid-cols-[min(var(--filter-list-width),calc(100%_-_min(var(--mendy-filter-editor-width,19rem),50%)))_minmax(0,1fr)]"
             : "flex flex-col",
           detached && cn("drop-shadow-md", selected && "items-start"),
         )}

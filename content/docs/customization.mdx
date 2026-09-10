@@ -28,6 +28,8 @@ Supply named classes on one bar:
 
 The available parts are `root`, `search`, `searchInput`, `menuTrigger`, `menu`, `menuList`, `menuRow`, `menuHeader`, `editor`, `chip`, `chipTrigger`, `chipRemove`, `option`, and `clear`. Named classes reach portalled menus too. For shared defaults, pass `classNames` to `MendyUIProvider`. Nested providers merge their settings, and bar-level classes override the matching provider setting.
 
+Chip editors and desktop menu editors default to `19rem`. Set `--mendy-filter-editor-width` on your theme root to change both. For one bar, set the variable through both `classNames.menu` and `classNames.editor`, since the popups are portalled. Widths stay within the viewport.
+
 ## Render option content
 
 `renderOption` receives the original, inferred item type. The library keeps the selection control, keyboard interaction, disabled state, and accessible name around your content.
@@ -50,6 +52,8 @@ const definitions = defineFilters({
 ```
 
 `renderSummary` changes chip contents. `renderEditor` replaces the field editor and receives typed values, draft setters, apply, and close methods. These callbacks work with local, remote, and externally managed options. See the [system reference](/docs/system).
+
+While selected option labels are unresolved, chips show a skeleton, including fields with `renderSummary`. Known labels stay visible during refetches. For externally managed queries, pass `loading` until the query settles; missing values fall back to their IDs after loading finishes. Custom summaries should use the supplied `choices` for labels so they also retain resolved labels during refetches.
 
 ## Replace a control
 

@@ -499,10 +499,7 @@ function FieldChip({ entry }: { entry: FilterEntry }) {
   const { id, field, value } = entry;
   const descriptionId = useId();
   const active = field.isActive(value);
-  const currentlyActive = useRef(active);
-  useLayoutEffect(() => {
-    currentlyActive.current = active;
-  }, [active]);
+  const chipEditor = useChipEditor(entry);
   const suggestion = showSuggestion(entry, suggestions, filters.active.length);
   const options = useFilterOptions(id, field, active ? value : field.suggestion?.value, false);
   if (field.hidden || (!active && !suggestion)) return null;
@@ -521,23 +518,16 @@ function FieldChip({ entry }: { entry: FilterEntry }) {
       removeProps={{ className: classNames?.chipRemove }}
       contentProps={{
         className: classNames?.editor,
-        onCloseAutoFocus: (event) => {
-          if (!currentlyActive.current) {
-            event.preventDefault();
-            trigger.current?.focus();
-          }
-        },
+        onCloseAutoFocus: chipEditor.onCloseAutoFocus,
       }}
-      triggerProps={{ "aria-describedby": descriptionId, className: classNames?.chipTrigger }}
+      triggerProps={{
+        "aria-describedby": descriptionId,
+        "aria-busy": options.resolving || undefined,
+        className: classNames?.chipTrigger,
+      }}
       editLabel={`${active ? "Edit" : "Apply"} ${field.label} filter`}
       open={filters.editField === id}
-      onOpenChange={(open) => {
-        if (open && !active && field.suggestion && "value" in field.suggestion) {
-          filters.commit(id, field.suggestion.value, "suggestion");
-          return;
-        }
-        filters.edit(open ? id : null);
-      }}
+      onOpenChange={chipEditor.onOpenChange}
       onRemove={
         active && field.removable !== false
           ? () => {
@@ -556,10 +546,8 @@ function FieldChip({ entry }: { entry: FilterEntry }) {
         />
       }
     >
-      <span id={descriptionId} className="sr-only">
-        {summarize(field, active ? value : field.suggestion?.value, options.selected)}
-      </span>
       <ChipSummary
+        descriptionId={descriptionId}
         field={field}
         value={value}
         active={active}
@@ -568,6 +556,34 @@ function FieldChip({ entry }: { entry: FilterEntry }) {
       />
     </AppliedFilter>
   );
+}
+function useChipEditor({ id, field, value }: FilterEntry) {
+  const { filters, trigger } = useRoot();
+  const active = field.isActive(value);
+  const currentlyActive = useRef(active);
+  const editingField = useRef(filters.editField);
+  useLayoutEffect(() => {
+    currentlyActive.current = active;
+    editingField.current = filters.editField;
+  }, [active, filters.editField]);
+  return {
+    onCloseAutoFocus(event: Event) {
+      // The outgoing popup must not steal focus back from its replacement.
+      if (editingField.current && editingField.current !== id) {
+        event.preventDefault();
+      } else if (!currentlyActive.current) {
+        event.preventDefault();
+        trigger.current?.focus();
+      }
+    },
+    onOpenChange(open: boolean) {
+      if (open && !active && field.suggestion && "value" in field.suggestion) {
+        filters.commit(id, field.suggestion.value, "suggestion");
+        return;
+      }
+      if (open || editingField.current === id) filters.edit(open ? id : null);
+    },
+  };
 }
 function showSuggestion(entry: FilterEntry, mode: RootContext["suggestions"], activeCount: number) {
   return (
@@ -634,12 +650,14 @@ function ChipLabel({
 }
 
 function ChipSummary({
+  descriptionId,
   field,
   value,
   active,
   options,
   summary,
 }: {
+  descriptionId: string;
   field: RuntimeField;
   value: unknown;
   active: boolean;
@@ -652,8 +670,18 @@ function ChipSummary({
   const text = summaryText(field, shownValue, options.selected, policy);
   return (
     <>
+      <span id={descriptionId} className="sr-only">
+        {options.resolving ? "Loading selected values" : full}
+      </span>
       <ChipLabel field={field} active={active} hasValue={Boolean(full)} />
-      {field.renderSummary ? (
+      {options.resolving ? (
+        <span
+          data-slot="filter-summary-skeleton"
+          aria-hidden="true"
+          className="h-4 max-w-full shrink-0 animate-pulse rounded-sm bg-muted-foreground/20 motion-reduce:animate-none"
+          style={{ width: Math.min(180, 100 + Math.max(0, options.selected.length - 1) * 40) }}
+        />
+      ) : field.renderSummary ? (
         field.renderSummary(shownValue, options.selected)
       ) : (
         <span
@@ -666,7 +694,7 @@ function ChipSummary({
           )}
           style={policy.mode === "ellipsis" ? { maxWidth: policy.maxWidth ?? 180 } : undefined}
         >
-          {options.resolving ? <span className="animate-pulse">{text || "Loading…"}</span> : text}
+          {text}
         </span>
       )}
     </>
@@ -931,7 +959,7 @@ function ChoiceEditor({
     <div
       data-mendy-ui=""
       data-filter-choices=""
-      className="w-64 max-w-full"
+      className="w-full"
       onKeyDown={(event) => {
         if (event.key === "Tab") event.stopPropagation();
       }}
@@ -1181,7 +1209,7 @@ function ValueEditor({
   return (
     <div
       data-mendy-ui=""
-      className="w-72 max-w-full space-y-2 p-3"
+      className="w-full space-y-2 p-3"
       onKeyDown={(event) => {
         if (event.key === "Tab") event.stopPropagation();
       }}

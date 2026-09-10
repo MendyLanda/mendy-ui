@@ -103,6 +103,10 @@ export function useFilterOptions(
   const [retryKey, retry] = useState(0);
   const requestKey = JSON.stringify([scopeKey, query, retryKey]);
   const identity = JSON.stringify([id, source?.kind, source?.scope]);
+  const retainedSelection = useRef<{ identity: string; choices: readonly Choice[] }>({
+    identity: "",
+    choices: [],
+  });
   const ids = selectedIds(value);
   const idsKey = JSON.stringify(ids);
   const [page, setPage] = useState<{
@@ -199,7 +203,7 @@ export function useFilterOptions(
       : { items: [], loading: enabled, cursor: null, error: undefined };
   const matchingResolved = resolved.key === resolveKey;
   const items = remote ? currentPage.items : (source?.items ?? []);
-  const { selected, shown } = optionPresentation(
+  const { selected, shown, knownSelected, missingLabels } = optionPresentation(
     source,
     items,
     ids,
@@ -208,7 +212,12 @@ export function useFilterOptions(
     resolved.identity === identity,
     remote,
     query,
+    retainedSelection.current.identity === identity ? retainedSelection.current.choices : [],
   );
+  useLayoutEffect(() => {
+    // Keep only actual labels for the current selection, never synthesized ID fallbacks.
+    retainedSelection.current = { identity, choices: knownSelected };
+  });
   return {
     query,
     setQuery(next: string) {
@@ -218,7 +227,7 @@ export function useFilterOptions(
     items: shown,
     selected,
     loading: remote ? currentPage.loading : (source?.loading ?? false),
-    resolving: remote && ids.length > 0 && !matchingResolved,
+    resolving: missingLabels && (remote ? !matchingResolved : Boolean(source?.loading)),
     error: currentPage.error ?? (matchingResolved ? resolved.error : undefined) ?? source?.error,
     retry() {
       source?.retry?.();
@@ -271,9 +280,11 @@ function optionPresentation(
   retainedLabels: boolean,
   remote: boolean,
   query: string,
+  previousSelection: readonly Choice[],
 ) {
   const known = new Map<string, Choice>();
   for (const item of [
+    ...previousSelection,
     ...(source?.selectedItems ?? []),
     ...(retainedLabels ? resolved.choices : []),
     ...items,
@@ -293,5 +304,13 @@ function optionPresentation(
     remote || source?.onQueryChange
       ? items
       : items.filter((item) => item.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
-  return { selected, shown };
+  return {
+    selected,
+    shown,
+    knownSelected: ids.flatMap((id) => {
+      const choice = known.get(id);
+      return choice ? [choice] : [];
+    }),
+    missingLabels: ids.some((id) => !known.has(id)),
+  };
 }

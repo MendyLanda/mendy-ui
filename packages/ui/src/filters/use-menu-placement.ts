@@ -1,5 +1,5 @@
 "use client";
-import type { RefObject } from "react";
+import type { CSSProperties, RefObject } from "react";
 import { useLayoutEffect, useState } from "react";
 
 /** Position the menu against the search field and the available viewport. */
@@ -9,6 +9,7 @@ export function useMenuPlacement(
   desktop: boolean,
 ) {
   const [alignOffset, setAlignOffset] = useState(0);
+  const [anchorWidth, setAnchorWidth] = useState<number>();
   const [side, setSide] = useState<"top" | "bottom">("bottom");
   useLayoutEffect(() => {
     const button = trigger.current;
@@ -16,6 +17,7 @@ export function useMenuPlacement(
     const update = () => {
       const bounds = button.getBoundingClientRect();
       const target = anchor?.current?.getBoundingClientRect();
+      setAnchorWidth(target?.width);
       const rtl = getComputedStyle(button).direction === "rtl";
       const viewport = window.visualViewport;
       const viewportTop = viewport?.offsetTop ?? 0;
@@ -51,7 +53,10 @@ export function useMenuPlacement(
     };
   }, [anchor, desktop, trigger]);
 
-  return { alignOffset, side };
+  const anchorStyle = anchorWidth
+    ? ({ "--mendy-filter-anchor-width": `${anchorWidth}px` } as CSSProperties)
+    : undefined;
+  return { alignOffset, side, anchorStyle };
 }
 
 /** Follow the selected row while keeping the editor inside the viewport. */
@@ -77,19 +82,24 @@ export function useEditorOffset({
     const update = () => {
       const row = rows.current.get(selectedId ?? "");
       if (!row) return;
-      const available =
-        parseFloat(
-          getComputedStyle(root).getPropertyValue("--radix-dropdown-menu-content-available-height"),
-        ) || window.innerHeight - 32;
-      const offset = row.getBoundingClientRect().top - root.getBoundingClientRect().top;
-      setEditorOffset(
-        Math.max(0, Math.min(offset - 5, available - panel.getBoundingClientRect().height - 2)),
-      );
+      const rootTop = root.getBoundingClientRect().top;
+      const list = root.querySelector('[data-slot="filter-menu-list"]');
+      const listBottom = list?.getBoundingClientRect().bottom ?? rootTop;
+      const height = panel.getBoundingClientRect().height;
+      const viewport = window.visualViewport;
+      const viewportBottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight);
+      // Keep short editors inside the list's vertical span. Lower rows therefore
+      // open upward even on a tall viewport, instead of dangling below the list.
+      const latestTop = Math.max(rootTop, Math.min(listBottom, viewportBottom - 16) - height);
+      const preferredTop = row.getBoundingClientRect().top - 5;
+      setEditorOffset(Math.max(0, Math.min(preferredTop, latestTop) - rootTop));
     };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(panel);
     observer.observe(root);
+    const list = root.querySelector('[data-slot="filter-menu-list"]');
+    if (list) observer.observe(list);
     root.addEventListener("scroll", update, true);
     return () => {
       observer.disconnect();

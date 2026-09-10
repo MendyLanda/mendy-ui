@@ -1,8 +1,8 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
-import { useEffect, useLayoutEffect, useImperativeHandle, useRef, useState } from "react";
-import { useAnimate, useReducedMotion } from "motion/react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { m, LazyMotion, domAnimation, useReducedMotion } from "motion/react";
 
 import { XIcon } from "lucide-react";
 
@@ -26,45 +26,72 @@ export function FilterEditor(props: FilterEditorProps) {
   return <DropdownMenu modal={false} {...props} />;
 }
 
+const ChipListContext = createContext(false);
+const listVariant = {
+  hidden: { y: 10, opacity: 0 },
+  show: {
+    y: 0,
+    opacity: 1,
+    transition: { duration: 0.05, staggerChildren: 0.06 },
+  },
+};
+const itemVariant = {
+  hidden: { y: 10, opacity: 0 },
+  show: { y: 0, opacity: 1 },
+};
+const reducedVariant = {
+  hidden: { y: 0, opacity: 1 },
+  show: { y: 0, opacity: 1, transition: { duration: 0 } },
+};
+
+/** Preserve the original list stagger; newly inserted chips animate immediately. */
+export function FilterChipList({ children }: { children: ReactNode }) {
+  const reducedMotion = useReducedMotion();
+  return (
+    <LazyMotion features={domAnimation}>
+      <ChipListContext.Provider value>
+        <m.div
+          variants={reducedMotion ? reducedVariant : listVariant}
+          initial="hidden"
+          animate="show"
+          className="contents"
+        >
+          {children}
+        </m.div>
+      </ChipListContext.Provider>
+    </LazyMotion>
+  );
+}
+
 export type FilterChipProps = ComponentProps<"div"> & { entranceDelay?: number };
 
-export function FilterChip({ className, ref, entranceDelay = 0, ...props }: FilterChipProps) {
-  const [scope, animate] = useAnimate<HTMLDivElement>();
+export function FilterChip({ className, entranceDelay, ...props }: FilterChipProps) {
+  const inList = useContext(ChipListContext);
   const reducedMotion = useReducedMotion();
-  const initialDelay = useRef(entranceDelay);
-  useImperativeHandle(ref, () => scope.current);
-  useLayoutEffect(() => {
-    if (reducedMotion) {
-      scope.current.style.transform = "none";
-      scope.current.style.opacity = "1";
-      return;
-    }
-    const animation = animate(
-      scope.current,
-      { y: [10, 0], opacity: [0, 1] },
-      {
-        type: "spring",
-        stiffness: 100,
-        damping: 10,
-        mass: 1,
-        delay: initialDelay.current,
-        opacity: { duration: 0.2 },
-      },
-    );
-    return () => animation.stop();
-  }, [animate, scope, reducedMotion]);
-  return (
-    <div
+  const content = (
+    <m.div
       data-mendy-ui=""
-      ref={scope}
-      data-slot="filter-chip"
-      className={cn(
-        "inline-flex h-9 max-w-full overflow-hidden rounded-md items-center bg-secondary text-sm text-muted-foreground",
-        className,
-      )}
-      {...props}
-    />
+      data-slot="filter-chip-entrance"
+      variants={reducedMotion ? reducedVariant : itemVariant}
+      initial={inList ? undefined : "hidden"}
+      animate={inList ? undefined : "show"}
+      transition={
+        entranceDelay === undefined || reducedMotion ? undefined : { delay: entranceDelay }
+      }
+      className="min-w-0 max-w-full"
+    >
+      <div
+        data-mendy-ui=""
+        data-slot="filter-chip"
+        className={cn(
+          "inline-flex h-9 max-w-full overflow-hidden rounded-md items-center bg-secondary text-sm text-muted-foreground",
+          className,
+        )}
+        {...props}
+      />
+    </m.div>
   );
+  return inList ? content : <LazyMotion features={domAnimation}>{content}</LazyMotion>;
 }
 
 export type FilterEditorTriggerProps = ComponentProps<typeof DropdownMenuTrigger>;

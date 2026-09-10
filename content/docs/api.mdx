@@ -42,7 +42,7 @@ The default `commitMode="enter"` saves with Enter and allows new lines with Shif
 
 Import `FilterSelectEditor` and `FilterMultiSelectEditor` from `@mendylanda/ui/filters`.
 
-Both accept `label`, `options`, `searchable`, `searchPlaceholder`, and `emptyMessage`. An option has a unique string `value`, a string `label`, and an optional `disabled` flag. Search matches label substrings without case sensitivity. Pass your own strings for localization.
+Both accept `label`, `options`, `searchable`, `searchPlaceholder`, and `emptyMessage`. An option has a unique string `value`, a string `label`, and an optional `disabled` flag. Search is enabled by default; set `searchable={false}` to omit it. Search matches label substrings without case sensitivity. Pass your own strings for localization.
 
 `FilterSelectEditor` takes `value` and `onValueChange`. `FilterMultiSelectEditor` takes `values` and `onValuesChange`. Selection changes are immediate; single selection closes the menu, while multiple selection keeps it open. Unknown selected values are retained when toggling another option.
 

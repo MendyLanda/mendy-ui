@@ -144,6 +144,7 @@ export interface RuntimeField {
   merge(current: unknown, incoming: unknown): unknown;
   urlKey?: string;
   source?: RuntimeSource;
+  /** Search is enabled by default. False disables it regardless of list size. */
   searchable?: boolean;
   /** Hide only the menu entry; recognition and chip editing remain available. */
   menu?: boolean;
@@ -232,6 +233,7 @@ interface SelectConfig<T, V> extends FieldConfig<V> {
   options: readonly T[] | ExternalOptions<T> | RemoteOptions<T, unknown>;
   getValue?: (item: T) => string;
   getLabel?: (item: T) => string;
+  /** Search is enabled by default. False disables it regardless of list size. */
   searchable?: boolean;
   loading?: boolean;
   error?: string | null;

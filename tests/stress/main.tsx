@@ -62,7 +62,7 @@ const definitions = defineFilters({
       ? ({ autoFocus }) => <input aria-label="Custom search" autoFocus={autoFocus} />
       : undefined,
     options: params.has("remote") ? remote : choices,
-    searchable: true,
+    searchable: params.has("no-search") ? false : undefined,
     searchLabel: "Search people",
   }),
   date: filter.dateRange({ label: "Created date" }),
@@ -70,6 +70,7 @@ const definitions = defineFilters({
   amount: filter.numberRange({ label: "Estimate" }),
   status: filter.select({
     label: "Status",
+    searchable: false,
     options: [
       { value: "open", label: "Open" },
       { value: "closed", label: "Closed" },
@@ -112,7 +113,7 @@ function Fixture() {
         people: filter.multiSelect({
           label: title,
           options: liveChoices,
-          searchable: true,
+          searchable: params.has("no-search") ? false : undefined,
           searchLabel: "Search people",
         }),
       }

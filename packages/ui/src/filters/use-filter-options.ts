@@ -78,6 +78,11 @@ export function selectedIds(value: unknown): string[] {
       ? [value]
       : [];
 }
+// External queries belong to the consumer; opting out only disables our local search.
+function optionSearchQuery(field: RuntimeField, localQuery: string) {
+  return field.source?.query ?? (field.searchable === false ? "" : localQuery);
+}
+
 export function useFilterOptions(
   id: string,
   field: RuntimeField,
@@ -94,7 +99,7 @@ export function useFilterOptions(
   }, [source]);
   const scopeKey = JSON.stringify([id, source?.kind, source?.scope, source?.params]);
   const [localQuery, setLocalQuery] = useValueDraft(scopeKey, () => "", `${id}:query`);
-  const query = source?.query ?? localQuery;
+  const query = optionSearchQuery(field, localQuery);
   const [retryKey, retry] = useState(0);
   const requestKey = JSON.stringify([scopeKey, query, retryKey]);
   const identity = JSON.stringify([id, source?.kind, source?.scope]);

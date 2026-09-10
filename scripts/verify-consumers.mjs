@@ -247,7 +247,11 @@ for (const framework of ["vite", "next"]) {
       await expect(menu.getByRole("searchbox", { name: "Search owner" })).toBeFocused();
       await expect(menu.getByRole("searchbox", { name: "Search owner" })).toHaveCSS(
         "padding-left",
-        "32px",
+        "36px",
+      );
+      await expect(menu.getByRole("searchbox", { name: "Search owner" })).toHaveCSS(
+        "border-top-width",
+        "0px",
       );
       const editor = menu.getByRole("group", { name: "Choose owner", exact: true });
       const widths = await editor.evaluate((element) => ({

@@ -1,10 +1,8 @@
 "use client";
 
 import type { KeyboardEvent, ReactNode } from "react";
-import { useEffect, useId, useRef, useState } from "react";
-import { Input } from "../customization.js";
-import { Label } from "../customization.js";
-import { Search } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { FilterOptionSearch } from "./filter-option-search.js";
 import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from "../primitives/dropdown-menu.js";
 import { FilterCheckboxItem } from "./filters.js";
 
@@ -17,6 +15,7 @@ export interface FilterOption {
 interface SharedProps {
   label: string;
   options: readonly FilterOption[];
+  /** Search is enabled by default. Set false for a short list. */
   searchable?: boolean;
   searchPlaceholder?: string;
   emptyMessage?: string;
@@ -36,7 +35,7 @@ function handleSearchKey(event: KeyboardEvent<HTMLInputElement>) {
 function SearchableOptions({
   label,
   options,
-  searchable,
+  searchable = true,
   searchPlaceholder,
   emptyMessage = "No options found.",
   children,
@@ -48,10 +47,11 @@ function SearchableOptions({
     const frame = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(frame);
   }, [searchable]);
-  const id = useId();
-  const filtered = options.filter((option) =>
-    option.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
-  );
+  const filtered = !searchable
+    ? options
+    : options.filter((option) =>
+        option.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
+      );
 
   return (
     <div
@@ -63,26 +63,14 @@ function SearchableOptions({
       }}
     >
       {searchable && (
-        <div data-mendy-ui="" className="relative border-b p-2">
-          <Search
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 opacity-50"
-            strokeWidth={1.5}
-            aria-hidden="true"
-          />
-          <Label htmlFor={id} className="sr-only">
-            {label}
-          </Label>
-          <Input
-            ref={inputRef}
-            id={id}
-            type="search"
-            className="pl-8 [&::-webkit-search-cancel-button]:appearance-none"
-            placeholder={searchPlaceholder ?? label}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={handleSearchKey}
-          />
-        </div>
+        <FilterOptionSearch
+          ref={inputRef}
+          aria-label={label}
+          placeholder={searchPlaceholder ?? label}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={handleSearchKey}
+        />
       )}
       {filtered.length ? (
         <div role="menu" aria-label={label} className="p-1">

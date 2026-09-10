@@ -27,6 +27,7 @@ import { defineFilters, filter, FilterBar, useFilters } from "@mendylanda/ui/fil
 const definitions = defineFilters({
   status: filter.select({
     label: "Status",
+    searchable: false,
     options: [
       { value: "open", label: "Open" },
       { value: "closed", label: "Closed" },

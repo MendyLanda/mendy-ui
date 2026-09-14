@@ -4,7 +4,7 @@ import type { ReactNode, Ref } from "react";
 import type { Header } from "@tanstack/react-table";
 import type { DataTableFeatures } from "./features.js";
 import type { DataTableInstance } from "./use-data-table.js";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TableHeaderCell, TableBodyRow } from "./table-parts.js";
 import { Button } from "../primitives/button.js";
@@ -93,8 +93,16 @@ export function TableView<T extends object>({
   );
   const { totalWidth, pinningActive } = layout;
   const focused = table.getFocusedCell();
-  const { columns, cellStyle } = useColumnWindow(layout, container, focused?.column.id);
-  const columnIndexes = new Map(layout.columns.map((column, index) => [column.id, index]));
+  const { columns, columnGaps, cellStyle } = useColumnWindow(
+    layout,
+    container,
+    viewportWidth,
+    focused?.column.id,
+  );
+  const columnIndexes = useMemo(
+    () => new Map(layout.columns.map((column, index) => [column.id, index])),
+    [layout.columns],
+  );
   const { announcement, copied, onKeyDown } = useTableInteraction({
     table,
     pinningActive,
@@ -117,13 +125,7 @@ export function TableView<T extends object>({
   useEffect(() => {
     const data = load.current;
     const requestKey = `${queryKey}:${rows.length}`;
-    const element = container.current;
-    // The virtual range can briefly describe the previous query after scroll resets.
-    const nearEnd =
-      element &&
-      element.scrollTop + element.clientHeight + rowHeight * 10 >= (rows.length + 1) * rowHeight;
     if (
-      !nearEnd ||
       !data?.available ||
       data.loading ||
       data.error ||
@@ -131,6 +133,13 @@ export function TableView<T extends object>({
       requested.current === requestKey
     )
       return;
+    const element = container.current;
+    // Only measure near the end when another page can actually be requested.
+    // Reading clientHeight on every scroll otherwise forces layout needlessly.
+    const nearEnd =
+      element &&
+      element.scrollTop + element.clientHeight + rowHeight * 10 >= (rows.length + 1) * rowHeight;
+    if (!nearEnd) return;
     requested.current = requestKey;
     Promise.resolve()
       .then(() => data.load())
@@ -156,6 +165,7 @@ export function TableView<T extends object>({
       <div
         ref={setContainer}
         role="grid"
+        tabIndex={-1}
         aria-label={label}
         aria-rowcount={rows.length + 1}
         aria-colcount={layout.columns.length}
@@ -174,15 +184,24 @@ export function TableView<T extends object>({
           style={{ width: totalWidth }}
         >
           {columns.map((column) => (
-            <TableHeaderCell
-              key={column.id}
-              table={table}
-              header={headersById.get(column.id)!}
-              index={columnIndexes.get(column.id)!}
-              style={cellStyle(column)}
-              renderHeader={renderHeader}
-              contentClassName={contentClassName}
-            />
+            <Fragment key={column.id}>
+              {columnGaps.has(column.id) && (
+                <div
+                  aria-hidden="true"
+                  className="shrink-0"
+                  style={{ width: columnGaps.get(column.id) }}
+                />
+              )}
+              <TableHeaderCell
+                key={column.id}
+                table={table}
+                header={headersById.get(column.id)!}
+                index={columnIndexes.get(column.id)!}
+                style={cellStyle(column)}
+                renderHeader={renderHeader}
+                contentClassName={contentClassName}
+              />
+            </Fragment>
           ))}
         </div>
         <TableInitialState
@@ -192,6 +211,7 @@ export function TableView<T extends object>({
             loadingState ?? (
               <TableLoadingRows
                 columns={columns}
+                columnGaps={columnGaps}
                 width={totalWidth}
                 rowHeight={rowHeight}
                 cellStyle={cellStyle}
@@ -220,6 +240,7 @@ export function TableView<T extends object>({
               rowHeight={rowHeight}
               cellStyle={cellStyle}
               columns={columns}
+              columnGaps={columnGaps}
               columnIndexes={columnIndexes}
               contentVersion={table.options}
               contentState={table.state}

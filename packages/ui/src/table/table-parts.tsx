@@ -4,7 +4,7 @@ import type { Cell, Column, Header, Row } from "@tanstack/react-table";
 import type { DataTableFeatures } from "./features.js";
 import type { DataTableInstance } from "./use-data-table.js";
 import type { TableColumn } from "./columns.js";
-import { memo, useMemo } from "react";
+import { Fragment, memo, useMemo } from "react";
 import { constructCell, flexRender } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { Button } from "../primitives/button.js";
@@ -59,13 +59,14 @@ export function TableHeaderCell<T extends object>({
     </div>
   );
 }
-export function TableBodyRow<T extends object>({
+function TableBodyRowImpl<T extends object>({
   row,
   rowIndex,
   start,
   rowHeight,
   cellStyle,
   columns,
+  columnGaps,
   columnIndexes,
   contentVersion,
   contentState,
@@ -81,6 +82,7 @@ export function TableBodyRow<T extends object>({
   rowHeight: number;
   cellStyle: (column: Column<DataTableFeatures, T>) => CSSProperties;
   columns: Column<DataTableFeatures, T>[];
+  columnGaps: Map<string, number>;
   columnIndexes: Map<string, number>;
   contentVersion: unknown;
   contentState: unknown;
@@ -113,7 +115,7 @@ export function TableBodyRow<T extends object>({
       data-highlighted={isRowHighlighted?.(row.original)}
       data-index={rowIndex}
       className="group absolute left-0 top-0 flex min-w-full hover:bg-accent/50 data-[highlighted=true]:bg-accent"
-      style={{ height: rowHeight, transform: `translateY(${start}px)` }}
+      style={{ height: rowHeight, top: start }}
     >
       {cells.map((cell) => {
         const index = columnIndexes.get(cell.column.id)!;
@@ -121,75 +123,94 @@ export function TableBodyRow<T extends object>({
         const definition = cell.column.columnDef as TableColumn<T>;
         const edge = selected ? cell.getSelectionEdges() : null;
         return (
-          <div
-            key={cell.id}
-            role="gridcell"
-            aria-colindex={index + 1}
-            aria-selected={selected}
-            data-row-id={row.id}
-            data-column-id={cell.column.id}
-            tabIndex={
-              focusedId ? (focusedId === cell.id ? 0 : -1) : rowIndex === 0 && index === 0 ? 0 : -1
-            }
-            style={cellStyle(cell.column)}
-            className={cn(
-              "relative flex shrink-0 items-center border-b border-e bg-background px-3 group-hover:bg-accent group-data-[highlighted=true]:bg-accent focus-visible:outline focus-visible:-outline-offset-2 focus-visible:outline-primary",
-              definition.align === "end" && "justify-end text-end",
-              definition.align === "center" && "justify-center text-center",
-              selected && "bg-accent",
-              selected && copied && "bg-green-100 dark:bg-green-950",
-            )}
-            onMouseDown={(event) => {
-              if (
-                event.button !== 0 ||
-                event.detail > 1 ||
-                !cell.getCanSelect() ||
-                (event.target as Element).closest(interactiveSelector) ||
-                window.getSelection()?.toString()
-              )
-                return;
-              event.preventDefault();
-              event.stopPropagation();
-              event.currentTarget.focus({ preventScroll: true });
-              cell.getSelectionStartHandler()(event);
-            }}
-            onMouseEnter={cell.getSelectionExtendHandler()}
-            onDoubleClick={(event) => {
-              if (!(event.target as Element).closest(interactiveSelector))
-                onRowActivate?.(row.original);
-            }}
-          >
-            {selected && (
-              <span
+          <Fragment key={cell.id}>
+            {columnGaps.has(cell.column.id) && (
+              <div
                 aria-hidden="true"
-                data-selection-outline=""
-                className="pointer-events-none absolute z-1 border-primary"
-                style={{
-                  top: edge?.top ? 0 : -1,
-                  bottom: edge?.bottom ? -1 : -2,
-                  left: -Number(cellStyle(cell.column).borderLeftWidth ?? 0),
-                  right: -Number(cellStyle(cell.column).borderRightWidth ?? 1),
-                  borderTopWidth: edge?.top ? 2 : 0,
-                  borderBottomWidth: edge?.bottom ? 2 : 0,
-                  borderLeftWidth: edge?.left ? 2 : 0,
-                  borderRightWidth: edge?.right ? 2 : 0,
-                }}
+                className="shrink-0"
+                style={{ width: columnGaps.get(cell.column.id) }}
               />
             )}
-            <div className={cn("max-h-full min-w-0 max-w-full truncate", contentClassName)}>
-              <TableCellContent
-                cell={cell}
-                renderer={cell.column.columnDef.cell}
-                version={contentVersion}
-                state={contentState}
-              />
+            <div
+              key={cell.id}
+              role="gridcell"
+              aria-colindex={index + 1}
+              aria-selected={selected}
+              data-row-id={row.id}
+              data-column-id={cell.column.id}
+              tabIndex={
+                focusedId
+                  ? focusedId === cell.id
+                    ? 0
+                    : -1
+                  : rowIndex === 0 && index === 0
+                    ? 0
+                    : -1
+              }
+              style={cellStyle(cell.column)}
+              className={cn(
+                "relative flex shrink-0 items-center border-b border-e bg-background px-3 group-hover:bg-accent group-data-[highlighted=true]:bg-accent",
+                !selected &&
+                  "focus-visible:outline focus-visible:-outline-offset-2 focus-visible:outline-primary",
+                definition.align === "end" && "justify-end text-end",
+                definition.align === "center" && "justify-center text-center",
+                selected && "bg-accent outline-none",
+                selected && copied && "bg-green-100 dark:bg-green-950",
+              )}
+              onMouseDown={(event) => {
+                if (
+                  event.button !== 0 ||
+                  event.detail > 1 ||
+                  !cell.getCanSelect() ||
+                  (event.target as Element).closest(interactiveSelector) ||
+                  window.getSelection()?.toString()
+                )
+                  return;
+                event.preventDefault();
+                event.stopPropagation();
+                event.currentTarget.focus({ preventScroll: true });
+                cell.getSelectionStartHandler()(event);
+              }}
+              onMouseEnter={cell.getSelectionExtendHandler()}
+              onDoubleClick={(event) => {
+                if (!(event.target as Element).closest(interactiveSelector))
+                  onRowActivate?.(row.original);
+              }}
+            >
+              {selected && (
+                <span
+                  aria-hidden="true"
+                  data-selection-outline=""
+                  className="pointer-events-none absolute z-1 border-primary"
+                  style={{
+                    top: edge?.top ? 0 : -1,
+                    bottom: edge?.bottom ? -1 : -2,
+                    left: -Number(cellStyle(cell.column).borderLeftWidth ?? 0),
+                    right: -Number(cellStyle(cell.column).borderRightWidth ?? 1),
+                    borderTopWidth: edge?.top ? 2 : 0,
+                    borderBottomWidth: edge?.bottom ? 2 : 0,
+                    borderLeftWidth: edge?.left ? 2 : 0,
+                    borderRightWidth: edge?.right ? 2 : 0,
+                  }}
+                />
+              )}
+              <div className={cn("max-h-full min-w-0 max-w-full truncate", contentClassName)}>
+                <TableCellContent
+                  cell={cell}
+                  renderer={cell.column.columnDef.cell}
+                  version={contentVersion}
+                  state={contentState}
+                />
+              </div>
             </div>
-          </div>
+          </Fragment>
         );
       })}
     </div>
   );
 }
+
+export const TableBodyRow = memo(TableBodyRowImpl) as typeof TableBodyRowImpl;
 
 function TableResizeHandle<T extends object>({
   table,

@@ -117,3 +117,44 @@ test("selecting ten million cells keeps rendering bounded", async ({ page }) => 
     ),
   ).toBe(0);
 });
+
+test("large client sorting and filtering preserve displayed selection values", async ({ page }) => {
+  await page.evaluate(() => {
+    const { table } = window as unknown as PerformanceHarnessWindow;
+    table.setSorting([{ id: "column-0", desc: true }]);
+  });
+  await expect(page.locator('[data-column-id="column-0"][role="gridcell"]').first()).toHaveText(
+    "99999:0",
+  );
+  await page.evaluate(() => {
+    const { table } = window as unknown as PerformanceHarnessWindow;
+    table.setColumnFilters([{ id: "column-0", value: [99990, 99999] }]);
+  });
+  await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "11");
+  const copied = await page.evaluate(() => {
+    const { table, copySelection } = window as unknown as PerformanceHarnessWindow;
+    table.selectCellRange({
+      anchorRowId: "99999",
+      anchorColumnId: "column-1",
+      focusRowId: "99990",
+      focusColumnId: "column-1",
+    });
+    return copySelection();
+  });
+  expect(copied).toBe(Array.from({ length: 10 }, (_, i) => String(100000 - i)).join("\n"));
+});
+
+test("end pins stay fully visible when a wide offscreen gap precedes them", async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 800 });
+  const grid = page.getByRole("grid");
+  await grid.evaluate((el) => {
+    el.scrollLeft = 100;
+  });
+  const right = (await grid.boundingBox())!.x + (await grid.boundingBox())!.width;
+  for (const role of ["gridcell", "columnheader"]) {
+    const pin = page.locator(`[role="${role}"][data-column-id="column-99"]`).first();
+    await expect(pin).toBeInViewport({ ratio: 1 });
+    const box = (await pin.boundingBox())!;
+    expect(Math.abs(box.x + box.width - right)).toBeLessThan(2);
+  }
+});

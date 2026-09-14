@@ -87,7 +87,7 @@ On narrow screens, columns keep their saved order but temporarily stop sticking 
 
 ## Large tables
 
-The viewport mounts visible rows and columns with overscan. Pinned columns and the focused column stay mounted. Resizing the viewport reuses cell content while updating its geometry. Copy visits selected rows rather than searching every loaded row.
+The viewport mounts visible rows and columns with overscan. Pinned columns and the focused column stay mounted. Resizing the viewport reuses cell content while updating its geometry. Copy visits only selected cells, preserving displayed column order and custom copy values. Scrolling a selection out of view does not disable keyboard copying.
 
 These optimizations are defaults. Inline column definitions and callbacks remain supported, and changed renderers receive fresh values. Recreating an array with the same row objects does not rebuild the row model. Update records immutably when their values change.
 

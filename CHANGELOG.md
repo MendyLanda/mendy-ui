@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0-alpha.5
+
+- Keep keyboard copying available after the focused row scrolls out of view and remounts. Preserve focus on controls outside the table.
+- Hide selection strokes behind pinned columns and avoid a second focus outline inside selected ranges. Keep end-pinned columns fully visible across virtual column gaps.
+- Copy only the selected cells, preserving custom values, pinned order, exclusions, and disabled cells without allocating unrelated columns.
+- Reuse unchanged rows and column geometry, cache class-name merges, and avoid unnecessary layout reads during scrolling and incremental loading.
+
 ## 0.3.0-alpha.4
 
 - Virtualize columns as well as rows, retaining pinned columns and keyboard focus. Construct viewport cell objects on demand.

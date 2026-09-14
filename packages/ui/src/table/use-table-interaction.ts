@@ -2,7 +2,7 @@
 import type { KeyboardEvent, RefObject } from "react";
 import type { CellSelectionDirection } from "@tanstack/react-table";
 import type { DataTableInstance } from "./use-data-table.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { interactiveSelector, selectedCellsText } from "./clipboard.js";
 
 export function useTableInteraction<T extends object>({
@@ -33,6 +33,32 @@ export function useTableInteraction<T extends object>({
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const mounted = useRef(true);
+  const ownedFocus = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const element = container.current;
+    if (!element) return;
+    const remember = (event: FocusEvent) => {
+      const target = event.target as HTMLElement;
+      ownedFocus.current =
+        element.contains(target) && target.getAttribute("role") === "gridcell" ? target : null;
+    };
+    document.addEventListener("focusin", remember);
+    return () => document.removeEventListener("focusin", remember);
+  }, [container]);
+  useLayoutEffect(() => {
+    // A virtual row can unmount the focused cell without a blur event. Keep
+    // keyboard commands on the grid rather than silently returning them to body.
+    if (
+      ownedFocus.current &&
+      !ownedFocus.current.isConnected &&
+      document.activeElement === document.body &&
+      table.getSelectedCellCount()
+    ) {
+      ownedFocus.current = null;
+      container.current?.focus({ preventScroll: true });
+    }
+  });
+
   useEffect(() => {
     mounted.current = true;
     return () => {

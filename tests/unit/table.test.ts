@@ -62,3 +62,12 @@ test("spare width respects weights, caps, fixed columns and narrow viewports", a
     [50, 150, 150],
   );
 });
+
+test("class merging preserves overrides after cache reuse and eviction", async () => {
+  const { cn } = await import("../../packages/ui/src/utils");
+  assert.equal(cn("px-3", [false, "px-6"]), "px-6");
+  assert.equal(cn("px-3", { "px-6": true }), "px-6");
+  for (let i = 0; i < 600; i++) cn(`w-[${i}px]`, "px-2");
+  assert.equal(cn("px-3", "px-6"), "px-6");
+  assert.equal(cn("px-6", "px-3"), "px-3");
+});

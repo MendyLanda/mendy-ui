@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0-alpha.6
+
+- Restore the spinner beside the incremental-loading status, with reduced-motion support.
+- Keep copied cells green while their row is hovered or highlighted, then restore the row highlight after the copy feedback ends.
+
 ## 0.3.0-alpha.5
 
 - Keep keyboard copying available after the focused row scrolls out of view and remounts. Preserve focus on controls outside the table.

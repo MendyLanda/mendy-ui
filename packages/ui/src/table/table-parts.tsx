@@ -149,7 +149,9 @@ function TableBodyRowImpl<T extends object>({
               }
               style={cellStyle(cell.column)}
               className={cn(
-                "relative flex shrink-0 items-center border-b border-e bg-background px-3 group-hover:bg-accent group-data-[highlighted=true]:bg-accent",
+                "relative flex shrink-0 items-center border-b border-e bg-background px-3",
+                !(selected && copied) &&
+                  "group-hover:bg-accent group-data-[highlighted=true]:bg-accent",
                 !selected &&
                   "focus-visible:outline focus-visible:-outline-offset-2 focus-visible:outline-primary",
                 definition.align === "end" && "justify-end text-end",

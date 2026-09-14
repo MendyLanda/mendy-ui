@@ -263,26 +263,39 @@ export function TableView<T extends object>({
           </div>
         )}
         {loadMore?.available && (
-          <div className="sticky left-0 flex justify-center p-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={loadMore.loading}
-              onClick={() => {
-                requested.current = null;
-                void Promise.resolve()
-                  .then(() => loadMore.load())
-                  .catch(() => {
-                    requested.current = null;
-                  });
-              }}
-            >
-              {loadMore.loading
-                ? "Loading more…"
-                : loadMore.error
-                  ? "Retry loading more"
-                  : "Load more"}
-            </Button>
+          <div className="sticky left-0 flex items-center justify-center gap-2 py-5 text-sm text-muted-foreground">
+            {loadMore.loading ? (
+              <div role="status" className="flex items-center gap-2">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="size-5 shrink-0 animate-spin motion-reduce:animate-none"
+                >
+                  <path d="M12 3v3m6.366-.366-2.12 2.12M21 12h-3m.366 6.366-2.12-2.12M12 21v-3m-6.366.366 2.12-2.12M3 12h3m-.366-6.366 2.12 2.12" />
+                </svg>
+                <span>Loading more…</span>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  requested.current = null;
+                  void Promise.resolve()
+                    .then(() => loadMore.load())
+                    .catch(() => {
+                      requested.current = null;
+                    });
+                }}
+              >
+                {loadMore.error ? "Retry loading more" : "Load more"}
+              </Button>
+            )}
             {loadMore.error && <span role="alert">{loadMore.error}</span>}
           </div>
         )}

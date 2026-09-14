@@ -135,3 +135,51 @@ test("scrolling selection does not steal focus from another control", async ({ p
   await expect(page.locator('[data-row-id="1000"][data-column-id="column-1"]')).toBeVisible();
   await expect(button).toBeFocused();
 });
+
+for (const theme of ["light", "dark"]) {
+  for (const highlighted of [false, true]) {
+    test(`copy feedback overrides hover and highlighted rows (${theme}, highlighted=${highlighted})`, async ({
+      page,
+    }) => {
+      await page.goto(
+        `http://127.0.0.1:8796/?rows=100&columns=6${highlighted ? "&highlight" : ""}`,
+      );
+      await page.evaluate(
+        (dark) => document.documentElement.classList.toggle("dark", dark),
+        theme === "dark",
+      );
+      await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
+      const first = page.locator('[data-row-id="0"][data-column-id="column-0"]');
+      const second = page.locator('[data-row-id="1"][data-column-id="column-0"]');
+      const unselected = page.locator('[data-row-id="0"][data-column-id="column-2"]');
+      await first.click();
+      await page.keyboard.press("Shift+ArrowDown");
+      await page.keyboard.press("Shift+ArrowRight");
+      await page.mouse.move(1100, 750);
+      await page.clock.pauseAt(new Date("2026-01-02T00:00:00Z"));
+      await page.keyboard.press("Meta+c");
+      await expect(page.getByText("Selected cells copied", { exact: true })).toBeAttached();
+      const green = await second.evaluate((el) => getComputedStyle(el).backgroundColor);
+      await first.hover();
+      await expect(first).toHaveCSS("background-color", green);
+      await expect(page.locator('[data-row-id="0"][data-column-id="column-1"]')).toHaveCSS(
+        "background-color",
+        green,
+      );
+      await expect(unselected).not.toHaveCSS("background-color", green);
+      await page.clock.runFor(350);
+      await expect(first).not.toHaveCSS("background-color", green);
+    });
+  }
+}
+
+test("incremental loading shows a spinner beside its status text", async ({ page }) => {
+  await page.goto("http://127.0.0.1:8796/?rows=10&columns=6&loading");
+  const status = page.getByRole("status").filter({ hasText: "Loading more" });
+  await expect(status).toBeVisible();
+  const spinner = status.locator('svg[aria-hidden="true"]');
+  await expect(spinner).toBeVisible();
+  await expect(spinner).toHaveCSS("animation-iteration-count", "infinite");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(spinner).toHaveCSS("animation-name", "none");
+});

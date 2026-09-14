@@ -47,7 +47,14 @@ function App() {
         Update first row
       </button>
       <output>{revision}</output>
-      <TableView table={table} height={600} />
+      <TableView
+        table={table}
+        height={600}
+        isRowHighlighted={params.has("highlight") ? (row) => row.id === "0" : undefined}
+        loadMore={
+          params.has("loading") ? { available: true, loading: true, load: () => {} } : undefined
+        }
+      />
     </main>
   );
 }

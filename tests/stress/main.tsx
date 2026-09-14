@@ -7,6 +7,7 @@ import {
   FilterBar,
   FilterRoot,
   FilterSearch,
+  FilterMenu,
   FilterList,
   FilterClear,
   AppliedFilter,
@@ -196,8 +197,68 @@ function StandaloneFixture() {
     </main>
   );
 }
+
+const availabilityDefinitions = defineFilters({
+  status: filter.select({
+    label: "Status",
+    searchable: false,
+    options: [{ value: "active", label: "Active" }],
+  }),
+});
+const recognizedOnlyDefinitions = defineFilters({
+  identifier: filter.text({
+    label: "Identifier",
+    menu: false,
+    recognize: (token) => (/^ISSUE-\d+$/.test(token) ? token : undefined),
+  }),
+});
+const zeroDefinitions = defineFilters({});
+
+function AvailabilityFixture() {
+  if (params.has("zero-fields")) return <AvailabilityBar definitions={zeroDefinitions} />;
+  if (params.has("menu-hidden-fields"))
+    return <AvailabilityBar definitions={recognizedOnlyDefinitions} />;
+  return <AvailabilityBar definitions={availabilityDefinitions} />;
+}
+
+function AvailabilityBar({ definitions }: { definitions: Parameters<typeof useFilters>[0] }) {
+  const [menuAvailable, setMenuAvailable] = useState(true);
+  const filters = useFilters(
+    params.has("dynamic-menu")
+      ? menuAvailable
+        ? availabilityDefinitions
+        : recognizedOnlyDefinitions
+      : definitions,
+  );
+  return (
+    <main>
+      {params.has("standalone-menu") ? (
+        <FilterRoot filters={filters}>
+          <FilterMenu />
+        </FilterRoot>
+      ) : params.has("custom-clear") ? (
+        <FilterRoot filters={filters}>
+          <FilterSearch />
+          <FilterList />
+          <FilterClear>Reset view</FilterClear>
+        </FilterRoot>
+      ) : (
+        <FilterBar filters={filters} />
+      )}
+      {params.has("dynamic-menu") && (
+        <button type="button" onClick={() => setMenuAvailable((available) => !available)}>
+          Toggle menu fields
+        </button>
+      )}
+      <output id="values">{JSON.stringify(filters.values)}</output>
+    </main>
+  );
+}
+
 createRoot(document.getElementById("root")!).render(
-  params.has("standalone") ? (
+  params.has("availability") ? (
+    <AvailabilityFixture />
+  ) : params.has("standalone") ? (
     <StandaloneFixture />
   ) : params.has("chip-regressions") ? (
     <ChipFixture />

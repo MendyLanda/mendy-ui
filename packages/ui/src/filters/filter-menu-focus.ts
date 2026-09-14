@@ -40,7 +40,7 @@ export function handleMenuTab(
     onClose,
     hasSelection,
   }: {
-    trigger: HTMLButtonElement | null;
+    trigger: HTMLElement | null;
     editor: HTMLDivElement | null;
     onClose(): void;
     hasSelection: boolean;

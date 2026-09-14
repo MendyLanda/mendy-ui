@@ -192,10 +192,8 @@ export function TableView<T extends object>({
         aria-colcount={layout.columns.length}
         aria-busy={status === "loading" || refreshing}
         style={{
-          height:
-            height === "auto"
-              ? `min(65dvh, ${Math.max(rows.length ? 0 : 160, virtual.getTotalSize() + rowHeight + 2)}px)`
-              : height,
+          height: height === "auto" ? undefined : height,
+          maxHeight: height === "auto" ? "65dvh" : undefined,
         }}
         className={cn(
           "relative isolate overflow-auto rounded-md border bg-background text-sm outline-none",
@@ -241,10 +239,14 @@ export function TableView<T extends object>({
                 width={totalWidth}
                 rowHeight={rowHeight}
                 cellStyle={cellStyle}
-                count={Math.max(
-                  1,
-                  Math.ceil(((virtual.scrollRect?.height ?? 400) - rowHeight) / rowHeight),
-                )}
+                count={
+                  height === "auto"
+                    ? 8
+                    : Math.max(
+                        1,
+                        Math.ceil(((virtual.scrollRect?.height ?? 400) - rowHeight) / rowHeight),
+                      )
+                }
               />
             )
           }

@@ -12,7 +12,7 @@ Start with `FilterBar`. It renders search, the filter menu, applied chips, sugge
 | `filters`                 | Required controller from `useFilters`, `useUrlFilters`, or `useControlledFilters` |
 | `searchLabel`             | `Search`; accessible label for the search input                                   |
 | `searchPlaceholder`       | `Search or filter`                                                                |
-| `showClear`               | `true`; include Clear all after the chips                                         |
+| `showClear`               | `true`; show Clear all when a removable filter is active                          |
 | `summary`                 | `{ mode: "count", limit: 3 }`; individual fields can override it                  |
 | `suggestions`             | `"always"`; also accepts `"when-empty"` and `"never"`                             |
 | `closeMenuOnApply`        | `false`; individual fields can override it                                        |
@@ -31,6 +31,8 @@ Start with `FilterBar`. It renders search, the filter menu, applied chips, sugge
 | `FilterFeedback`    | Validation, persistence, and ambiguous recognition feedback                    |
 | `FilterField`       | `id`; render a single chip or suggestion                                       |
 | `FilterFieldEditor` | `id`, `autoFocus = true`; put a field editor in your own layout                |
+
+Search-only bars hide the menu trigger and use the input’s clear control. Menu fields with `hidden: true` or `menu: false` do not create a menu trigger. Applied removable chips can still show Clear all.
 
 When placing `FilterClear` elsewhere, set `<FilterList showClear={false} />` to avoid two clear actions.
 

@@ -67,7 +67,7 @@ interface RootContext {
   suggestions: "when-empty" | "always" | "never";
   groups: FilterMenuGroup[];
   disabled: boolean;
-  trigger: React.RefObject<HTMLButtonElement | null>;
+  trigger: React.RefObject<HTMLElement | null>;
   ambiguous: PasteAmbiguity[];
   setAmbiguous(value: PasteAmbiguity[]): void;
 }
@@ -77,6 +77,15 @@ const subscribeHydration = () => () => {};
 const clientHydrated = () => true;
 const serverHydrated = () => false;
 const Context = createContext<RootContext | null>(null);
+function availableMenuEntries(filters: FilterController) {
+  return filters.entries.filter((entry) => !entry.field.hidden && entry.field.menu !== false);
+}
+function hasClearableActiveField(filters: FilterController) {
+  return filters.entries.some(
+    ({ field, value }) =>
+      !field.hidden && !field.disabled && field.removable !== false && field.isActive(value),
+  );
+}
 function useRoot() {
   const context = useContext(Context);
   if (!context) throw new Error("Filter components must be inside FilterRoot.");
@@ -118,7 +127,7 @@ function FilterRootContent({
   const disabled = disabledProp || !hydrated;
   const [cache] = useState(() => new Map());
   const [ambiguous, setAmbiguous] = useState<PasteAmbiguity[]>([]);
-  const trigger = useRef<HTMLButtonElement>(null);
+  const trigger = useRef<HTMLElement>(null);
   const [direction, setDirection] = useState<"ltr" | "rtl">("ltr");
   useLayoutEffect(() => {
     if (filters.menuOpen && trigger.current)
@@ -182,11 +191,23 @@ export function FilterSearch({
   const anchor = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const shift = useRef(false);
+  const hasMenu = availableMenuEntries(filters).length > 0;
+  useLayoutEffect(() => {
+    if (hasMenu) return;
+    const focusTarget = input.current;
+    trigger.current = focusTarget;
+    return () => {
+      if (trigger.current === focusTarget) trigger.current = null;
+    };
+  }, [hasMenu, trigger]);
+  useEffect(() => {
+    if (!hasMenu && filters.menuOpen) filters.setMenuOpen(false);
+  }, [filters, hasMenu]);
   return (
     <DropdownMenu
       dir={direction}
       modal={false}
-      open={filters.menuOpen}
+      open={hasMenu && filters.menuOpen}
       onOpenChange={filters.setMenuOpen}
     >
       <div
@@ -211,7 +232,7 @@ export function FilterSearch({
           spellCheck={false}
           className={cn(
             "w-full ps-9 text-sm [&::-webkit-search-cancel-button]:appearance-none",
-            filters.search ? "pe-16" : "pe-9",
+            filters.search ? (hasMenu ? "pe-16" : "pe-9") : hasMenu ? "pe-9" : "pe-3",
             classNames?.searchInput,
           )}
           onKeyDown={(event) => {
@@ -261,7 +282,10 @@ export function FilterSearch({
             type="button"
             disabled={disabled}
             aria-label="Clear search"
-            className="absolute end-9 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm opacity-50 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className={cn(
+              "absolute top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm opacity-50 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              hasMenu ? "end-9" : "end-1",
+            )}
             onClick={() => {
               setAmbiguous([]);
               filters.setSearch("");
@@ -271,26 +295,30 @@ export function FilterSearch({
             <X className="size-3.5" aria-hidden="true" />
           </Button>
         )}
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            ref={trigger}
-            type="button"
-            disabled={disabled}
-            aria-label="Open filters"
-            aria-haspopup="dialog"
-            className={cn(
-              "absolute end-1 top-1/2 size-7 -translate-y-1/2 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:opacity-100",
-              filters.active.length ? "opacity-100" : "opacity-50",
-              classNames?.menuTrigger,
-            )}
-          >
-            <ListFilter className="size-4" aria-hidden="true" />
-          </Button>
-        </DropdownMenuTrigger>
+        {hasMenu && (
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              ref={(element) => {
+                trigger.current = element;
+              }}
+              type="button"
+              disabled={disabled}
+              aria-label="Open filters"
+              aria-haspopup="dialog"
+              className={cn(
+                "absolute end-1 top-1/2 size-7 -translate-y-1/2 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:opacity-100",
+                filters.active.length ? "opacity-100" : "opacity-50",
+                classNames?.menuTrigger,
+              )}
+            >
+              <ListFilter className="size-4" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+        )}
       </div>
-      {filters.menuOpen && <FilterMenuContent anchor={anchor} />}
+      {hasMenu && filters.menuOpen && <FilterMenuContent anchor={anchor} />}
     </DropdownMenu>
   );
 }
@@ -307,6 +335,11 @@ export function FilterMenu({
 }) {
   const { filters, trigger, disabled, direction } = useRoot();
   const { classNames } = useMendyUI();
+  const hasMenu = availableMenuEntries(filters).length > 0;
+  useEffect(() => {
+    if (!hasMenu && filters.menuOpen) filters.setMenuOpen(false);
+  }, [filters, hasMenu]);
+  if (!hasMenu) return null;
   return (
     <DropdownMenu
       dir={direction}
@@ -316,7 +349,9 @@ export function FilterMenu({
     >
       <DropdownMenuTrigger asChild>
         <Button
-          ref={trigger}
+          ref={(element) => {
+            trigger.current = element;
+          }}
           asChild={asChild}
           className={classNames?.menuTrigger}
           variant="outline"
@@ -344,9 +379,7 @@ function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement
   const [clearEpoch, setClearEpoch] = useState(0);
   const [drafts] = useState<DraftCache>(() => new Map());
   const grouped = new Set(groups.flatMap((group) => group.fields));
-  const visible = filters.entries.filter(
-    (entry) => !entry.field.hidden && entry.field.menu !== false,
-  );
+  const visible = availableMenuEntries(filters);
   const sections = [
     ...visible.flatMap((entry) =>
       grouped.has(entry.id)
@@ -463,7 +496,7 @@ export function FilterList({ showClear = true }: { showClear?: boolean }) {
           ? [<FieldChip key={entry.id} entry={entry} />]
           : [],
       )}
-      {showClear && <FilterClear />}
+      {showClear && hasClearableActiveField(filters) && <FilterClear />}
     </FilterChipList>
   );
 }

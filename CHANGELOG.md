@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0-alpha.8
+
+- Fit short tables and custom empty states to their natural height without unnecessary vertical scrolling. Keep the viewport cap and fixed-height overrides.
+- Hide the filter menu when no menu fields are available. Search-only bars use the input clear action without a redundant Clear all.
+
 ## 0.3.0-alpha.7
 
 Prerelease under the `alpha` tag.

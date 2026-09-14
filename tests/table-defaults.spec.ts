@@ -28,6 +28,7 @@ test("default height fits content, grows to its cap, and selected rows join cust
   const grid = page.getByRole("grid", { name: "Default height table", exact: true });
   const initialHeight = (await grid.boundingBox())!.height;
   expect(initialHeight).toBeLessThan(300);
+  expect(await grid.evaluate((element) => element.scrollHeight - element.clientHeight)).toBe(0);
 
   const selectedRow = grid.locator('[role="row"][data-index="0"]');
   const customRow = grid.locator('[role="row"][data-index="1"]');
@@ -168,4 +169,26 @@ test("active disabled and non-removable filters explain the empty result without
   await expect(page.getByText("No results match your filters.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Clear filters", exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Filter patch count", { exact: true })).toHaveText("0");
+});
+
+test("auto height fits custom empty content and a horizontal scrollbar without vertical overflow", async ({
+  page,
+  isMobile,
+}) => {
+  if (!isMobile) await page.setViewportSize({ width: 1000, height: 1000 });
+  await page.goto("/?defaults=sizing");
+  for (const name of ["Wide short table", "Tall empty table"]) {
+    const grid = page.getByRole("grid", { name, exact: true });
+    await expect
+      .poll(() => grid.evaluate((element) => element.scrollHeight - element.clientHeight))
+      .toBe(0);
+  }
+  const wide = page.getByRole("grid", { name: "Wide short table", exact: true });
+  expect(await wide.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  const empty = page.getByRole("grid", { name: "Tall empty table", exact: true });
+  const action = empty.getByRole("button", { name: "Create record" });
+  await expect(action).toBeInViewport();
+  expect(
+    (await action.boundingBox())!.y + (await action.boundingBox())!.height,
+  ).toBeLessThanOrEqual((await empty.boundingBox())!.y + (await empty.boundingBox())!.height);
 });

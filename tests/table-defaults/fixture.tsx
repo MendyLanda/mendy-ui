@@ -11,6 +11,7 @@ type ColumnFiltersState = TableState["columnFilters"];
 type PaginationState = TableState["pagination"];
 type SortingState = TableState["sorting"];
 export type TableDefaultsMode =
+  | "sizing"
   | "height"
   | "state"
   | "empty"
@@ -50,6 +51,7 @@ declare global {
 }
 
 export function TableDefaultsFixture({ mode }: { mode: TableDefaultsMode }) {
+  if (mode === "sizing") return <SizingFixture />;
   if (mode === "state") return <StateFixture />;
   if (mode === "controller" || mode === "controller-empty" || mode === "locked")
     return <ControlledFiltersFixture mode={mode} />;
@@ -272,4 +274,44 @@ function ControlledFiltersFixture({
 
 function FixtureFrame({ children }: { children: ReactNode }) {
   return <main style={{ maxWidth: 900, margin: "20px auto", padding: 12 }}>{children}</main>;
+}
+
+function SizingFixture() {
+  const wideColumns = defineColumns<Row>((column) => [
+    column.accessor("title", { label: "Title", size: 1000 }),
+    column.accessor("group", { label: "Group", size: 300 }),
+  ]);
+  return (
+    <FixtureFrame>
+      <DataTable
+        rows={makeRows(1)}
+        columns={wideColumns}
+        getRowId={(row) => row.id}
+        label="Wide short table"
+        showColumnSettings={false}
+      />
+      <DataTable
+        rows={[]}
+        columns={columns}
+        getRowId={(row) => row.id}
+        label="Tall empty table"
+        showColumnSettings={false}
+        emptyState={
+          <div
+            style={{
+              minHeight: 300,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              gap: 24,
+            }}
+          >
+            <strong>No records yet</strong>
+            <p>Create your first record to get started.</p>
+            <button>Create record</button>
+          </div>
+        }
+      />
+    </FixtureFrame>
+  );
 }

@@ -82,7 +82,7 @@ Opening the menu shows the category list without choosing a filter. Focusing a c
 
 ### Defaults and clearing
 
-`FilterBar` and composed `FilterList` include Clear all after the chips. It clears filters and search. Set `showClear={false}` to opt out. Choice search is enabled by default; use `searchable: false` for short lists. Menu selections keep the menu open, and selecting the current single choice again clears it. Chip editor popups open instantly; `editorAnimation` opts into their animation.
+`FilterBar` and composed `FilterList` show Clear all after the chips when a removable filter is active. It clears filters and search. Search-only bars use the input’s clear control and hide the filter menu when no menu fields are available. Set `showClear={false}` to opt out. Choice search is enabled by default; use `searchable: false` for short lists. Menu selections keep the menu open, and selecting the current single choice again clears it. Chip editor popups open instantly; `editorAnimation` opts into their animation.
 
 See [defaults and app configuration](https://ui.mendylanda.com/docs/defaults) for the full behavior and [system reference](https://ui.mendylanda.com/docs/system) for query adapters, selected-label loading, grouped fields, and custom editors.
 
@@ -119,7 +119,7 @@ Pass a filter controller once to place the shared filter bar and connect table r
 
 Create the controller with `useFilters`, `useUrlFilters`, or `useControlledFilters`. Its values remain application query state. The table does not derive a predicate or fetch rows from filter definitions. Set `filterBar={false}` when controls live elsewhere, or use `TableFilters` and `TableView` with the same controller in a composed layout.
 
-Tables fit their rows by default, capped at 65dvh. Full-page layouts can set an explicit `height`. Rows remain 44px unless `rowHeight="auto"` opts into measurement for wrapped or editable content. Selected rows receive the standard highlight; `isRowHighlighted` adds application state. `onRowClick`, `rowClassName`, and `renderRowDetail` cover row actions and expandable content.
+Tables fit their rows, headers, and empty content by default, capped at 65dvh. Short tables do not reserve a vertical scrollbar. Full-page layouts can set an explicit `height`. Rows remain 44px unless `rowHeight="auto"` opts into measurement for wrapped or editable content. Selected rows receive the standard highlight; `isRowHighlighted` adds application state. `onRowClick`, `rowClassName`, and `renderRowDetail` cover row actions and expandable content.
 
 Changes to table query state or the shared controller reset scroll and cell selection. Appending rows keeps the current position and selection. Empty states distinguish an empty dataset, an empty filtered result with one controller clear, and an empty later page that can return to the first page. Locked filters never get a clear action.
 

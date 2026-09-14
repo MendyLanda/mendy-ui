@@ -40,7 +40,7 @@ interface FilterMenuPanelProps {
   onSelect(id: string | null): void;
   onClose(): void;
   anchor?: RefObject<HTMLDivElement | null>;
-  trigger: RefObject<HTMLButtonElement | null>;
+  trigger: RefObject<HTMLElement | null>;
 }
 const desktopQuery = "(min-width: 640px)";
 function subscribeViewport(listener: () => void) {

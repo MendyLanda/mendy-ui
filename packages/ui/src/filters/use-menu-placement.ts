@@ -5,7 +5,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 /** Position the menu against the search field and the available viewport. */
 export function useMenuPlacement(
   anchor: RefObject<HTMLDivElement | null> | undefined,
-  trigger: RefObject<HTMLButtonElement | null>,
+  trigger: RefObject<HTMLElement | null>,
   desktop: boolean,
 ) {
   const [alignOffset, setAlignOffset] = useState(0);

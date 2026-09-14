@@ -39,7 +39,7 @@ Click and drag to select cells. Shift extends a selection; arrow keys move betwe
 
 `onRowClick` handles a single click and becomes the Enter action when `onRowActivate` is absent. Supply both callbacks when a single click selects a row while double-click or Enter opens it. Selected rows receive the table highlight automatically. `isRowHighlighted` can add another application-owned highlight. Row checkboxes are opt-in with `selectionColumn()` and `enableRowSelection`.
 
-The table fits its rows by default and stops growing at 65dvh. Set an explicit `height` for a full-page table or another fixed viewport. Rows stay at 44px by default. Use `rowHeight="auto"` for badges, wrapping text, or editable controls that need measured height. `rowClassName` applies a class from the row record.
+The table fits its rows, headers, and empty content by default and stops growing at 65dvh. Short tables have no vertical scrollbar unless their content exceeds that cap. Set an explicit `height` for a full-page table or another fixed viewport. Rows stay at 44px by default. Use `rowHeight="auto"` for badges, wrapping text, or editable controls that need measured height. `rowClassName` applies a class from the row record.
 
 `renderRowDetail` adds measured content below a record. Return `null` for a collapsed record. Detail content uses the table viewport width, so a nested wide grid can scroll without widening the parent page.
 

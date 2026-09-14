@@ -101,8 +101,7 @@ test("copy follows pinned visual order and reports clipboard failures", async ({
     }),
   );
   await page.getByRole("button", { name: "Column settings" }).click();
-  await page.getByRole("menuitem", { name: "Amount", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Pin to start", exact: true }).click();
+  await page.getByRole("button", { name: "Pin Amount to left", exact: true }).click();
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await page.locator('[data-row-id="item-0"][data-column-id="title"]').click();
@@ -127,8 +126,7 @@ test("column preferences restore on reload and remain separate between scopes", 
   page,
 }) => {
   await page.getByRole("button", { name: "Column settings" }).click();
-  await page.getByRole("menuitem", { name: "Amount", exact: true }).click();
-  await page.getByRole("menuitemcheckbox", { name: "Visible" }).click();
+  await page.getByRole("checkbox", { name: "Show Amount", exact: true }).click();
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await expect
@@ -145,8 +143,7 @@ test("narrow viewports keep middle columns reachable without discarding saved pi
   page,
 }) => {
   await page.getByRole("button", { name: "Column settings" }).click();
-  await page.getByRole("menuitem", { name: "Title", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Pin to start", exact: true }).click();
+  await page.getByRole("button", { name: "Pin Title to left", exact: true }).click();
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 340, height: 850 });
@@ -205,4 +202,80 @@ test("loading uses the live column geometry and pinned boundaries in one scroll 
     "border-right-width",
     "1px",
   );
+});
+
+test("headers keep their column boundaries on wide screens and sort with a text-only hover", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  const grid = page.getByRole("grid", { name: "Fixture" });
+  const header = grid.getByRole("columnheader").last();
+  await expect(header).toHaveCSS("border-right-width", "1px");
+  const sort = grid.getByRole("button", { name: "Title", exact: true });
+  await sort.hover();
+  await expect(sort).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+});
+test("column settings support keyboard reordering, pin cycling, visibility and reset", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Column settings" }).click();
+  const dialog = page.getByRole("dialog", { name: "Column settings" });
+  const handle = dialog.getByRole("button", { name: "Reorder Amount", exact: true });
+  await handle.focus();
+  await page.keyboard.press("Space");
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("Space");
+  await expect
+    .poll(() =>
+      dialog
+        .locator("[data-column-setting]")
+        .evaluateAll((els) => els.map((el) => el.getAttribute("data-column-setting"))),
+    )
+    .toEqual(["_selection", "amount", "title", "actions"]);
+  await dialog.getByRole("button", { name: "Pin Amount to left", exact: true }).click();
+  await dialog.getByRole("button", { name: "Pin Amount to right", exact: true }).click();
+  await dialog.getByRole("button", { name: "Unpin Amount", exact: true }).click();
+  await dialog.getByRole("checkbox", { name: "Show Amount", exact: true }).click();
+  await expect(dialog).toContainText("1 hidden");
+  await dialog.getByRole("button", { name: "Reset columns", exact: true }).click();
+  await expect(dialog.getByRole("checkbox", { name: "Show Amount", exact: true })).toBeChecked();
+  await expect(dialog.locator("[data-column-setting]").nth(2)).toHaveAttribute(
+    "data-column-setting",
+    "amount",
+  );
+});
+
+test("column settings support pointer dragging without closing the panel", async ({ page }) => {
+  await page.getByRole("button", { name: "Column settings" }).click();
+  const dialog = page.getByRole("dialog", { name: "Column settings" });
+  const from = await dialog
+    .getByRole("button", { name: "Reorder Title", exact: true })
+    .boundingBox();
+  const to = await dialog
+    .getByRole("button", { name: "Reorder Amount", exact: true })
+    .boundingBox();
+  await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2 + 8, { steps: 3 });
+  const dragged = page.locator('[data-column-setting="title"][data-dragging="true"]');
+  await expect(dragged).toBeVisible();
+  const lifted = await dragged.boundingBox();
+  const destinationY = to!.y + to!.height / 2 + 5;
+  const liftY = from!.y + from!.height / 2 + 8;
+  await page.mouse.move(to!.x + to!.width / 2, destinationY, { steps: 12 });
+  // Wait for the browser's final drag frame before releasing the pointer.
+  await expect
+    .poll(async () => (await dragged.boundingBox())?.y ?? 0)
+    .toBeCloseTo(lifted!.y + destinationY - liftY, 0);
+  await page.mouse.up();
+  await expect(dialog).toBeVisible();
+  await expect
+    .poll(() =>
+      dialog
+        .locator("[data-column-setting]")
+        .evaluateAll((els) => els.map((el) => el.getAttribute("data-column-setting"))),
+    )
+    .toEqual(["_selection", "amount", "title", "actions"]);
+  const accessibility = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+  expect(accessibility.violations).toEqual([]);
 });

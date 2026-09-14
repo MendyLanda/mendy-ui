@@ -36,7 +36,7 @@ export function TableHeaderCell<T extends object>({
       aria-colindex={index + 1}
       aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
       style={style}
-      className="relative flex shrink-0 items-center gap-1 border-e bg-background px-3 font-medium text-muted-foreground last:border-e-0"
+      className="relative flex shrink-0 items-center gap-1 border-e bg-background px-3 font-medium text-muted-foreground"
     >
       <div
         className={cn(
@@ -219,7 +219,7 @@ function TableHeaderContent<T extends object>({
     <Button
       variant="ghost"
       size="sm"
-      className="h-8 max-w-full justify-start gap-1 px-0 font-medium"
+      className="h-8 max-w-full justify-start gap-1 px-0 font-medium text-muted-foreground hover:bg-transparent hover:text-foreground"
       onClick={column.getToggleSortingHandler()}
       title={title}
     >

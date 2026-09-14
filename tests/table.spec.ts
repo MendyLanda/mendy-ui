@@ -43,13 +43,12 @@ test("table virtualizes, sorts, resizes and keeps interactive controls usable", 
 });
 test("column settings can hide and restore a column", async ({ page }) => {
   await page.getByRole("button", { name: "Column settings" }).click();
-  await page.getByRole("menuitem", { name: "Owner", exact: true }).click();
-  await page.getByRole("menuitemcheckbox", { name: "Visible" }).click();
+  await page.getByRole("checkbox", { name: "Show Owner", exact: true }).click();
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await expect(page.getByRole("grid").locator('[data-column-id="owner.name"]')).toHaveCount(0);
   await page.getByRole("button", { name: "Column settings" }).click();
-  await page.getByRole("menuitem", { name: "Reset columns" }).click();
+  await page.getByRole("button", { name: "Reset columns" }).click();
   await expect(
     page.getByRole("grid").locator('[data-column-id="owner.name"]').first(),
   ).toBeVisible();

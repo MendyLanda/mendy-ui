@@ -33,7 +33,7 @@ Accessors support nested fields such as `owner.name`. Formatters keep display, c
 
 ## Defaults
 
-Rows are virtualized, headers stick to the top, and columns can be resized, hidden, reordered, and pinned. The column menu provides keyboard-accessible movement controls. Resize handles also accept Left and Right; double-click resets the width.
+Rows are virtualized, headers stick to the top, and columns can be resized, hidden, reordered, and pinned. Column settings show visibility checkboxes and pin controls in one panel. Drag a handle to reorder, or focus it and press Space, use Up/Down, and press Space again to drop. Escape cancels the move. Pin controls cycle between left, right, and unpinned. Reset restores the column defaults. Resize handles also accept Left and Right; double-click resets the width.
 
 Click and drag to select cells. Shift extends a selection; arrow keys move between cells. Copy uses displayed column order and preserves blank cells in disjoint selections. Buttons, links, inputs, and native text selections retain their own interaction. `onRowActivate` opens a row on double-click or Enter. Row checkboxes are opt-in with `selectionColumn()` and `enableRowSelection`.
 

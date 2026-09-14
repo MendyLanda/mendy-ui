@@ -4,7 +4,7 @@ import type { DataTableInstance } from "./use-data-table.js";
 import type { TableColumn } from "./columns.js";
 import type { SavedTableView } from "./state.js";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../primitives/button.js";
 import { Checkbox } from "../primitives/checkbox.js";
 import { Input } from "../primitives/input.js";
@@ -13,118 +13,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuCheckboxItem,
-  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
 } from "../primitives/dropdown-menu.js";
-import { applyTablePreferences } from "./use-data-table.js";
 
-export function TableColumnSettings<T extends object>({ table }: { table: DataTableInstance<T> }) {
-  const columns = table.getAllLeafColumns();
-  const byId = new Map(columns.map((column) => [column.id, column]));
-  const orderedIds = new Set(table.state.columnOrder);
-  const order = [
-    ...table.state.columnOrder,
-    ...columns.map((column) => column.id).filter((id) => !orderedIds.has(id)),
-  ];
-  function move(id: string, delta: number) {
-    const next = [...order],
-      index = next.indexOf(id),
-      destination = index + delta;
-    if (index < 0 || destination < 0 || destination >= next.length) return;
-    next.splice(index, 1);
-    next.splice(destination, 0, id);
-    table.setColumnOrder(next);
-  }
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" aria-label="Column settings">
-          <SlidersHorizontal className="size-4" />
-          <span>Columns</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="max-h-96 w-64 overflow-auto"
-        aria-label="Column settings"
-        onCloseAutoFocus={(event) => {
-          // The close animation can finish after the user has already selected a cell.
-          if (document.activeElement?.closest('[role="grid"]')) event.preventDefault();
-        }}
-      >
-        {order.map((id, index) => {
-          const column = byId.get(id);
-          if (!column) return null;
-          const definition = column.columnDef as TableColumn<T>;
-          const label =
-            definition.label ?? (typeof definition.header === "string" ? definition.header : id);
-          return (
-            <DropdownMenuSub key={id}>
-              <DropdownMenuSubTrigger>{label}</DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                <DropdownMenuCheckboxItem
-                  checked={column.getIsVisible()}
-                  disabled={!column.getCanHide()}
-                  onSelect={(event) => event.preventDefault()}
-                  onCheckedChange={(value) => column.toggleVisibility(value)}
-                >
-                  Visible
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  disabled={!column.getCanPin()}
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    column.pin(column.getIsPinned() === "start" ? false : "start");
-                  }}
-                >
-                  {" "}
-                  {column.getIsPinned() === "start" ? "Unpin" : "Pin to start"}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={!column.getCanPin()}
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    column.pin(column.getIsPinned() === "end" ? false : "end");
-                  }}
-                >
-                  {column.getIsPinned() === "end" ? "Unpin" : "Pin to end"}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={index === 0}
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    move(id, -1);
-                  }}
-                >
-                  Move earlier
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={index === order.length - 1}
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    move(id, 1);
-                  }}
-                >
-                  Move later
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-          );
-        })}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={() => applyTablePreferences(table, { version: 1, ...table.initialState })}
-        >
-          Reset columns
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
+export { TableColumnSettings } from "./table-column-settings.js";
 export function TablePagination<T extends object>({
   table,
   loading,

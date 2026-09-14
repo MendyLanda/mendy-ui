@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-alpha.2
+
+- Keep the last header border aligned with the column cells on wide screens.
+- Use text-color hover feedback for sortable headers, with no button background.
+- Replace nested column menus with a compact settings panel: drag or keyboard reorder, visibility checkboxes, cycling pin controls, a summary, and Reset.
+
 ## 0.3.0-alpha.1
 
 - Render loading skeletons in the same column layout as loaded rows, with one header and scroll area.

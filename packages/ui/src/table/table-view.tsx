@@ -18,6 +18,7 @@ import { TableInitialState } from "./table-feedback.js";
 import { useTableInteraction } from "./use-table-interaction.js";
 import { useTableResults } from "./use-table-results.js";
 import { useInlineRowSelection } from "./use-inline-row-selection.js";
+import { TableFrame } from "./table-frame.js";
 
 export interface TableDataState {
   status?: "loading" | "ready" | "error";
@@ -31,6 +32,10 @@ export interface TableViewProps<T extends object> extends TableDataState {
   label?: string;
   /** Defaults to "auto": fit the rows, capped at 65% of the viewport height. */
   height?: number | string;
+  /** Fill the remaining page height, or fit content by default. Fill overrides height. */
+  layout?: "content" | "fill";
+  /** Controls below the grid, included in the available height when layout is fill. */
+  footer?: ReactNode;
   /** Auto measures multiline rows and retains all columns to keep their height stable. */
   rowHeight?: number | "auto";
   rowClassName?: (row: T) => string | undefined;
@@ -60,6 +65,8 @@ export function TableView<T extends object>({
   table,
   label = "Data table",
   height = "auto",
+  layout: layoutMode = "content",
+  footer,
   rowHeight: rowHeightOption = 44,
   rowClassName,
   renderRowDetail,
@@ -82,6 +89,7 @@ export function TableView<T extends object>({
   rowSelectionControls = true,
   onCopyError,
 }: TableViewProps<T>) {
+  const fill = layoutMode === "fill";
   const { resultKey, hasFilters, clearFilters } = useTableResults(table, queryKey, filters);
   const autoRowHeight = rowHeightOption === "auto" || Boolean(renderRowDetail);
   const rowHeight = rowHeightOption === "auto" ? 44 : rowHeightOption;
@@ -188,7 +196,7 @@ export function TableView<T extends object>({
   const headersById = new Map(table.getFlatHeaders().map((header) => [header.column.id, header]));
 
   return (
-    <div data-mendy-ui="" className="min-w-0">
+    <TableFrame layout={layoutMode} stretch={height === "100%"} footer={footer}>
       <div aria-live="polite" className="sr-only">
         {announcement}
       </div>
@@ -201,11 +209,12 @@ export function TableView<T extends object>({
         aria-colcount={layout.columns.length}
         aria-busy={status === "loading" || refreshing}
         style={{
-          height: height === "auto" ? undefined : height,
-          maxHeight: height === "auto" ? "65dvh" : undefined,
+          height: fill || height === "auto" ? undefined : height,
+          maxHeight: !fill && height === "auto" ? "65dvh" : undefined,
         }}
         className={cn(
           "relative isolate overflow-auto rounded-md border bg-background text-sm outline-none",
+          fill && "min-h-0 flex-1",
           className,
         )}
         onKeyDown={onKeyDown}
@@ -250,7 +259,7 @@ export function TableView<T extends object>({
                 rowHeight={rowHeight}
                 cellStyle={cellStyle}
                 count={
-                  height === "auto"
+                  !fill && height === "auto"
                     ? 8
                     : Math.max(
                         1,
@@ -349,6 +358,6 @@ export function TableView<T extends object>({
           </div>
         )}
       </div>
-    </div>
+    </TableFrame>
   );
 }

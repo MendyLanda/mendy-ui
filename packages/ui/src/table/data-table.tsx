@@ -6,6 +6,7 @@ import { useDataTable } from "./use-data-table.js";
 import { TableView } from "./table-view.js";
 import { TableColumnSettings, TablePagination } from "./table-controls.js";
 import { TableFilters, type TableFiltersProps } from "./table-filters.js";
+import { TableFrame } from "./table-frame.js";
 
 type Appearance<T extends object> = Omit<TableViewProps<T>, "table"> & {
   toolbar?: ReactNode;
@@ -25,26 +26,44 @@ function ControlledTable<T extends object>({
   showPagination = false,
   filters,
   filterBar,
+  layout = "content",
   ...view
 }: Appearance<T> & { table: DataTableInstance<T> }) {
+  const fill = layout === "fill";
   return (
-    <div data-mendy-ui="" className="min-w-0 space-y-2">
-      {(toolbar || showColumnSettings || (filters && filterBar !== false)) && (
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0 flex-1 space-y-2">
-            {filters && filterBar !== false && <TableFilters {...filterBar} filters={filters} />}
-            {!filters && toolbar}
+    <TableFrame
+      layout={layout}
+      slot="data-table"
+      header={
+        (toolbar || showColumnSettings || (filters && filterBar !== false)) && (
+          <div className="flex shrink-0 flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0 flex-1 space-y-2">
+              {filters && filterBar !== false && <TableFilters {...filterBar} filters={filters} />}
+              {!filters && toolbar}
+            </div>
+            {filters && toolbar}
+            {showColumnSettings && <TableColumnSettings table={table} />}
           </div>
-          {filters && toolbar}
-          {showColumnSettings && <TableColumnSettings table={table} />}
-        </div>
-      )}
-      <TableView table={table} filters={filters} {...view} />
-      {showPagination && (
-        <TablePagination table={table} loading={view.status === "loading" || view.refreshing} />
-      )}
-      {footer}
-    </div>
+        )
+      }
+      footer={
+        showPagination || footer ? (
+          <>
+            {showPagination && (
+              <div className="shrink-0">
+                <TablePagination
+                  table={table}
+                  loading={view.status === "loading" || view.refreshing}
+                />
+              </div>
+            )}
+            {footer}
+          </>
+        ) : undefined
+      }
+    >
+      <TableView table={table} filters={filters} {...view} height={fill ? "100%" : view.height} />
+    </TableFrame>
   );
 }
 function ConfiguredTable<T extends object>(props: Appearance<T> & UseDataTableOptions<T>) {

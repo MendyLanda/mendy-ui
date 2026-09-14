@@ -86,9 +86,9 @@ Opening the menu shows the category list without choosing a filter. Focusing a c
 
 See [defaults and app configuration](https://ui.mendylanda.com/docs/defaults) for the full behavior and [system reference](https://ui.mendylanda.com/docs/system) for query adapters, selected-label loading, grouped fields, and custom editors.
 
-## Table (alpha)
+## Table
 
-Install `@mendylanda/ui@alpha` to try the table. This API may change during the alpha.
+The table is exported from `@mendylanda/ui/table`.
 
 ```tsx
 import { DataTable, defineColumns, format } from "@mendylanda/ui/table";
@@ -119,7 +119,7 @@ Pass a filter controller once to place the shared filter bar and connect table r
 
 Create the controller with `useFilters`, `useUrlFilters`, or `useControlledFilters`. Its values remain application query state. The table does not derive a predicate or fetch rows from filter definitions. Set `filterBar={false}` when controls live elsewhere, or use `TableFilters` and `TableView` with the same controller in a composed layout.
 
-Tables fit their rows, headers, and empty content by default, capped at 65dvh. Short tables do not reserve a vertical scrollbar. Full-page layouts can set an explicit `height`. Rows remain 44px unless `rowHeight="auto"` opts into measurement for wrapped or editable content. Selected rows receive the standard highlight; `isRowHighlighted` adds application state. `onRowClick`, `rowClassName`, and `renderRowDetail` cover row actions and expandable content.
+Tables use `layout="content"` by default, fitting their rows, headers, and empty content up to 65dvh. Short tables do not reserve a vertical scrollbar. An explicit `height` sets the table viewport in content layout. `layout="fill"` measures the space from the component's top to the bottom of the viewport and remeasures when the viewport resizes or content above the table changes size. `DataTable` reserves its toolbar, pagination, and footer automatically. Composed layouts can pass controls below the grid through `TableView`'s `footer` prop. Rows remain 44px unless `rowHeight="auto"` opts into measurement for wrapped or editable content. Selected rows receive the standard highlight; `isRowHighlighted` adds application state. `onRowClick`, `rowClassName`, and `renderRowDetail` cover row actions and expandable content.
 
 Changes to table query state or the shared controller reset scroll and cell selection. Appending rows keeps the current position and selection. Empty states distinguish an empty dataset, an empty filtered result with one controller clear, and an empty later page that can return to the first page. Locked filters never get a clear action.
 

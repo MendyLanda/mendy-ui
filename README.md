@@ -17,9 +17,9 @@ Filters includes typed definitions, local and controlled state, dynamic options,
 
 Your app owns definitions, data queries, and business rules. Shared interaction behavior stays in the package. Customize it through theme variables, named classes, typed render callbacks, control replacements, or composition. See the [customization guide](https://ui.mendylanda.com/docs/customization).
 
-## Table alpha
+## Table
 
-The table is available in `@mendylanda/ui@alpha`, imported from `@mendylanda/ui/table`. It includes typed columns, virtual rows and columns, sorting, resizing, pinning, visibility, keyboard cell selection, clipboard copy, scoped preferences, and optional pagination. Applications keep their data queries and custom cells. [Table docs](https://ui.mendylanda.com/docs/components/table).
+The stable package includes the table under `@mendylanda/ui/table`. It has typed columns, virtual rows and columns, sorting, resizing, pinning, visibility, keyboard cell selection, clipboard copy, scoped preferences, content and fill layouts, and optional pagination. Applications keep their data queries and custom cells. [Table docs](https://ui.mendylanda.com/docs/components/table).
 
 ## Development
 
@@ -55,7 +55,7 @@ Run `pnpm package:pack` to create an installable archive in `artifacts/`. Read [
 
 GitHub Actions checks the package, packed consumers, and site. Successful main builds deploy to Cloudflare Workers Static Assets using the existing repository secrets. Publishing an npm version is a separate release operation.
 
-The site must not advertise an unavailable release. Publish the initial package before merging the npm migration into main.
+Publish a package release before deploying documentation for APIs introduced by that release.
 
 ## Attribution
 

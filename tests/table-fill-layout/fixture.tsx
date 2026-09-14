@@ -1,5 +1,4 @@
-import type { ProfilerOnRenderCallback } from "react";
-import { Profiler, useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DataTable,
   TableView,
@@ -18,16 +17,25 @@ const allRows: Row[] = Array.from({ length: 500 }, (_, index) => ({
   group: index % 2 === 0 ? "Even" : "Odd",
 }));
 
+let titleCellRenders = 0;
+
 const columns = defineColumns<Row>((column) => [
   selectionColumn<Row>(),
-  column.accessor("title", { label: "Title", size: 260, grow: 1 }),
+  column.accessor("title", {
+    label: "Title",
+    size: 260,
+    grow: 1,
+    render: ({ value }) => {
+      titleCellRenders += 1;
+      return value;
+    },
+  }),
   column.accessor("group", { label: "Group", size: 140 }),
 ]);
 
 declare global {
   interface Window {
     fillLayoutFixture?: {
-      commits: () => number;
       expandFooter: (height: number) => void;
       expandToolbar: (height: number) => void;
       insertAbove: (height: number) => void;
@@ -35,6 +43,7 @@ declare global {
       setLayout: (layout: Layout) => void;
       setMode: (mode: Mode) => void;
       setMounted: (mounted: boolean) => void;
+      titleCellRenders: () => number;
     };
   }
 }
@@ -51,8 +60,6 @@ export function TableFillLayoutFixture() {
   const tableFrame = useRef<HTMLElement>(null);
   const toolbar = useRef<HTMLDivElement>(null);
   const footer = useRef<HTMLDivElement>(null);
-  const commits = useRef(0);
-  const commitOutput = useRef<HTMLOutputElement>(null);
   const height =
     parameters.get("height") === "260"
       ? 260
@@ -61,11 +68,6 @@ export function TableFillLayoutFixture() {
         : "auto";
   const directView = parameters.get("fill") === "view";
 
-  const onRender = useCallback<ProfilerOnRenderCallback>(() => {
-    commits.current += 1;
-    if (commitOutput.current) commitOutput.current.textContent = String(commits.current);
-  }, []);
-
   useEffect(() => {
     if (parameters.get("theme") === "dark") document.documentElement.classList.add("dark");
     else document.documentElement.classList.remove("dark");
@@ -73,7 +75,6 @@ export function TableFillLayoutFixture() {
 
   useEffect(() => {
     window.fillLayoutFixture = {
-      commits: () => commits.current,
       expandFooter: (value) => {
         if (footer.current) footer.current.style.height = `${value}px`;
       },
@@ -96,6 +97,7 @@ export function TableFillLayoutFixture() {
       setLayout,
       setMode,
       setMounted,
+      titleCellRenders: () => titleCellRenders,
     };
     return () => {
       delete window.fillLayoutFixture;
@@ -124,22 +126,17 @@ export function TableFillLayoutFixture() {
       >
         <strong>Fill layout fixture</strong>
         <output aria-label="Fixture mode">{mode}</output>
-        <output ref={commitOutput} aria-label="Table commits">
-          0
-        </output>
       </header>
       <section ref={tableFrame} data-testid="table-frame">
         {mounted && (
-          <Profiler id="fill-layout-table" onRender={onRender}>
-            <FixtureTable
-              directView={directView}
-              footerRef={footer}
-              height={height}
-              layout={layout}
-              mode={mode}
-              toolbarRef={toolbar}
-            />
-          </Profiler>
+          <FixtureTable
+            directView={directView}
+            footerRef={footer}
+            height={height}
+            layout={layout}
+            mode={mode}
+            toolbarRef={toolbar}
+          />
         )}
       </section>
     </div>

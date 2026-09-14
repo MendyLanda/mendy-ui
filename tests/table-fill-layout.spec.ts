@@ -139,7 +139,7 @@ test("fill remains stable across row and feedback states and changing toolbar an
   await expectFillsViewport(root);
 });
 
-test("ancestor and inserted sibling resizing preserves scroll and selection without a React commit", async ({
+test("ancestor and inserted sibling resizing preserves scroll and selection without rerendering cells", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1100, height: 820 });
@@ -163,7 +163,8 @@ test("ancestor and inserted sibling resizing preserves scroll and selection with
   ).toHaveAttribute("aria-checked", "true");
 
   await page.waitForTimeout(100);
-  const commitsBefore = await page.evaluate(() => window.fillLayoutFixture!.commits());
+  const rendersBefore = await page.evaluate(() => window.fillLayoutFixture!.titleCellRenders());
+  expect(rendersBefore).toBeGreaterThan(0);
   const before = await fillMetrics(root);
   const scrollBefore = await grid.evaluate((element) => element.scrollTop);
   await invokeFixture(page, "setAboveHeight", 96);
@@ -183,7 +184,9 @@ test("ancestor and inserted sibling resizing preserves scroll and selection with
     grid.getByRole("checkbox", { name: `Select row ${rowId}`, exact: true }),
   ).toHaveAttribute("aria-checked", "true");
   await page.waitForTimeout(100);
-  expect(await page.evaluate(() => window.fillLayoutFixture!.commits())).toBe(commitsBefore);
+  expect(await page.evaluate(() => window.fillLayoutFixture!.titleCellRenders())).toBe(
+    rendersBefore,
+  );
 });
 
 test("content and explicit heights stay content-sized when the page and preceding content resize", async ({

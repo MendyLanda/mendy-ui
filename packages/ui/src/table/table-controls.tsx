@@ -50,6 +50,10 @@ export function TableColumnSettings<T extends object>({ table }: { table: DataTa
         align="end"
         className="max-h-96 w-64 overflow-auto"
         aria-label="Column settings"
+        onCloseAutoFocus={(event) => {
+          // The close animation can finish after the user has already selected a cell.
+          if (document.activeElement?.closest('[role="grid"]')) event.preventDefault();
+        }}
       >
         {order.map((id, index) => {
           const column = byId.get(id);

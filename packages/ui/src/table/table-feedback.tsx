@@ -14,19 +14,7 @@ export function TableInitialState({
   emptyState?: ReactNode;
 }) {
   if (hasRows) return null;
-  if (status === "loading")
-    return (
-      loadingState ?? (
-        <div role="status" aria-label="Loading rows" className="space-y-3 p-3">
-          {Array.from({ length: 8 }, (_, index) => (
-            <div
-              key={index}
-              className="h-8 animate-pulse rounded bg-muted motion-reduce:animate-none"
-            />
-          ))}
-        </div>
-      )
-    );
+  if (status === "loading") return loadingState ?? null;
   if (status === "error")
     return (
       <div role="alert" className="p-6 text-center">

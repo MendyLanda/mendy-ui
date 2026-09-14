@@ -119,6 +119,7 @@ test("copy follows pinned visual order and reports clipboard failures", async ({
       },
     }),
   );
+  await expect(page.locator('[data-row-id="item-0"][data-column-id="amount"]')).toBeFocused();
   await page.keyboard.press("Control+c");
   await expect(page.getByText("Could not copy selected cells", { exact: true })).toHaveCount(1);
 });
@@ -153,4 +154,55 @@ test("narrow viewports keep middle columns reachable without discarding saved pi
   await expect(title).toHaveCSS("position", "static");
   await page.setViewportSize({ width: 1100, height: 850 });
   await expect(title).toHaveCSS("position", "sticky");
+});
+
+test("loading uses the live column geometry and pinned boundaries in one scroll area", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  const grid = page.getByRole("grid", { name: "Fixture" });
+  const before = await grid.locator('[data-row-id="item-0"]').evaluateAll((cells) =>
+    cells.map((cell) => ({
+      id: cell.getAttribute("data-column-id"),
+      width: cell.getBoundingClientRect().width,
+      left: getComputedStyle(cell).borderLeftWidth,
+      right: getComputedStyle(cell).borderRightWidth,
+    })),
+  );
+  expect(before[0].right).toBe("4px");
+  expect(before.at(-1)!.left).toBe("4px");
+  await page.getByRole("button", { name: "Simulate loading" }).click();
+  await expect(grid.getByRole("status", { name: "Loading rows" })).toBeVisible();
+  const loading = await grid
+    .locator('[data-slot="table-loading-row"]')
+    .first()
+    .locator('[data-slot="table-loading-cell"]')
+    .evaluateAll((cells) =>
+      cells.map((cell) => ({
+        id: cell.getAttribute("data-column-id"),
+        width: cell.getBoundingClientRect().width,
+        left: getComputedStyle(cell).borderLeftWidth,
+        right: getComputedStyle(cell).borderRightWidth,
+      })),
+    );
+  expect(loading).toEqual(before);
+  await expect(grid.getByRole("columnheader")).toHaveCount(before.length);
+  expect(
+    await grid.evaluate(
+      (el) =>
+        [...el.querySelectorAll("*")].filter((child) => {
+          const style = getComputedStyle(child);
+          return /auto|scroll/.test(style.overflowY) && child.scrollHeight > child.clientHeight;
+        }).length,
+    ),
+  ).toBe(0);
+  await page.setViewportSize({ width: 260, height: 800 });
+  await expect(grid.locator('[data-slot="table-loading-cell"]').first()).toHaveCSS(
+    "position",
+    "static",
+  );
+  await expect(grid.locator('[data-slot="table-loading-cell"]').first()).toHaveCSS(
+    "border-right-width",
+    "1px",
+  );
 });

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0-alpha.1
+
+- Render loading skeletons in the same column layout as loaded rows, with one header and scroll area.
+- Keep cell focus when a column menu finishes closing after a cell was selected.
+- Restore prominent pinned-column boundaries in headers, loading rows, and loaded rows.
+- Keep pin boundaries disabled when a narrow viewport temporarily unpins columns.
+
 ## 0.3.0-alpha.0
 
 First table prerelease, published under `alpha`; `latest` remains 0.2.0.

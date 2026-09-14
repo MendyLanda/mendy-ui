@@ -1,7 +1,7 @@
 "use client";
 
-import type { CSSProperties, ReactNode, Ref } from "react";
-import type { Column, Header } from "@tanstack/react-table";
+import type { ReactNode, Ref } from "react";
+import type { Header } from "@tanstack/react-table";
 import type { DataTableFeatures } from "./features.js";
 import type { DataTableInstance } from "./use-data-table.js";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
@@ -10,6 +10,8 @@ import { TableHeaderCell, TableBodyRow } from "./table-parts.js";
 import { Button } from "../primitives/button.js";
 import { cn } from "../utils.js";
 import { useViewportWidth } from "./use-viewport-width.js";
+import { tableLayout } from "./table-layout.js";
+import { TableLoadingRows } from "./table-loading.js";
 import { TableInitialState } from "./table-feedback.js";
 import { useTableInteraction } from "./use-table-interaction.js";
 
@@ -69,11 +71,6 @@ export function TableView<T extends object>({
     [scrollRef],
   );
   const rows = table.getRowModel().rows;
-  const columns = [
-    ...table.getStartVisibleLeafColumns(),
-    ...table.getCenterVisibleLeafColumns(),
-    ...table.getEndVisibleLeafColumns(),
-  ];
   const virtual = useVirtualizer({
     count: rows.length,
     getScrollElement: () => container.current,
@@ -82,13 +79,11 @@ export function TableView<T extends object>({
     overscan: 8,
   });
   const viewportWidth = useViewportWidth(container);
-  const totalWidth = columns.reduce((sum, column) => sum + column.getSize(), 0);
-  const pinnedWidth = [
-    ...table.getStartVisibleLeafColumns(),
-    ...table.getEndVisibleLeafColumns(),
-  ].reduce((sum, column) => sum + column.getSize(), 0);
-  // Preserve stored pins, but leave room to reach the middle columns on narrow screens.
-  const pinningActive = (viewportWidth ?? Infinity) >= Math.min(totalWidth, pinnedWidth + 120);
+  const { columns, totalWidth, pinningActive, cellStyle } = tableLayout(
+    table,
+    viewportWidth,
+    rowHeight,
+  );
   const { announcement, copied, onKeyDown } = useTableInteraction({
     table,
     pinningActive,
@@ -123,29 +118,6 @@ export function TableView<T extends object>({
         requested.current = null;
       });
   }, [last, rows.length, queryKey, loadMore?.available, loadMore?.loading, loadMore?.error]);
-  const positions = new Map<string, { side: "left" | "right"; offset: number }>();
-  let offset = 0;
-  for (const column of table.getStartVisibleLeafColumns()) {
-    positions.set(column.id, { side: "left", offset });
-    offset += column.getSize();
-  }
-  offset = 0;
-  for (const column of [...table.getEndVisibleLeafColumns()].reverse()) {
-    positions.set(column.id, { side: "right", offset });
-    offset += column.getSize();
-  }
-  function cellStyle(column: Column<DataTableFeatures, T>): CSSProperties {
-    const pin = pinningActive ? positions.get(column.id) : undefined;
-    return {
-      width: column.getSize(),
-      minWidth: column.getSize(),
-      height: rowHeight,
-      ...(column.id === table.getEndVisibleLeafColumns()[0]?.id
-        ? { marginInlineStart: "auto" }
-        : {}),
-      ...(pin ? { position: "sticky", [pin.side]: pin.offset, zIndex: 2 } : {}),
-    };
-  }
   const focused = table.getFocusedCell();
   const headersById = new Map(table.getFlatHeaders().map((header) => [header.column.id, header]));
 
@@ -189,7 +161,20 @@ export function TableView<T extends object>({
         <TableInitialState
           status={status}
           hasRows={rows.length > 0}
-          loadingState={loadingState}
+          loadingState={
+            loadingState ?? (
+              <TableLoadingRows
+                columns={columns}
+                width={totalWidth}
+                rowHeight={rowHeight}
+                cellStyle={cellStyle}
+                count={Math.max(
+                  1,
+                  Math.ceil(((virtual.scrollRect?.height ?? 400) - rowHeight) / rowHeight),
+                )}
+              />
+            )
+          }
           emptyState={emptyState}
           error={error}
           retry={retry}

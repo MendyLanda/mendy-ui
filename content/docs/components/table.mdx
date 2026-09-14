@@ -35,9 +35,13 @@ Accessors support nested fields such as `owner.name`. Formatters keep display, c
 
 Rows and columns are virtualized, headers stick to the top, and columns can be resized, hidden, reordered, and pinned. Data columns share spare viewport width by default. Set `grow: false` for compact columns, `grow: 2` for twice the share, and `maxSize` to cap expansion. Display and selection columns stay at their configured width unless you opt them in. Manually resized columns retain their chosen width; double-click a resize handle or reset column settings to restore automatic growth. Column settings show visibility checkboxes and pin controls in one panel. Drag a handle to reorder, or focus it and press Space, use Up/Down, and press Space again to drop. Escape cancels the move. Pin controls cycle between left, right, and unpinned. Reset restores the column defaults. Resize handles also accept Left and Right; double-click resets the width.
 
-Click and drag to select cells. Shift extends a selection; arrow keys move between cells. Copy uses displayed column order and preserves blank cells in disjoint selections. Buttons, links, inputs, and native text selections retain their own interaction. `onRowActivate` opens a row on double-click or Enter. Row checkboxes are opt-in with `selectionColumn()` and `enableRowSelection`.
+Click and drag to select cells. Shift extends a selection; arrow keys move between cells. Copy uses displayed column order and preserves blank cells in disjoint selections. Buttons, links, disclosure controls, inputs, and native text selections retain their own interaction.
 
-The default row height is 44px. Supply `height` and `rowHeight` for your layout. Custom cells should fit the chosen row height.
+`onRowClick` handles a single click and becomes the Enter action when `onRowActivate` is absent. Supply both callbacks when a single click selects a row while double-click or Enter opens it. Selected rows receive the table highlight automatically. `isRowHighlighted` can add another application-owned highlight. Row checkboxes are opt-in with `selectionColumn()` and `enableRowSelection`.
+
+The table fits its rows by default and stops growing at 65dvh. Set an explicit `height` for a full-page table or another fixed viewport. Rows stay at 44px by default. Use `rowHeight="auto"` for badges, wrapping text, or editable controls that need measured height. `rowClassName` applies a class from the row record.
+
+`renderRowDetail` adds measured content below a record. Return `null` for a collapsed record. Detail content uses the table viewport width, so a nested wide grid can scroll without widening the parent page.
 
 ## Existing state and queries
 
@@ -57,17 +61,28 @@ const table = useDataTable({
 
 <DataTable
   table={table}
+  filters={filters}
   showPagination
   status={query.isLoading ? "loading" : query.isError ? "error" : "ready"}
   refreshing={query.isFetching && !query.isLoading}
   retry={() => query.refetch()}
-  toolbar={<FilterBar filters={filters} />}
+  toolbar={<ProjectActions />}
 />;
 ```
 
-Filtering, sorting, and pagination have independent `client` or `external` processing options. Pagination defaults to `off`. Passing a toolbar does not process its filters; supply your filtered rows or configure the table's client filter state.
+Create `filters` with `useFilters`, `useUrlFilters`, or `useControlledFilters`. Pass the same controller to `DataTable`. The table places its filter bar on the left and puts `toolbar` actions and column settings beside it.
 
-For infinite queries, pass `loadMore={{ available, loading, load, error }}`. The viewport requests another page near the end. A failed next page keeps the existing rows usable and offers Retry. Pass `queryKey` when the result set changes to reset scroll and cell selection; do not change it when appending a page.
+The controller remains the source of truth for the application query. The table does not infer a row predicate, change a request, or fetch data from a filter definition. Supply rows that match the controller values for external processing, or map those values into controlled TanStack filter state for client processing. Filtering, sorting, and pagination have independent `client` or `external` processing options. Pagination defaults to `off`.
+
+Use `filterBar={{ showSearch: false }}` when a query supports defined filters without free-text search. Other `FilterBar` presentation props work in the same object. Set `filterBar={false}` when the application renders the controls elsewhere. The controller still powers result resets and empty-state recovery.
+
+An empty first page with active filters offers Clear filters and calls `filters.clear()` once. This keeps a controlled query patch atomic. If only locked or disabled filters are active, the table explains that no rows match without showing a clear button. An empty later page offers Go to first page. With no active filters, `emptyState` or the standard dataset-empty message appears.
+
+An explicit `emptyState` overrides the default empty-state UI, including recovery actions. Omit it to use automatic recovery.
+
+For infinite queries, pass `loadMore={{ available, loading, load, error }}`. The viewport requests another page near the end. A failed next page keeps the existing rows usable and offers Retry.
+
+Sorting, column filters, the global filter, pagination, controller entries, and controller search reset scroll and cell selection automatically. Appending rows keeps both. Most controlled tables do not need `queryKey`; use it only for result inputs that neither the table nor the filter controller can observe. Keep it stable when appending a page.
 
 ## Preferences and saved views
 
@@ -81,7 +96,15 @@ For infinite queries, pass `loadMore={{ available, loading, load, error }}`. The
 
 ## Composition and export
 
-Use `TableView`, `TableColumnSettings`, `TablePagination`, and `TableActionBar` separately around the same table instance to customize placement. The full `DataTable` assembles these defaults for you. `tableCsv(table)` exports loaded rows in visible column order; it does not fetch all matching results. Supply a server export action when that is the intended scope.
+Use `TableView`, `TableFilters`, `TableColumnSettings`, `TablePagination`, and `TableActionBar` separately around the same table instance to customize placement. Give `TableFilters` and `TableView` the same controller. `TableView` uses it for reset and recovery behavior without rendering filter controls. The full `DataTable` assembles these defaults for you. `tableCsv(table)` exports loaded rows in visible column order; it does not fetch all matching results. Supply a server export action when that is the intended scope.
+
+```tsx
+<div className="flex items-start justify-between gap-2">
+  <TableFilters filters={filters} showSearch={false} />
+  <ProjectActions />
+</div>
+<TableView table={table} filters={filters} />
+```
 
 On narrow screens, columns keep their saved order but temporarily stop sticking if the pinned columns would leave less than 120px for the middle of the table. Widening the viewport restores sticky positioning without changing saved preferences.
 

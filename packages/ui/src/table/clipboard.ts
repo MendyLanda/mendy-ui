@@ -4,7 +4,7 @@ import { constructCell } from "@tanstack/react-table";
 import { csvValue, tsvValue } from "./state.js";
 
 export const interactiveSelector =
-  'button, a, input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="checkbox"], [role="button"], [role="textbox"]';
+  'button, a, summary, input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="checkbox"], [role="button"], [role="textbox"]';
 export function selectedCellsText<T extends object>(table: DataTableInstance<T>): string {
   const rows = table.getRowsInDisplayOrder();
   const columns = [

@@ -6,4 +6,5 @@ export * from "./use-result-selection.js";
 export * from "./table-view.js";
 export * from "./table-controls.js";
 export * from "./data-table.js";
+export * from "./table-filters.js";
 export * from "./clipboard.js";

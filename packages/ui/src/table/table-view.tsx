@@ -4,6 +4,7 @@ import type { ReactNode, Ref } from "react";
 import type { Header } from "@tanstack/react-table";
 import type { DataTableFeatures } from "./features.js";
 import type { DataTableInstance } from "./use-data-table.js";
+import type { FilterController } from "../filters/use-filters.js";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TableHeaderCell, TableBodyRow } from "./table-parts.js";
@@ -15,6 +16,7 @@ import { tableLayout } from "./table-layout.js";
 import { TableLoadingRows } from "./table-loading.js";
 import { TableInitialState } from "./table-feedback.js";
 import { useTableInteraction } from "./use-table-interaction.js";
+import { useTableResults } from "./use-table-results.js";
 
 export interface TableDataState {
   status?: "loading" | "ready" | "error";
@@ -26,8 +28,13 @@ export interface TableDataState {
 export interface TableViewProps<T extends object> extends TableDataState {
   table: DataTableInstance<T>;
   label?: string;
+  /** Defaults to "auto": fit the rows, capped at 65% of the viewport height. */
   height?: number | string;
-  rowHeight?: number;
+  /** Auto measures multiline rows and retains all columns to keep their height stable. */
+  rowHeight?: number | "auto";
+  rowClassName?: (row: T) => string | undefined;
+  /** Expanded content beneath a record. Return null for collapsed records. */
+  renderRowDetail?: (row: T) => ReactNode;
   className?: string;
   /** Theme adapter for application-owned renderers, not package controls. */
   contentClassName?: string;
@@ -36,7 +43,12 @@ export interface TableViewProps<T extends object> extends TableDataState {
   scrollRef?: Ref<HTMLDivElement>;
   /** Change when the result set changes, not when another page is appended. */
   queryKey?: string;
+  /** Shared filter state for query resets and empty-result recovery. */
+  filters?: FilterController;
   renderHeader?: (header: Header<DataTableFeatures, T, unknown>) => ReactNode;
+  /** Single-click action, also used by Enter unless onRowActivate is provided. */
+  onRowClick?: (row: T) => void;
+  /** Optional double-click and Enter action. Interactive controls keep their own behavior. */
   onRowActivate?: (row: T) => void;
   isRowHighlighted?: (row: T) => boolean;
   onCopyError?: (error: unknown) => void;
@@ -44,8 +56,10 @@ export interface TableViewProps<T extends object> extends TableDataState {
 export function TableView<T extends object>({
   table,
   label = "Data table",
-  height = "min(65dvh, 640px)",
-  rowHeight = 44,
+  height = "auto",
+  rowHeight: rowHeightOption = 44,
+  rowClassName,
+  renderRowDetail,
   className,
   contentClassName,
   emptyState,
@@ -57,11 +71,16 @@ export function TableView<T extends object>({
   retry,
   loadMore,
   queryKey,
+  filters,
   renderHeader,
+  onRowClick,
   onRowActivate,
   isRowHighlighted,
   onCopyError,
 }: TableViewProps<T>) {
+  const { resultKey, hasFilters, clearFilters } = useTableResults(table, queryKey, filters);
+  const autoRowHeight = rowHeightOption === "auto" || Boolean(renderRowDetail);
+  const rowHeight = rowHeightOption === "auto" ? 44 : rowHeightOption;
   const container = useRef<HTMLDivElement>(null);
   const setContainer = useCallback(
     (node: HTMLDivElement | null) => {
@@ -98,6 +117,7 @@ export function TableView<T extends object>({
     container,
     viewportWidth,
     focused?.column.id,
+    !autoRowHeight,
   );
   const columnIndexes = useMemo(
     () => new Map(layout.columns.map((column, index) => [column.id, index])),
@@ -107,30 +127,29 @@ export function TableView<T extends object>({
     table,
     pinningActive,
     container,
-    queryKey,
-    onRowActivate,
+    queryKey: resultKey,
+    onRowActivate: onRowActivate ?? onRowClick,
     onCopyError,
     scrollToIndex: (index) => virtual.scrollToIndex(index, { align: "auto" }),
   });
   const items = virtual.getVirtualItems();
   const last = items.at(-1)?.index ?? -1;
-  const requested = useRef<string | null>(null);
+  const requested = useRef<{ key: unknown; count: number } | null>(null);
   const load = useRef(loadMore);
   useLayoutEffect(() => {
     load.current = loadMore;
   }, [loadMore]);
   useEffect(() => {
     requested.current = null;
-  }, [queryKey]);
+  }, [resultKey]);
   useEffect(() => {
     const data = load.current;
-    const requestKey = `${queryKey}:${rows.length}`;
     if (
       !data?.available ||
       data.loading ||
       data.error ||
       last < rows.length - 10 ||
-      requested.current === requestKey
+      (requested.current?.key === resultKey && requested.current.count === rows.length)
     )
       return;
     const element = container.current;
@@ -138,9 +157,10 @@ export function TableView<T extends object>({
     // Reading clientHeight on every scroll otherwise forces layout needlessly.
     const nearEnd =
       element &&
-      element.scrollTop + element.clientHeight + rowHeight * 10 >= (rows.length + 1) * rowHeight;
+      element.scrollTop + element.clientHeight + rowHeight * 10 >=
+        virtual.getTotalSize() + rowHeight;
     if (!nearEnd) return;
-    requested.current = requestKey;
+    requested.current = { key: resultKey, count: rows.length };
     Promise.resolve()
       .then(() => data.load())
       .catch(() => {
@@ -150,10 +170,11 @@ export function TableView<T extends object>({
     last,
     rows.length,
     rowHeight,
-    queryKey,
+    resultKey,
     loadMore?.available,
     loadMore?.loading,
     loadMore?.error,
+    virtual,
   ]);
   const headersById = new Map(table.getFlatHeaders().map((header) => [header.column.id, header]));
 
@@ -167,10 +188,15 @@ export function TableView<T extends object>({
         role="grid"
         tabIndex={-1}
         aria-label={label}
-        aria-rowcount={rows.length + 1}
+        aria-rowcount={renderRowDetail ? -1 : rows.length + 1}
         aria-colcount={layout.columns.length}
         aria-busy={status === "loading" || refreshing}
-        style={{ height }}
+        style={{
+          height:
+            height === "auto"
+              ? `min(65dvh, ${Math.max(rows.length ? 0 : 160, virtual.getTotalSize() + rowHeight + 2)}px)`
+              : height,
+        }}
         className={cn(
           "relative isolate overflow-auto rounded-md border bg-background text-sm outline-none",
           className,
@@ -223,6 +249,10 @@ export function TableView<T extends object>({
             )
           }
           emptyState={emptyState}
+          hasFilters={hasFilters}
+          pageIndex={table.state.pagination.pageIndex}
+          clearFilters={clearFilters}
+          firstPage={() => table.setPageIndex(0)}
           error={error}
           retry={retry}
         />
@@ -238,6 +268,11 @@ export function TableView<T extends object>({
               rowIndex={item.index}
               start={item.start}
               rowHeight={rowHeight}
+              autoRowHeight={autoRowHeight}
+              measureElement={autoRowHeight ? virtual.measureElement : undefined}
+              rowClassName={rowClassName}
+              renderRowDetail={renderRowDetail}
+              detailWidth={viewportWidth ?? totalWidth}
               cellStyle={cellStyle}
               columns={columns}
               columnGaps={columnGaps}
@@ -247,6 +282,7 @@ export function TableView<T extends object>({
               focusedId={focused?.id}
               copied={copied}
               contentClassName={contentClassName}
+              onRowClick={onRowClick}
               onRowActivate={onRowActivate}
               isRowHighlighted={isRowHighlighted}
             />

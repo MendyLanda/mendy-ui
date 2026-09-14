@@ -68,6 +68,7 @@ const definitions = defineFilters({
 });
 export default function App() {
   const filters = useFilters(definitions);
+  const tableFilters = useFilters({});
   const [inlineField, setInlineField] = useState("owner");
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
   return <main>
@@ -79,6 +80,7 @@ export default function App() {
       </MendyUIProvider>
     </div>
     <DataTable rows={tableRows} columns={tableColumns} getRowId={row=>row.id} label="Consumer table" height={180} />
+    <section aria-label="Integrated table"><DataTable filters={tableFilters} rows={tableRows.filter(row=>row.title.toLowerCase().includes(tableFilters.search.toLowerCase()))} columns={tableColumns} getRowId={row=>row.id} label="Filtered consumer table" /></section>
     <output aria-label="Current values">{JSON.stringify(filters.values)}</output>
   </main>;
 }
@@ -238,7 +240,7 @@ for (const framework of ["vite", "next", "tailwind3"]) {
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.goto(origin);
-      const consumerTable = page.getByRole("grid", { name: "Consumer table" });
+      const consumerTable = page.getByRole("grid", { name: "Consumer table", exact: true });
       await expect(consumerTable.getByRole("gridcell").first()).toHaveText("First item");
       await expect(consumerTable).toHaveCSS("overflow-y", "auto");
       await expect(consumerTable.getByRole("gridcell").first()).toHaveCSS("height", "44px");
@@ -247,6 +249,14 @@ for (const framework of ["vite", "next", "tailwind3"]) {
         "aria-selected",
         "true",
       );
+      const integrated = page.getByRole("region", { name: "Integrated table" });
+      const integratedGrid = integrated.getByRole("grid");
+      expect((await integratedGrid.boundingBox()).height).toBeLessThan(200);
+      await integrated.getByRole("searchbox").fill("no match");
+      await expect(integratedGrid.getByText("No results match your filters.")).toBeVisible();
+      await integratedGrid.getByRole("button", { name: "Clear filters", exact: true }).click();
+      await expect(integrated.getByRole("searchbox")).toHaveValue("");
+      await expect(integratedGrid.getByRole("gridcell")).toHaveCount(2);
       if (framework === "vite") {
         const width = await page
           .locator("#unrelated-utility")

@@ -2,7 +2,9 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 
 /** Reuse equal array shells; never deep-compare records or ignore changed callbacks. */
-export function useStableArray<T>(input: T[]): T[] {
+export function useStableArray<T>(input: T[]): T[];
+export function useStableArray<T>(input: readonly T[]): readonly T[];
+export function useStableArray<T>(input: readonly T[]): readonly T[] {
   const committed = useRef(input);
   const value = useMemo(() => {
     const previous = committed.current;

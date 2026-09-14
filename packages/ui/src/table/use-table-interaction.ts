@@ -17,7 +17,7 @@ export function useTableInteraction<T extends object>({
   table: DataTableInstance<T>;
   pinningActive: boolean;
   container: RefObject<HTMLDivElement | null>;
-  queryKey?: string;
+  queryKey?: unknown;
   onRowActivate?: (row: T) => void;
   onCopyError?: (error: unknown) => void;
   scrollToIndex: (index: number) => void;
@@ -40,7 +40,9 @@ export function useTableInteraction<T extends object>({
     const remember = (event: FocusEvent) => {
       const target = event.target as HTMLElement;
       ownedFocus.current =
-        element.contains(target) && target.getAttribute("role") === "gridcell" ? target : null;
+        target.closest('[role="grid"]') === element && target.getAttribute("role") === "gridcell"
+          ? target
+          : null;
     };
     document.addEventListener("focusin", remember);
     return () => document.removeEventListener("focusin", remember);
@@ -73,7 +75,10 @@ export function useTableInteraction<T extends object>({
   }, [queryKey, resetCellSelection, container]);
   useEffect(() => {
     const dismiss = (event: PointerEvent) => {
-      if (container.current && !container.current.contains(event.target as Node))
+      if (
+        container.current &&
+        (event.target as Element).closest('[role="grid"]') !== container.current
+      )
         resetCellSelection(true);
     };
     document.addEventListener("pointerdown", dismiss);
@@ -122,7 +127,12 @@ export function useTableInteraction<T extends object>({
     });
   }
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if ((event.target as Element).closest(interactiveSelector)) return;
+    if (
+      event.defaultPrevented ||
+      (event.target as Element).closest('[role="grid"]') !== event.currentTarget ||
+      (event.target as Element).closest(interactiveSelector)
+    )
+      return;
     if (
       (event.ctrlKey || event.metaKey) &&
       event.key.toLowerCase() === "c" &&

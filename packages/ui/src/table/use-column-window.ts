@@ -11,6 +11,7 @@ export function useColumnWindow<T extends object>(
   container: RefObject<HTMLDivElement | null>,
   viewportWidth: number | null,
   focusedColumn?: string,
+  enabled = true,
 ) {
   const [scrollLeft, setScrollLeft] = useState(0);
   const [activeColumn, setActiveColumn] = useState<string>();
@@ -48,6 +49,7 @@ export function useColumnWindow<T extends object>(
     let previousEnd = 0;
     layout.columns.forEach((column, index) => {
       if (
+        !enabled ||
         (index >= start && index <= end) ||
         (layout.pinningActive && column.getIsPinned()) ||
         column.id === focusedColumn ||
@@ -69,5 +71,5 @@ export function useColumnWindow<T extends object>(
       columnGaps,
       cellStyle: (column: Column<DataTableFeatures, T>) => styles.get(column.id)!,
     };
-  }, [layout, start, end, focusedColumn, activeColumn]);
+  }, [layout, start, end, focusedColumn, activeColumn, enabled]);
 }

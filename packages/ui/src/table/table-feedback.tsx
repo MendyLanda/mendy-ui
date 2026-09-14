@@ -8,10 +8,18 @@ export function TableInitialState({
   emptyState,
   error,
   retry,
+  hasFilters,
+  pageIndex = 0,
+  clearFilters,
+  firstPage,
 }: Pick<TableDataState, "status" | "error" | "retry"> & {
   hasRows: boolean;
   loadingState?: ReactNode;
   emptyState?: ReactNode;
+  hasFilters?: boolean;
+  pageIndex?: number;
+  clearFilters?: () => void;
+  firstPage?: () => void;
 }) {
   if (hasRows) return null;
   if (status === "loading") return loadingState ?? null;
@@ -27,8 +35,30 @@ export function TableInitialState({
       </div>
     );
   return (
-    <div role="status" className="p-8 text-center text-muted-foreground">
-      {emptyState ?? "No results."}
+    <div
+      role="status"
+      className="flex flex-col items-center gap-2 p-8 text-center text-muted-foreground"
+    >
+      {emptyState ??
+        (pageIndex > 0 ? (
+          <>
+            <span>No results on this page.</span>
+            <Button variant="outline" size="sm" onClick={firstPage}>
+              Go to first page
+            </Button>
+          </>
+        ) : hasFilters ? (
+          <>
+            <span>No results match your filters.</span>
+            {clearFilters && (
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                Clear filters
+              </Button>
+            )}
+          </>
+        ) : (
+          "No rows yet."
+        ))}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   tableCsv,
 } from "@mendylanda/ui/table";
 import "@mendylanda/ui/styles.css";
+import { TableDefaultsFixture, type TableDefaultsMode } from "../table-defaults/fixture";
 type Item = { id: string; title: string; amount: number };
 const allRows = Array.from({ length: 10000 }, (_, i) => ({
   id: `item-${i}`,
@@ -96,8 +97,87 @@ function App() {
     </main>
   );
 }
+const defaultsMode = new URLSearchParams(location.search).get(
+  "defaults",
+) as TableDefaultsMode | null;
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    {defaultsMode ? (
+      <TableDefaultsFixture mode={defaultsMode} />
+    ) : location.search.includes("details") ? (
+      <DetailedFixture />
+    ) : (
+      <App />
+    )}
   </React.StrictMode>,
 );
+
+function DetailedFixture() {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [clicked, setClicked] = useState("");
+  const [clickCount, setClickCount] = useState(0);
+  const [action, setAction] = useState(0);
+  const rows = Array.from({ length: location.search.includes("fit") ? 2 : 200 }, (_, i) => ({
+    id: `record-${i}`,
+    title: i === 0 ? "Multiline content ".repeat(35) : `Record ${i}`,
+  }));
+  return (
+    <main style={{ padding: 20, maxWidth: 850 }}>
+      <output aria-label="Clicked row">{clicked}</output>
+      <output aria-label="Row click count">{clickCount}</output>
+      <output aria-label="Action count">{action}</output>
+      <DataTable
+        label="Detailed records"
+        rows={rows}
+        getRowId={(r) => r.id}
+        height={location.search.includes("fit") ? "auto" : 450}
+        rowHeight="auto"
+        showColumnSettings={false}
+        onRowClick={(r) => {
+          setClicked(r.id);
+          setClickCount((count) => count + 1);
+        }}
+        rowClassName={(r) => (r.id === "record-0" ? "bg-amber-100" : undefined)}
+        renderRowDetail={(r) =>
+          expanded === r.id ? (
+            <DataTable
+              label="Nested records"
+              rows={[{ id: "child", title: "Child value" }]}
+              getRowId={(r) => r.id}
+              columns={[{ id: "title", accessorKey: "title", label: "Child title" }]}
+              height={150}
+              showColumnSettings={false}
+            />
+          ) : null
+        }
+        columns={[
+          { id: "id", accessorKey: "id", label: "ID", size: 140, pin: "start", grow: false },
+          { id: "title", accessorKey: "title", label: "Title", size: 250, grow: 1 },
+          {
+            id: "actions",
+            label: "Actions",
+            size: 130,
+            enableCellSelection: false,
+            cell: ({ row }) => (
+              <>
+                <button
+                  onClick={() => {
+                    setExpanded(expanded === row.id ? null : row.id);
+                    setAction((n) => n + 1);
+                  }}
+                >
+                  Details {row.id}
+                </button>
+                <details>
+                  <summary>More {row.id}</summary>
+                  <p>{"Extra details ".repeat(20)}</p>
+                </details>
+              </>
+            ),
+          },
+        ]}
+      />
+    </main>
+  );
+}

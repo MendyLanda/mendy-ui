@@ -64,6 +64,11 @@ function TableBodyRowImpl<T extends object>({
   rowIndex,
   start,
   rowHeight,
+  autoRowHeight,
+  measureElement,
+  rowClassName,
+  renderRowDetail,
+  detailWidth,
   cellStyle,
   columns,
   columnGaps,
@@ -73,6 +78,7 @@ function TableBodyRowImpl<T extends object>({
   focusedId,
   copied,
   contentClassName,
+  onRowClick,
   onRowActivate,
   isRowHighlighted,
 }: {
@@ -80,6 +86,11 @@ function TableBodyRowImpl<T extends object>({
   rowIndex: number;
   start: number;
   rowHeight: number;
+  autoRowHeight: boolean;
+  measureElement?: (element: HTMLDivElement | null) => void;
+  rowClassName?: (row: T) => string | undefined;
+  renderRowDetail?: (row: T) => ReactNode;
+  detailWidth: number;
   cellStyle: (column: Column<DataTableFeatures, T>) => CSSProperties;
   columns: Column<DataTableFeatures, T>[];
   columnGaps: Map<string, number>;
@@ -89,6 +100,7 @@ function TableBodyRowImpl<T extends object>({
   focusedId?: string;
   copied: boolean;
   contentClassName?: string;
+  onRowClick?: (row: T) => void;
   onRowActivate?: (row: T) => void;
   isRowHighlighted?: (row: T) => boolean;
 }) {
@@ -106,16 +118,25 @@ function TableBodyRowImpl<T extends object>({
     }
     return cell;
   });
-  return (
+  const rowElement = (
     <div
       key={row.id}
+      ref={renderRowDetail ? undefined : measureElement}
       role="row"
-      aria-rowindex={rowIndex + 2}
+      aria-rowindex={renderRowDetail ? undefined : rowIndex + 2}
       aria-selected={row.getIsSelected()}
-      data-highlighted={isRowHighlighted?.(row.original)}
+      data-highlighted={row.getIsSelected() || isRowHighlighted?.(row.original)}
       data-index={rowIndex}
-      className="group absolute left-0 top-0 flex min-w-full hover:bg-accent/50 data-[highlighted=true]:bg-accent"
-      style={{ height: rowHeight, top: start }}
+      className={cn(
+        "group left-0 flex min-w-full bg-background hover:bg-accent data-[highlighted=true]:bg-accent",
+        rowClassName?.(row.original),
+      )}
+      style={{
+        height: autoRowHeight ? undefined : rowHeight,
+        minHeight: rowHeight,
+        top: renderRowDetail ? 0 : start,
+        position: renderRowDetail ? "relative" : "absolute",
+      }}
     >
       {cells.map((cell) => {
         const index = columnIndexes.get(cell.column.id)!;
@@ -147,9 +168,13 @@ function TableBodyRowImpl<T extends object>({
                     ? 0
                     : -1
               }
-              style={cellStyle(cell.column)}
+              style={
+                autoRowHeight
+                  ? { ...cellStyle(cell.column), height: undefined, minHeight: rowHeight }
+                  : cellStyle(cell.column)
+              }
               className={cn(
-                "relative flex shrink-0 items-center border-b border-e bg-background px-3",
+                "relative flex shrink-0 items-center border-b border-e bg-inherit px-3",
                 !(selected && copied) &&
                   "group-hover:bg-accent group-data-[highlighted=true]:bg-accent",
                 !selected &&
@@ -174,6 +199,10 @@ function TableBodyRowImpl<T extends object>({
                 cell.getSelectionStartHandler()(event);
               }}
               onMouseEnter={cell.getSelectionExtendHandler()}
+              onClick={(event) => {
+                if (event.detail <= 1 && !(event.target as Element).closest(interactiveSelector))
+                  onRowClick?.(row.original);
+              }}
               onDoubleClick={(event) => {
                 if (!(event.target as Element).closest(interactiveSelector))
                   onRowActivate?.(row.original);
@@ -196,7 +225,13 @@ function TableBodyRowImpl<T extends object>({
                   }}
                 />
               )}
-              <div className={cn("max-h-full min-w-0 max-w-full truncate", contentClassName)}>
+              <div
+                className={cn(
+                  "min-w-0 max-w-full",
+                  autoRowHeight ? "whitespace-normal break-words py-2" : "max-h-full truncate",
+                  contentClassName,
+                )}
+              >
                 <TableCellContent
                   cell={cell}
                   renderer={cell.column.columnDef.cell}
@@ -208,6 +243,31 @@ function TableBodyRowImpl<T extends object>({
           </Fragment>
         );
       })}
+    </div>
+  );
+  if (!renderRowDetail) return rowElement;
+  const detail = renderRowDetail(row.original);
+  return (
+    <div
+      ref={measureElement}
+      data-index={rowIndex}
+      role="rowgroup"
+      className="absolute left-0 min-w-full"
+      style={{ top: start }}
+    >
+      {rowElement}
+      {detail != null && (
+        <div role="row" className="border-b bg-background">
+          <div
+            role="gridcell"
+            aria-colspan={columns.length}
+            className="sticky min-w-0 p-3"
+            style={{ width: detailWidth, maxWidth: "100%", insetInlineStart: 0 }}
+          >
+            {detail}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

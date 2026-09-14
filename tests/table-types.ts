@@ -10,3 +10,11 @@ defineColumns<Item>((column) => [
   // @ts-expect-error Copy callbacks receive the inferred numeric value.
   column.accessor("amount", { label: "Amount", copy: (value) => value.toUpperCase() }),
 ]);
+
+// Readonly query results are accepted without copying the dataset.
+const readonlyOptions = {
+  rows: [{ id: "read-only", amount: 1 }] as const,
+  columns: defineColumns<Item>((column) => [column.accessor("amount", { label: "Amount" })]),
+  getRowId: (row: Item) => row.id,
+} satisfies import("@mendylanda/ui/table").UseDataTableOptions<Item>;
+void readonlyOptions;

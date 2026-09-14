@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0-alpha.7
+
+Prerelease under the `alpha` tag.
+
+- Connect an existing filter controller to `DataTable` and `TableView`. `DataTable` can place `TableFilters` beside toolbar actions, hide free-text search, or leave filter rendering to the application.
+- Keep filtering and data fetching in application-owned state. Empty results can clear the shared controller once, retain locked filters, or return an empty later page to page one.
+- Default table height to its measured content with a 65dvh cap. Keep 44px rows by default and add measured automatic row height for wrapped, editable, and expanded content.
+- Reset scroll and cell selection when sorting, filters, pagination, controller values, or an explicit query key changes. Preserve both when rows are appended.
+- Highlight selected rows automatically. Add single-click row actions, application row classes, measured row details, and additive custom highlights.
+- Accept readonly row arrays and keep nested grids, disclosure controls, and application inputs isolated from parent table keyboard and pointer handling.
+
 ## 0.3.0-alpha.6
 
 - Restore the spinner beside the incremental-loading status, with reduced-motion support.

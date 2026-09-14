@@ -15,7 +15,7 @@ export interface UseDataTableOptions<T extends object> extends Omit<
   TableOptions<DataTableFeatures, T>,
   "features" | "data" | "columns" | "manualFiltering" | "manualSorting" | "manualPagination"
 > {
-  rows: T[];
+  rows: readonly T[];
   columns: TableColumn<T>[];
   getRowId: (row: T, index: number) => string;
   processing?: {

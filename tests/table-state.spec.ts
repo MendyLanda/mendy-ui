@@ -69,7 +69,7 @@ test("pinned end cells reach the viewport edge and interactive cells do not sele
 test("loading and retry states are distinct from empty results", async ({ page }) => {
   await page.getByRole("button", { name: "Simulate loading" }).click();
   await expect(page.getByRole("status", { name: "Loading rows" })).toBeVisible();
-  await expect(page.getByText("No results.", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("No rows yet.", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Simulate error" }).click();
   await page.getByRole("button", { name: "Retry", exact: true }).click();
   await expect(page.getByRole("gridcell").first()).toBeVisible();

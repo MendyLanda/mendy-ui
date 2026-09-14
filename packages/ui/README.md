@@ -106,4 +106,21 @@ export function Projects({ rows }: { rows: Project[] }) {
 
 Use `useDataTable` and `TableView` when the application already controls sorting, pagination, preferences, or selection. Data fetching and mutations stay in the application. `useResultSelection` represents explicit IDs or all matching results with exclusions. `TableSavedViews` accepts application-owned views; it does not create a backend.
 
+Pass a filter controller once to place the shared filter bar and connect table recovery behavior:
+
+```tsx
+<DataTable
+  table={table}
+  filters={filters}
+  toolbar={<ProjectActions />}
+  filterBar={{ showSearch: false }}
+/>
+```
+
+Create the controller with `useFilters`, `useUrlFilters`, or `useControlledFilters`. Its values remain application query state. The table does not derive a predicate or fetch rows from filter definitions. Set `filterBar={false}` when controls live elsewhere, or use `TableFilters` and `TableView` with the same controller in a composed layout.
+
+Tables fit their rows by default, capped at 65dvh. Full-page layouts can set an explicit `height`. Rows remain 44px unless `rowHeight="auto"` opts into measurement for wrapped or editable content. Selected rows receive the standard highlight; `isRowHighlighted` adds application state. `onRowClick`, `rowClassName`, and `renderRowDetail` cover row actions and expandable content.
+
+Changes to table query state or the shared controller reset scroll and cell selection. Appending rows keeps the current position and selection. Empty states distinguish an empty dataset, an empty filtered result with one controller clear, and an empty later page that can return to the first page. Locked filters never get a clear action.
+
 See the [table documentation](https://ui.mendylanda.com/docs/components/table) for composition, remote data, and persistence.

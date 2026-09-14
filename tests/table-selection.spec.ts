@@ -60,17 +60,21 @@ test("selection hidden behind pinned cells does not bleed through row borders", 
   const pinned = await page.locator('[data-row-id="1"][data-column-id="column-0"]').boundingBox();
   const screenshot = await grid.screenshot({ scale: "css" });
   const blue = await page.evaluate(
-    async ({ image, x, y, width }) => {
+    async ({ image, x, y, width, rowHeight }) => {
       const bitmap = await createImageBitmap(await (await fetch(image)).blob());
       const canvas = document.createElement("canvas");
       canvas.width = bitmap.width;
       canvas.height = bitmap.height;
       const context = canvas.getContext("2d")!;
       context.drawImage(bitmap, 0, 0);
-      const pixels = context.getImageData(x, y, width, 250).data;
       let count = 0;
-      for (let i = 0; i < pixels.length; i += 4) {
-        if (pixels[i + 2] > 180 && pixels[i] < 100 && pixels[i + 1] < 150) count++;
+      // Inspect the row seams where strokes can leak. Scanning text too picks
+      // up blue font-antialiasing fringes on some Linux browser configurations.
+      for (let row = 1; row <= 5; row++) {
+        const pixels = context.getImageData(x, Math.round(y + row * rowHeight - 2), width, 4).data;
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (pixels[i + 2] > 180 && pixels[i] < 100 && pixels[i + 1] < 150) count++;
+        }
       }
       return count;
     },
@@ -79,6 +83,7 @@ test("selection hidden behind pinned cells does not bleed through row borders", 
       x: Math.round(pinned!.x - box!.x + 5),
       y: Math.round(pinned!.y - box!.y),
       width: Math.floor(pinned!.width - 12),
+      rowHeight: pinned!.height,
     },
   );
   expect(blue).toBe(0);

@@ -35,8 +35,17 @@ function App() {
   const [page, setPage] = useState(0);
   const [mode, setMode] = useState<"loading" | "ready" | "error">("ready");
   const [many, setMany] = useState(false);
+  const [autoLoad, setAutoLoad] = useState(false);
+  const [loads, setLoads] = useState(0);
   const [edit, setEdit] = useState("");
-  const rows = mode === "ready" ? (many ? allRows : allRows.slice(page * 20, page * 20 + 20)) : [];
+  const rows =
+    mode === "ready"
+      ? autoLoad
+        ? allRows.slice(0, 50)
+        : many
+          ? allRows
+          : allRows.slice(page * 20, page * 20 + 20)
+      : [];
   const selection = useResultSelection({
     scope: { key: scope, value: { search: scope } },
     rowIds: rows.map((r) => r.id),
@@ -61,6 +70,8 @@ function App() {
       <button onClick={() => setScope(scope === "one" ? "two" : "one")}>Change scope</button>
       <button onClick={() => setPage(page + 1)}>Another page</button>
       <button onClick={() => setMany(!many)}>Large dataset</button>
+      <button onClick={() => setAutoLoad(true)}>Enable incremental loading</button>
+      <output aria-label="Page requests">{loads}</output>
       <button onClick={() => setMode("loading")}>Simulate loading</button>
       <button onClick={() => setMode("error")}>Simulate error</button>
       <button onClick={() => document.documentElement.classList.toggle("dark")}>Theme</button>
@@ -75,6 +86,11 @@ function App() {
         status={mode}
         retry={() => setMode("ready")}
         queryKey={scope}
+        loadMore={
+          autoLoad
+            ? { available: true, loading: false, load: () => setLoads((n) => n + 1) }
+            : undefined
+        }
       />
       <button onClick={() => setEdit(tableCsv(table))}>Export loaded rows</button>
     </main>

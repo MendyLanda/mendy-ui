@@ -39,3 +39,26 @@ test("CSV quotes delimiters and prevents formula execution; TSV preserves multi-
   assert.equal(csvValue('a,"b"'), '"a,""b"""');
   assert.equal(tsvValue("a\nb"), '"a\nb"');
 });
+
+test("spare width respects weights, caps, fixed columns and narrow viewports", async () => {
+  const { distributeColumnWidths } = await import("../../packages/ui/src/table/column-widths");
+  const columns = [
+    { id: "fixed", size: 50, maxSize: 500, grow: false as const },
+    { id: "name", size: 100, maxSize: 250, grow: 2 },
+    { id: "notes", size: 100, maxSize: 500, grow: 1 },
+  ];
+  assert.deepEqual([...distributeColumnWidths(columns, 400).values()], [50, 200, 150]);
+  assert.deepEqual([...distributeColumnWidths(columns, 650).values()], [50, 250, 350]);
+  assert.deepEqual([...distributeColumnWidths(columns, 900).values()], [50, 250, 500]);
+  assert.deepEqual([...distributeColumnWidths(columns, 200).values()], [50, 100, 100]);
+  assert.deepEqual([...distributeColumnWidths(columns, null).values()], [50, 100, 100]);
+  assert.deepEqual(
+    [
+      ...distributeColumnWidths(
+        columns.map((c) => ({ ...c, grow: c.grow === false ? false : 1e308 })),
+        350,
+      ).values(),
+    ],
+    [50, 150, 150],
+  );
+});

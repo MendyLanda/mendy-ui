@@ -5,6 +5,8 @@ import type { DataTableFeatures } from "./features.js";
 export type TableColumn<T extends object> = ColumnDef<DataTableFeatures, T> & {
   label?: string;
   align?: "start" | "center" | "end";
+  /** Share of spare viewport width. Defaults to 1 for data columns, false for display columns. */
+  grow?: number | false;
   defaultHidden?: boolean;
   pin?: "start" | "end";
   copyValue?: (row: T) => string;
@@ -39,6 +41,7 @@ export interface ValueFormat<V> {
 interface ValueOptions<T extends object, V> {
   label: string;
   size?: number;
+  grow?: number | false;
   minSize?: number;
   maxSize?: number;
   hidden?: boolean;
@@ -64,6 +67,7 @@ function valueColumn<T extends object, V>(
     header: options.label,
     label: options.label,
     size: options.size,
+    grow: options.grow,
     minSize: options.minSize,
     maxSize: options.maxSize,
     defaultHidden: options.hidden,
@@ -96,7 +100,15 @@ interface ColumnBuilder<T extends object> {
   computed<V>(id: string, value: (row: T) => V, options: ValueOptions<T, V>): TableColumn<T>;
   display(
     id: string,
-    options: { label: string; render: (row: T) => ReactNode; size?: number; pin?: "start" | "end" },
+    options: {
+      label: string;
+      render: (row: T) => ReactNode;
+      size?: number;
+      minSize?: number;
+      maxSize?: number;
+      grow?: number | false;
+      pin?: "start" | "end";
+    },
   ): TableColumn<T>;
 }
 export function defineColumns<T extends object>(
@@ -121,6 +133,9 @@ export function defineColumns<T extends object>(
       label: options.label,
       header: options.label,
       size: options.size,
+      minSize: options.minSize,
+      maxSize: options.maxSize,
+      grow: options.grow ?? false,
       pin: options.pin,
       enableSorting: false,
       enableCellSelection: false,

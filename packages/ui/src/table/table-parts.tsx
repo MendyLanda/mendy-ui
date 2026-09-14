@@ -1,5 +1,5 @@
 "use client";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ReactNode, MouseEvent, TouchEvent } from "react";
 import type { Column, Header, Row } from "@tanstack/react-table";
 import type { DataTableFeatures } from "./features.js";
 import type { DataTableInstance } from "./use-data-table.js";
@@ -46,7 +46,14 @@ export function TableHeaderCell<T extends object>({
       >
         <TableHeaderContent header={header} renderHeader={renderHeader} title={title} />
       </div>
-      {column.getCanResize() && <TableResizeHandle table={table} header={header} title={title} />}
+      {column.getCanResize() && (
+        <TableResizeHandle
+          table={table}
+          header={header}
+          title={title}
+          width={Number(style.width)}
+        />
+      )}
     </div>
   );
 }
@@ -104,16 +111,9 @@ export function TableBodyRow<T extends object>({
             tabIndex={
               focusedId ? (focusedId === cell.id ? 0 : -1) : rowIndex === 0 && index === 0 ? 0 : -1
             }
-            style={{
-              ...cellStyle(cell.column),
-              ...(selected
-                ? {
-                    boxShadow: `${edge?.top ? "inset 0 2px var(--primary)," : ""}${edge?.bottom ? "inset 0 -2px var(--primary)," : ""}${edge?.left ? "inset 2px 0 var(--primary)," : ""}${edge?.right ? "inset -2px 0 var(--primary)," : ""} inset 0 0 0 0 transparent`,
-                  }
-                : {}),
-            }}
+            style={cellStyle(cell.column)}
             className={cn(
-              "flex shrink-0 items-center overflow-hidden border-b border-e bg-background px-3 group-hover:bg-accent group-data-[highlighted=true]:bg-accent focus-visible:outline focus-visible:-outline-offset-2 focus-visible:outline-primary",
+              "relative flex shrink-0 items-center border-b border-e bg-background px-3 group-hover:bg-accent group-data-[highlighted=true]:bg-accent focus-visible:outline focus-visible:-outline-offset-2 focus-visible:outline-primary",
               definition.align === "end" && "justify-end text-end",
               definition.align === "center" && "justify-center text-center",
               selected && "bg-accent",
@@ -139,7 +139,24 @@ export function TableBodyRow<T extends object>({
                 onRowActivate?.(row.original);
             }}
           >
-            <div className={cn("min-w-0 max-w-full truncate", contentClassName)}>
+            {selected && (
+              <span
+                aria-hidden="true"
+                data-selection-outline=""
+                className="pointer-events-none absolute z-1 border-primary"
+                style={{
+                  top: edge?.top ? 0 : -1,
+                  bottom: edge?.bottom ? -1 : -2,
+                  left: -Number(cellStyle(cell.column).borderLeftWidth ?? 0),
+                  right: -Number(cellStyle(cell.column).borderRightWidth ?? 1),
+                  borderTopWidth: edge?.top ? 2 : 0,
+                  borderBottomWidth: edge?.bottom ? 2 : 0,
+                  borderLeftWidth: edge?.left ? 2 : 0,
+                  borderRightWidth: edge?.right ? 2 : 0,
+                }}
+              />
+            )}
+            <div className={cn("max-h-full min-w-0 max-w-full truncate", contentClassName)}>
               {flexRender(
                 cell.column.columnDef.cell ?? (() => String(cell.getValue() ?? "")),
                 cell.getContext(),
@@ -156,24 +173,42 @@ function TableResizeHandle<T extends object>({
   table,
   header,
   title,
+  width,
 }: {
   table: DataTableInstance<T>;
   header: Header<DataTableFeatures, T, unknown>;
   title: string;
+  width: number;
 }) {
   const column = header.column;
+  const beginResize = (event: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
+    if ("touches" in event && event.touches.length > 1) return;
+    if ("button" in event) {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      event.currentTarget.focus({ preventScroll: true });
+    }
+    // Start dragging from the visible width, not the smaller configured base width.
+    header.getResizeHandler()(event);
+    table.setColumnSizing((sizes) => ({ ...sizes, [column.id]: width }));
+    table.setColumnResizing((state) => ({
+      ...state,
+      startSize: width,
+      columnSizingStart: [[column.id, width]],
+    }));
+  };
   return (
     <div
       role="separator"
       tabIndex={0}
       aria-label={`Resize ${title}`}
       aria-orientation="vertical"
-      aria-valuenow={Math.round(column.getSize())}
+      aria-valuenow={Math.round(width)}
       aria-valuemin={column.columnDef.minSize ?? 48}
       aria-valuemax={column.columnDef.maxSize ?? 1200}
       onDoubleClick={() => column.resetSize()}
-      onMouseDown={header.getResizeHandler()}
-      onTouchStart={header.getResizeHandler()}
+      onMouseDown={beginResize}
+      onTouchStart={beginResize}
       onKeyDown={(event) => {
         if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
           event.preventDefault();
@@ -184,13 +219,13 @@ function TableResizeHandle<T extends object>({
               column.columnDef.maxSize ?? 1200,
               Math.max(
                 column.columnDef.minSize ?? 48,
-                column.getSize() + (event.key === "ArrowLeft" ? -10 : 10),
+                width + (event.key === "ArrowLeft" ? -10 : 10),
               ),
             ),
           }));
         }
       }}
-      className="absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none hover:bg-primary/20 focus-visible:bg-primary/20 focus-visible:outline-none"
+      className="absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none select-none hover:bg-primary/20 focus-visible:bg-primary/20 focus-visible:outline-none"
     />
   );
 }

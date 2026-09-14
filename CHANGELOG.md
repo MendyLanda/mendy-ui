@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-alpha.3
+
+- Grow data columns into available viewport space, with weighted `grow` controls and `maxSize` caps. Preserve manual widths and resize from the displayed width.
+- Draw continuous selection outlines over cell borders, including fractional-pixel row positions.
+- Resume incremental loading after returning to a cancelled query and ignore stale virtual ranges during scroll resets.
+
 ## 0.3.0-alpha.2
 
 - Keep the last header border aligned with the column cells on wide screens.

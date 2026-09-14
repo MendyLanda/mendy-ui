@@ -148,7 +148,7 @@ test("narrow viewports keep middle columns reachable without discarding saved pi
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 340, height: 850 });
   const title = page.locator('[data-row-id="item-0"][data-column-id="title"]');
-  await expect(title).toHaveCSS("position", "static");
+  await expect(title).toHaveCSS("position", "relative");
   await page.setViewportSize({ width: 1100, height: 850 });
   await expect(title).toHaveCSS("position", "sticky");
 });
@@ -158,6 +158,12 @@ test("loading uses the live column geometry and pinned boundaries in one scroll 
 }) => {
   await page.setViewportSize({ width: 1200, height: 900 });
   const grid = page.getByRole("grid", { name: "Fixture" });
+  await expect
+    .poll(
+      async () =>
+        (await grid.locator('[data-row-id="item-0"][data-column-id="title"]').boundingBox())!.width,
+    )
+    .toBeGreaterThan(220);
   const before = await grid.locator('[data-row-id="item-0"]').evaluateAll((cells) =>
     cells.map((cell) => ({
       id: cell.getAttribute("data-column-id"),
@@ -278,4 +284,101 @@ test("column settings support pointer dragging without closing the panel", async
     .toEqual(["_selection", "amount", "title", "actions"]);
   const accessibility = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
   expect(accessibility.violations).toEqual([]);
+});
+
+test("selection outline stays continuous across row and column borders", async ({ page }) => {
+  const grid = page.getByRole("grid", { name: "Fixture" });
+  const first = grid.locator('[data-row-id="item-0"][data-column-id="title"]');
+  await first.click();
+  await page.keyboard.press("Shift+ArrowDown");
+  await page.keyboard.press("Shift+ArrowRight");
+  const box = await grid.boundingBox();
+  const cell = await first.boundingBox();
+  const shot = await grid.screenshot({ scale: "css" });
+  const pixels = await page.evaluate(
+    async ({ image, x, y, right, top }) => {
+      const bitmap = await createImageBitmap(await (await fetch(image)).blob());
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(bitmap, 0, 0);
+      return [
+        [-3, -1, 0, 1].map((offset) => Array.from(ctx.getImageData(x, y + offset, 1, 1).data)),
+        [-3, -1, 0, 1].map((offset) =>
+          Array.from(ctx.getImageData(right + offset, top, 1, 1).data),
+        ),
+      ];
+    },
+    {
+      image: `data:image/png;base64,${shot.toString("base64")}`,
+      x: Math.floor(cell!.x - box!.x + 1),
+      y: Math.round(cell!.y - box!.y + cell!.height),
+      right: Math.round(cell!.x - box!.x + cell!.width),
+      top: Math.floor(cell!.y - box!.y + 1),
+    },
+  );
+  for (const edge of pixels) {
+    expect(edge[0][0]).toBeLessThan(100);
+    for (const pixel of edge) expect(pixel).toEqual(edge[0]);
+  }
+});
+
+test("columns grow into spare space and manual resizing starts from the displayed width", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1200, height: 800 });
+  const grid = page.getByRole("grid", { name: "Fixture" });
+  const title = grid
+    .getByRole("columnheader")
+    .filter({ has: page.getByRole("button", { name: "Title", exact: true }) });
+  const amount = grid
+    .getByRole("columnheader")
+    .filter({ has: page.getByRole("button", { name: "Amount", exact: true }) });
+  await expect.poll(async () => (await title.boundingBox())!.width).toBeGreaterThan(220);
+  const total = await grid
+    .getByRole("columnheader")
+    .evaluateAll((els) => els.reduce((sum, el) => sum + el.getBoundingClientRect().width, 0));
+  expect(Math.abs(total - (await grid.evaluate((el) => el.clientWidth)))).toBeLessThan(1);
+  const before = (await title.boundingBox())!.width;
+  const handle = grid.getByRole("separator", { name: "Resize Title", exact: true });
+  await handle.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(async () => (await title.boundingBox())!.width).toBeCloseTo(before + 10, 0);
+  await page.setViewportSize({ width: 800, height: 800 });
+  await expect.poll(async () => (await title.boundingBox())!.width).toBeCloseTo(before + 10, 0);
+  await handle.dblclick();
+  await expect.poll(async () => (await title.boundingBox())!.width).toBeLessThan(before);
+  const from = await handle.boundingBox();
+  const start = (await title.boundingBox())!.width;
+  await page.mouse.move(from!.x + 3, from!.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(from!.x + 33, from!.y + 10, { steps: 6 });
+  await expect.poll(async () => (await title.boundingBox())!.width).toBeCloseTo(start + 30, 0);
+  await page.mouse.up();
+  expect((await amount.boundingBox())!.width).toBeGreaterThanOrEqual(100);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const key = JSON.stringify(["mendy-table", "one", "fixture"]);
+        return JSON.parse(localStorage.getItem(key) ?? "{}").columnSizing?.title;
+      }),
+    )
+    .toBeCloseTo(start + 30, 0);
+  await page.reload();
+  await expect.poll(async () => (await title.boundingBox())!.width).toBeCloseTo(start + 30, 0);
+});
+
+test("returning to a query can load again after its previous request was cancelled", async ({
+  page,
+}) => {
+  const grid = page.getByRole("grid", { name: "Fixture" });
+  await page.getByRole("button", { name: "Enable incremental loading" }).click();
+  await grid.evaluate((el) => (el.scrollTop = el.scrollHeight));
+  await expect(page.getByLabel("Page requests", { exact: true })).toHaveText("1");
+  await page.getByRole("button", { name: "Change scope" }).click();
+  await expect.poll(() => grid.evaluate((el) => el.scrollTop)).toBe(0);
+  await page.getByRole("button", { name: "Change scope" }).click();
+  await grid.evaluate((el) => (el.scrollTop = el.scrollHeight));
+  await expect(page.getByLabel("Page requests", { exact: true })).toHaveText("2");
 });

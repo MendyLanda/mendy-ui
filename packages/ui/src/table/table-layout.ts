@@ -2,6 +2,8 @@ import type { CSSProperties } from "react";
 import type { Column } from "@tanstack/react-table";
 import type { DataTableFeatures } from "./features.js";
 import type { DataTableInstance } from "./use-data-table.js";
+import type { TableColumn } from "./columns.js";
+import { distributeColumnWidths } from "./column-widths.js";
 
 /** Keep headers, skeletons, and loaded cells on the same column geometry. */
 export function tableLayout<T extends object>(
@@ -14,29 +16,44 @@ export function tableLayout<T extends object>(
     ...table.getCenterVisibleLeafColumns(),
     ...table.getEndVisibleLeafColumns(),
   ];
-  const totalWidth = columns.reduce((sum, column) => sum + column.getSize(), 0);
+  const widths = distributeColumnWidths(
+    columns.map((column) => {
+      const definition = column.columnDef as TableColumn<T>;
+      return {
+        id: column.id,
+        size: column.getSize(),
+        maxSize: definition.maxSize ?? 1200,
+        grow: Object.hasOwn(table.state.columnSizing, column.id)
+          ? false
+          : (definition.grow ?? (column.accessorFn ? 1 : false)),
+      };
+    }),
+    viewportWidth,
+  );
+  const size = (column: Column<DataTableFeatures, T>) => widths.get(column.id)!;
+  const totalWidth = columns.reduce((sum, column) => sum + size(column), 0);
   const pinnedWidth = [
     ...table.getStartVisibleLeafColumns(),
     ...table.getEndVisibleLeafColumns(),
-  ].reduce((sum, column) => sum + column.getSize(), 0);
+  ].reduce((sum, column) => sum + size(column), 0);
   // Preserve stored pins, but leave room to reach the middle columns on narrow screens.
   const pinningActive = (viewportWidth ?? Infinity) >= Math.min(totalWidth, pinnedWidth + 120);
   const positions = new Map<string, { side: "left" | "right"; offset: number }>();
   let offset = 0;
   for (const column of table.getStartVisibleLeafColumns()) {
     positions.set(column.id, { side: "left", offset });
-    offset += column.getSize();
+    offset += size(column);
   }
   offset = 0;
   for (const column of [...table.getEndVisibleLeafColumns()].reverse()) {
     positions.set(column.id, { side: "right", offset });
-    offset += column.getSize();
+    offset += size(column);
   }
   function cellStyle(column: Column<DataTableFeatures, T>): CSSProperties {
     const pin = pinningActive ? positions.get(column.id) : undefined;
     return {
-      width: column.getSize(),
-      minWidth: column.getSize(),
+      width: size(column),
+      minWidth: size(column),
       height: rowHeight,
       ...(column.id === table.getEndVisibleLeafColumns()[0]?.id
         ? { marginInlineStart: "auto" }

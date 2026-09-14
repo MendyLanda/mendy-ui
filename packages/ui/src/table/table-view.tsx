@@ -101,9 +101,18 @@ export function TableView<T extends object>({
     load.current = loadMore;
   }, [loadMore]);
   useEffect(() => {
+    requested.current = null;
+  }, [queryKey]);
+  useEffect(() => {
     const data = load.current;
     const requestKey = `${queryKey}:${rows.length}`;
+    const element = container.current;
+    // The virtual range can briefly describe the previous query after scroll resets.
+    const nearEnd =
+      element &&
+      element.scrollTop + element.clientHeight + rowHeight * 10 >= (rows.length + 1) * rowHeight;
     if (
+      !nearEnd ||
       !data?.available ||
       data.loading ||
       data.error ||
@@ -117,7 +126,15 @@ export function TableView<T extends object>({
       .catch(() => {
         requested.current = null;
       });
-  }, [last, rows.length, queryKey, loadMore?.available, loadMore?.loading, loadMore?.error]);
+  }, [
+    last,
+    rows.length,
+    rowHeight,
+    queryKey,
+    loadMore?.available,
+    loadMore?.loading,
+    loadMore?.error,
+  ]);
   const focused = table.getFocusedCell();
   const headersById = new Map(table.getFlatHeaders().map((header) => [header.column.id, header]));
 

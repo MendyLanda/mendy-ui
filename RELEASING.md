@@ -17,3 +17,7 @@ Update `packages/ui/package.json`, its workspace lockfile, and `CHANGELOG.md` to
 The `publish.yml` workflow validates and publishes the checked-out package version. Configure npm trusted publishing for GitHub owner `MendyLanda`, repository `mendy-ui`, and workflow filename `publish.yml`. Enable direct publishing for that trusted publisher. The workflow uses a GitHub-hosted runner and OIDC, with no npm token stored in the repository.
 
 See [npm's trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/) for the account setup. After configuration, run the **Publish npm package** workflow from main. It fails if the version already exists. Releases are explicit; ordinary website deployments do not publish npm versions.
+
+## Prereleases
+
+Publish table previews with an explicit tag, for example `npm publish ./artifacts/mendylanda-ui-0.3.0-alpha.0.tgz --access public --tag alpha`. Verify both the prerelease version and `npm view @mendylanda/ui dist-tags`; an alpha must not replace `latest`. The current manual publishing workflow is for stable releases.

@@ -54,6 +54,9 @@ const app = `"use client";
 import { useState } from "react";
 import { defineFilters, filter, FilterBar, useFilters, FilterRoot, FilterFieldEditor, MendyUIProvider } from "@mendylanda/ui/filters";
 import { Input } from "@mendylanda/ui/primitives/input";
+import { DataTable, defineColumns } from "@mendylanda/ui/table";
+const tableColumns = defineColumns<{id:string;title:string}>(column => [column.accessor("title",{label:"Title"})]);
+const tableRows = [{id:"one",title:"First item"},{id:"two",title:"Second item"}];
 import type { MendyUIComponents } from "@mendylanda/ui/filters";
 const ProjectInput: MendyUIComponents["Input"] = (props) => <Input {...props} data-project-input="" />;
 const components = { Input: ProjectInput };
@@ -75,6 +78,7 @@ export default function App() {
         <section aria-label="Inline editor"><select aria-label="Inline field" value={inlineField} onChange={event => setInlineField(event.target.value)}><option value="owner">Owner</option><option value="title">Title</option><option value="created">Created date</option></select><FilterRoot filters={filters}><FilterFieldEditor id={inlineField} autoFocus={false} /></FilterRoot></section>
       </MendyUIProvider>
     </div>
+    <DataTable rows={tableRows} columns={tableColumns} getRowId={row=>row.id} label="Consumer table" height={180} />
     <output aria-label="Current values">{JSON.stringify(filters.values)}</output>
   </main>;
 }
@@ -234,6 +238,15 @@ for (const framework of ["vite", "next", "tailwind3"]) {
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.goto(origin);
+      const consumerTable = page.getByRole("grid", { name: "Consumer table" });
+      await expect(consumerTable.getByRole("gridcell").first()).toHaveText("First item");
+      await expect(consumerTable).toHaveCSS("overflow-y", "auto");
+      await expect(consumerTable.getByRole("gridcell").first()).toHaveCSS("height", "44px");
+      await consumerTable.getByRole("gridcell").first().click();
+      await expect(consumerTable.getByRole("gridcell").first()).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
       if (framework === "vite") {
         const width = await page
           .locator("#unrelated-utility")

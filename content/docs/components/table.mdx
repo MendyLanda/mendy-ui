@@ -1,0 +1,86 @@
+---
+title: Table
+description: Typed columns, virtual scrolling, selection, and persistent preferences.
+---
+
+import { TableDemo } from "@/examples/table-demo";
+
+The table is available in `@mendylanda/ui@alpha`. Install the prerelease explicitly:
+
+```bash
+npm install @mendylanda/ui@alpha
+```
+
+Import the package stylesheet once, as described in [installation](/docs/installation). Tables use the same theme as Filters. Existing stable installations stay on the stable release.
+
+<TableDemo />
+
+## Start with columns and rows
+
+```tsx
+import { DataTable, defineColumns, format } from "@mendylanda/ui/table";
+
+type Project = { id: string; name: string; budget: number };
+const columns = defineColumns<Project>((column) => [
+  column.accessor("name", { label: "Project", pin: "start" }),
+  column.accessor("budget", { label: "Budget", format: format.currency("USD") }),
+]);
+
+<DataTable rows={projects} columns={columns} getRowId={(row) => row.id} />;
+```
+
+Accessors support nested fields such as `owner.name`. Formatters keep display, clipboard, and export text consistent. Use `render: ({ row, value }) => ...` for custom content and `copy` or `export` to override its text. Computed columns take a stable ID and an accessor function. Display columns contain actions and do not participate in sorting or copying.
+
+## Defaults
+
+Rows are virtualized, headers stick to the top, and columns can be resized, hidden, reordered, and pinned. The column menu provides keyboard-accessible movement controls. Resize handles also accept Left and Right; double-click resets the width.
+
+Click and drag to select cells. Shift extends a selection; arrow keys move between cells. Copy uses displayed column order and preserves blank cells in disjoint selections. Buttons, links, inputs, and native text selections retain their own interaction. `onRowActivate` opens a row on double-click or Enter. Row checkboxes are opt-in with `selectionColumn()` and `enableRowSelection`.
+
+The default row height is 44px. Supply `height` and `rowHeight` for your layout. Custom cells should fit the chosen row height.
+
+## Existing state and queries
+
+Use `useDataTable` when queries or custom controls need the table state. It accepts controlled TanStack state and change callbacks, so URL hooks and existing stores can remain in the application.
+
+```tsx
+const table = useDataTable({
+  rows: query.data?.rows ?? [],
+  columns,
+  getRowId: (row) => row.id,
+  processing: { filtering: "external", sorting: "external", pagination: "external" },
+  state: { sorting, pagination },
+  onSortingChange: setSorting,
+  onPaginationChange: setPagination,
+  rowCount: query.data?.total ?? 0,
+});
+
+<DataTable
+  table={table}
+  showPagination
+  status={query.isLoading ? "loading" : query.isError ? "error" : "ready"}
+  refreshing={query.isFetching && !query.isLoading}
+  retry={() => query.refetch()}
+  toolbar={<FilterBar filters={filters} />}
+/>;
+```
+
+Filtering, sorting, and pagination have independent `client` or `external` processing options. Pagination defaults to `off`. Passing a toolbar does not process its filters; supply your filtered rows or configure the table's client filter state.
+
+For infinite queries, pass `loadMore={{ available, loading, load, error }}`. The viewport requests another page near the end. A failed next page keeps the existing rows usable and offers Retry. Pass `queryKey` when the result set changes to reset scroll and cell selection; do not change it when appending a page.
+
+## Preferences and saved views
+
+`preferences={{ key: 'projects', scope: workspaceId + ':' + userId }}` stores column preferences in the browser. Unknown columns are discarded and widths are clamped when restoring preferences. Supply a `storage` adapter with `read` and `write` for remote storage, and `onError` for failures.
+
+`captureTablePreferences` and `applyTablePreferences` work with existing saved-view systems. `TableSavedViews` supplies controls while your application stores views. A `SavedTableView<Filters>` contains an ID, name, filters, sorting, and preferences. Apply filters and sorting using your existing state callbacks.
+
+## All matching results
+
+`useResultSelection({ scope: { key, value }, rowIds, totalCount })` manages loaded-row selection and selecting every matching result. Its descriptor is either `{ mode: 'ids', ids }` or `{ mode: 'matching', scope, excludedIds }`. Wire its `rowSelection` and `onRowSelectionChange` into `useDataTable` and call `selectAllMatching` from your action controls. Changing the scope key resets selection. The application translates the descriptor into an authorized backend operation.
+
+## Composition and export
+
+Use `TableView`, `TableColumnSettings`, `TablePagination`, and `TableActionBar` separately around the same table instance to customize placement. The full `DataTable` assembles these defaults for you. `tableCsv(table)` exports loaded rows in visible column order; it does not fetch all matching results. Supply a server export action when that is the intended scope.
+
+On narrow screens, columns keep their saved order but temporarily stop sticking if the pinned columns would leave less than 120px for the middle of the table. Widening the viewport restores sticky positioning without changing saved preferences.

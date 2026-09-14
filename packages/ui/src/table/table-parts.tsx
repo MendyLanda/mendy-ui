@@ -1,0 +1,234 @@
+"use client";
+import type { CSSProperties, ReactNode } from "react";
+import type { Column, Header, Row } from "@tanstack/react-table";
+import type { DataTableFeatures } from "./features.js";
+import type { DataTableInstance } from "./use-data-table.js";
+import type { TableColumn } from "./columns.js";
+import { flexRender } from "@tanstack/react-table";
+import { ArrowDown, ArrowUp } from "lucide-react";
+import { Button } from "../primitives/button.js";
+import { cn } from "../utils.js";
+import { interactiveSelector } from "./clipboard.js";
+export function TableHeaderCell<T extends object>({
+  table,
+  header,
+  index,
+  style,
+  renderHeader,
+  contentClassName,
+}: {
+  table: DataTableInstance<T>;
+  header: Header<DataTableFeatures, T, unknown>;
+  index: number;
+  style: CSSProperties;
+  renderHeader?: (header: Header<DataTableFeatures, T, unknown>) => ReactNode;
+  contentClassName?: string;
+}) {
+  const column = header.column;
+  const definition = column.columnDef as TableColumn<T>;
+  const title =
+    definition.label ?? (typeof definition.header === "string" ? definition.header : column.id);
+  const sorted = column.getIsSorted();
+  return (
+    <div
+      key={column.id}
+      role="columnheader"
+      aria-colindex={index + 1}
+      aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
+      style={style}
+      className="relative flex shrink-0 items-center gap-1 border-e bg-background px-3 font-medium text-muted-foreground last:border-e-0"
+    >
+      <div
+        className={cn(
+          "min-w-0 flex-1 overflow-hidden",
+          (renderHeader || typeof definition.header === "function") && contentClassName,
+        )}
+      >
+        <TableHeaderContent header={header} renderHeader={renderHeader} title={title} />
+      </div>
+      {column.getCanResize() && <TableResizeHandle table={table} header={header} title={title} />}
+    </div>
+  );
+}
+export function TableBodyRow<T extends object>({
+  row,
+  rowIndex,
+  start,
+  rowHeight,
+  cellStyle,
+  focusedId,
+  copied,
+  contentClassName,
+  onRowActivate,
+  isRowHighlighted,
+}: {
+  row: Row<DataTableFeatures, T>;
+  rowIndex: number;
+  start: number;
+  rowHeight: number;
+  cellStyle: (column: Column<DataTableFeatures, T>) => CSSProperties;
+  focusedId?: string;
+  copied: boolean;
+  contentClassName?: string;
+  onRowActivate?: (row: T) => void;
+  isRowHighlighted?: (row: T) => boolean;
+}) {
+  const cells = [
+    ...row.getStartVisibleCells(),
+    ...row.getCenterVisibleCells(),
+    ...row.getEndVisibleCells(),
+  ];
+  return (
+    <div
+      key={row.id}
+      role="row"
+      aria-rowindex={rowIndex + 2}
+      aria-selected={row.getIsSelected()}
+      data-highlighted={isRowHighlighted?.(row.original)}
+      data-index={rowIndex}
+      className="group absolute left-0 top-0 flex min-w-full hover:bg-accent/50 data-[highlighted=true]:bg-accent"
+      style={{ height: rowHeight, transform: `translateY(${start}px)` }}
+    >
+      {cells.map((cell, index) => {
+        const selected = cell.getIsSelected();
+        const definition = cell.column.columnDef as TableColumn<T>;
+        const edge = selected ? cell.getSelectionEdges() : null;
+        return (
+          <div
+            key={cell.id}
+            role="gridcell"
+            aria-colindex={index + 1}
+            aria-selected={selected}
+            data-row-id={row.id}
+            data-column-id={cell.column.id}
+            tabIndex={
+              focusedId ? (focusedId === cell.id ? 0 : -1) : rowIndex === 0 && index === 0 ? 0 : -1
+            }
+            style={{
+              ...cellStyle(cell.column),
+              ...(selected
+                ? {
+                    boxShadow: `${edge?.top ? "inset 0 2px var(--primary)," : ""}${edge?.bottom ? "inset 0 -2px var(--primary)," : ""}${edge?.left ? "inset 2px 0 var(--primary)," : ""}${edge?.right ? "inset -2px 0 var(--primary)," : ""} inset 0 0 0 0 transparent`,
+                  }
+                : {}),
+            }}
+            className={cn(
+              "flex shrink-0 items-center overflow-hidden border-b border-e bg-background px-3 group-hover:bg-accent group-data-[highlighted=true]:bg-accent focus-visible:outline focus-visible:-outline-offset-2 focus-visible:outline-primary",
+              definition.align === "end" && "justify-end text-end",
+              definition.align === "center" && "justify-center text-center",
+              selected && "bg-accent",
+              selected && copied && "bg-green-100 dark:bg-green-950",
+            )}
+            onMouseDown={(event) => {
+              if (
+                event.button !== 0 ||
+                event.detail > 1 ||
+                !cell.getCanSelect() ||
+                (event.target as Element).closest(interactiveSelector) ||
+                window.getSelection()?.toString()
+              )
+                return;
+              event.preventDefault();
+              event.stopPropagation();
+              event.currentTarget.focus({ preventScroll: true });
+              cell.getSelectionStartHandler()(event);
+            }}
+            onMouseEnter={cell.getSelectionExtendHandler()}
+            onDoubleClick={(event) => {
+              if (!(event.target as Element).closest(interactiveSelector))
+                onRowActivate?.(row.original);
+            }}
+          >
+            <div className={cn("min-w-0 max-w-full truncate", contentClassName)}>
+              {flexRender(
+                cell.column.columnDef.cell ?? (() => String(cell.getValue() ?? "")),
+                cell.getContext(),
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TableResizeHandle<T extends object>({
+  table,
+  header,
+  title,
+}: {
+  table: DataTableInstance<T>;
+  header: Header<DataTableFeatures, T, unknown>;
+  title: string;
+}) {
+  const column = header.column;
+  return (
+    <div
+      role="separator"
+      tabIndex={0}
+      aria-label={`Resize ${title}`}
+      aria-orientation="vertical"
+      aria-valuenow={Math.round(column.getSize())}
+      aria-valuemin={column.columnDef.minSize ?? 48}
+      aria-valuemax={column.columnDef.maxSize ?? 1200}
+      onDoubleClick={() => column.resetSize()}
+      onMouseDown={header.getResizeHandler()}
+      onTouchStart={header.getResizeHandler()}
+      onKeyDown={(event) => {
+        if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+          event.preventDefault();
+          event.stopPropagation();
+          table.setColumnSizing((sizes) => ({
+            ...sizes,
+            [column.id]: Math.min(
+              column.columnDef.maxSize ?? 1200,
+              Math.max(
+                column.columnDef.minSize ?? 48,
+                column.getSize() + (event.key === "ArrowLeft" ? -10 : 10),
+              ),
+            ),
+          }));
+        }
+      }}
+      className="absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none hover:bg-primary/20 focus-visible:bg-primary/20 focus-visible:outline-none"
+    />
+  );
+}
+
+function TableHeaderContent<T extends object>({
+  header,
+  renderHeader,
+  title,
+}: {
+  header: Header<DataTableFeatures, T, unknown>;
+  renderHeader?: (header: Header<DataTableFeatures, T, unknown>) => ReactNode;
+  title: string;
+}) {
+  const column = header.column;
+  const definition = column.columnDef as TableColumn<T>;
+  const sorted = column.getIsSorted();
+  return renderHeader ? (
+    renderHeader(header)
+  ) : typeof definition.header === "function" ? (
+    flexRender(definition.header, header.getContext())
+  ) : !column.getCanSort() ? (
+    <span className="block truncate" title={title}>
+      {title}
+    </span>
+  ) : (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-8 max-w-full justify-start gap-1 px-0 font-medium"
+      onClick={column.getToggleSortingHandler()}
+      title={title}
+    >
+      <span className="truncate">{title}</span>
+      {sorted === "asc" ? (
+        <ArrowUp className="size-3 shrink-0" />
+      ) : sorted === "desc" ? (
+        <ArrowDown className="size-3 shrink-0" />
+      ) : null}
+    </Button>
+  );
+}

@@ -23,10 +23,18 @@ export default defineConfig({
     },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
-  webServer: {
-    command: "node scripts/serve-test-build.mjs",
-    url: "http://127.0.0.1:8787",
-    reuseExistingServer: !process.env.CI,
-    timeout: 60000,
-  },
+  webServer: [
+    {
+      command: "node scripts/serve-test-build.mjs",
+      url: "http://127.0.0.1:8787",
+      reuseExistingServer: !process.env.CI,
+      timeout: 60000,
+    },
+    {
+      command: "node tests/table-fixture/serve.mjs",
+      url: "http://127.0.0.1:8795",
+      reuseExistingServer: !process.env.CI,
+      timeout: 60000,
+    },
+  ],
 });

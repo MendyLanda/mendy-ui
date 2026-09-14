@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0-alpha.0
+
+First table prerelease, published under `alpha`; `latest` remains 0.2.0.
+
+- Add typed column definitions and reusable number, currency, and date formats.
+- Add a virtualized table with sticky headers, resizing, pinning, column settings, sorting, keyboard cell selection, and clipboard copy.
+- Support independently controlled filtering, sorting, and pagination, plus incremental loading and retry states.
+- Add scoped, versioned column preferences, saved-view controls, explicit/all-matching selection, and loaded-row CSV export.
+- Export `DataTable`, `useDataTable`, and composable table controls through `@mendylanda/ui/table`.
+- Document the alpha API and add a 10,000-row demo. Existing filter defaults are unchanged.
+
 ## 0.2.0
 
 This update changes presentation defaults. Existing projects can retain the previous layout with `menuLayout="connected"` and visible choice names with `chipLabel: true`.

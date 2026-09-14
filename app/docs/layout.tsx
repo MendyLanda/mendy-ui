@@ -7,6 +7,7 @@ const order = [
   "/docs/installation",
   "/docs/defaults",
   "/docs/components/filters",
+  "/docs/components/table",
   "/docs/examples",
   "/docs/advanced",
   "/docs/system",

@@ -85,3 +85,25 @@ Opening the menu shows the category list without choosing a filter. Focusing a c
 `FilterBar` and composed `FilterList` include Clear all after the chips. It clears filters and search. Set `showClear={false}` to opt out. Choice search is enabled by default; use `searchable: false` for short lists. Menu selections keep the menu open, and selecting the current single choice again clears it. Chip editor popups open instantly; `editorAnimation` opts into their animation.
 
 See [defaults and app configuration](https://ui.mendylanda.com/docs/defaults) for the full behavior and [system reference](https://ui.mendylanda.com/docs/system) for query adapters, selected-label loading, grouped fields, and custom editors.
+
+## Table (alpha)
+
+Install `@mendylanda/ui@alpha` to try the table. This API may change during the alpha.
+
+```tsx
+import { DataTable, defineColumns, format } from "@mendylanda/ui/table";
+
+type Project = { id: string; name: string; budget: number };
+const columns = defineColumns<Project>((column) => [
+  column.accessor("name", { label: "Project" }),
+  column.accessor("budget", { label: "Budget", format: format.currency("USD") }),
+]);
+
+export function Projects({ rows }: { rows: Project[] }) {
+  return <DataTable rows={rows} columns={columns} getRowId={(row) => row.id} />;
+}
+```
+
+Use `useDataTable` and `TableView` when the application already controls sorting, pagination, preferences, or selection. Data fetching and mutations stay in the application. `useResultSelection` represents explicit IDs or all matching results with exclusions. `TableSavedViews` accepts application-owned views; it does not create a backend.
+
+See the [table documentation](https://ui.mendylanda.com/docs/components/table) for composition, remote data, and persistence.

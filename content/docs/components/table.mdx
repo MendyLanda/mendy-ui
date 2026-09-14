@@ -33,7 +33,7 @@ Accessors support nested fields such as `owner.name`. Formatters keep display, c
 
 ## Defaults
 
-Rows are virtualized, headers stick to the top, and columns can be resized, hidden, reordered, and pinned. Data columns share spare viewport width by default. Set `grow: false` for compact columns, `grow: 2` for twice the share, and `maxSize` to cap expansion. Display and selection columns stay at their configured width unless you opt them in. Manually resized columns retain their chosen width; double-click a resize handle or reset column settings to restore automatic growth. Column settings show visibility checkboxes and pin controls in one panel. Drag a handle to reorder, or focus it and press Space, use Up/Down, and press Space again to drop. Escape cancels the move. Pin controls cycle between left, right, and unpinned. Reset restores the column defaults. Resize handles also accept Left and Right; double-click resets the width.
+Rows and columns are virtualized, headers stick to the top, and columns can be resized, hidden, reordered, and pinned. Data columns share spare viewport width by default. Set `grow: false` for compact columns, `grow: 2` for twice the share, and `maxSize` to cap expansion. Display and selection columns stay at their configured width unless you opt them in. Manually resized columns retain their chosen width; double-click a resize handle or reset column settings to restore automatic growth. Column settings show visibility checkboxes and pin controls in one panel. Drag a handle to reorder, or focus it and press Space, use Up/Down, and press Space again to drop. Escape cancels the move. Pin controls cycle between left, right, and unpinned. Reset restores the column defaults. Resize handles also accept Left and Right; double-click resets the width.
 
 Click and drag to select cells. Shift extends a selection; arrow keys move between cells. Copy uses displayed column order and preserves blank cells in disjoint selections. Buttons, links, inputs, and native text selections retain their own interaction. `onRowActivate` opens a row on double-click or Enter. Row checkboxes are opt-in with `selectionColumn()` and `enableRowSelection`.
 
@@ -84,3 +84,11 @@ For infinite queries, pass `loadMore={{ available, loading, load, error }}`. The
 Use `TableView`, `TableColumnSettings`, `TablePagination`, and `TableActionBar` separately around the same table instance to customize placement. The full `DataTable` assembles these defaults for you. `tableCsv(table)` exports loaded rows in visible column order; it does not fetch all matching results. Supply a server export action when that is the intended scope.
 
 On narrow screens, columns keep their saved order but temporarily stop sticking if the pinned columns would leave less than 120px for the middle of the table. Widening the viewport restores sticky positioning without changing saved preferences.
+
+## Large tables
+
+The viewport mounts visible rows and columns with overscan. Pinned columns and the focused column stay mounted. Resizing the viewport reuses cell content while updating its geometry. Copy visits selected rows rather than searching every loaded row.
+
+These optimizations are defaults. Inline column definitions and callbacks remain supported, and changed renderers receive fresh values. Recreating an array with the same row objects does not rebuild the row model. Update records immutably when their values change.
+
+Virtualization limits rendering, not data processing. Client sorting and filtering still process loaded rows, and copying or exporting a large selection must produce all its values. Use external processing and incremental loading when the dataset should stay on the server. Expensive custom cell components can still benefit from their own memoization.

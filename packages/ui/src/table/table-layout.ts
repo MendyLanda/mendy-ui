@@ -49,9 +49,12 @@ export function tableLayout<T extends object>(
     positions.set(column.id, { side: "right", offset });
     offset += size(column);
   }
-  function cellStyle(column: Column<DataTableFeatures, T>): CSSProperties {
+  const styles = new Map<string, CSSProperties>();
+  const offsets = [0];
+  for (const column of columns) {
+    offsets.push(offsets.at(-1)! + size(column));
     const pin = pinningActive ? positions.get(column.id) : undefined;
-    return {
+    styles.set(column.id, {
       width: size(column),
       minWidth: size(column),
       height: rowHeight,
@@ -71,7 +74,8 @@ export function tableLayout<T extends object>(
               : {}),
           }
         : {}),
-    };
+    });
   }
-  return { columns, totalWidth, pinningActive, cellStyle };
+  const cellStyle = (column: Column<DataTableFeatures, T>) => styles.get(column.id)!;
+  return { columns, totalWidth, pinningActive, cellStyle, offsets };
 }

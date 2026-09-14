@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0-alpha.4
+
+- Virtualize columns as well as rows, retaining pinned columns and keyboard focus. Construct viewport cell objects on demand.
+- Reuse cell content during viewport resizing and scrolling, and preserve row models when consumers recreate equivalent array shells. Changed records and callbacks still update.
+- Copy selections without scanning unrelated rows. Reuse virtual row measurements and serialize preferences only when their values change.
+- Add browser regression budgets for 100,000 rows, 100 columns, and ten-million-cell selections.
+
 ## 0.3.0-alpha.3
 
 - Grow data columns into available viewport space, with weighted `grow` controls and `maxSize` caps. Preserve manual widths and resize from the displayed width.

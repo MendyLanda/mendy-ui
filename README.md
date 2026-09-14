@@ -19,7 +19,7 @@ Your app owns definitions, data queries, and business rules. Shared interaction 
 
 ## Table alpha
 
-The table is available in `@mendylanda/ui@alpha`, imported from `@mendylanda/ui/table`. It includes typed columns, virtual rows, sorting, resizing, pinning, visibility, keyboard cell selection, clipboard copy, scoped preferences, and optional pagination. Applications keep their data queries and custom cells. [Table docs](https://ui.mendylanda.com/docs/components/table).
+The table is available in `@mendylanda/ui@alpha`, imported from `@mendylanda/ui/table`. It includes typed columns, virtual rows and columns, sorting, resizing, pinning, visibility, keyboard cell selection, clipboard copy, scoped preferences, and optional pagination. Applications keep their data queries and custom cells. [Table docs](https://ui.mendylanda.com/docs/components/table).
 
 ## Development
 

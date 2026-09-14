@@ -4,11 +4,12 @@ import type { ReactNode, Ref } from "react";
 import type { Header } from "@tanstack/react-table";
 import type { DataTableFeatures } from "./features.js";
 import type { DataTableInstance } from "./use-data-table.js";
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TableHeaderCell, TableBodyRow } from "./table-parts.js";
 import { Button } from "../primitives/button.js";
 import { cn } from "../utils.js";
+import { useColumnWindow } from "./use-column-window.js";
 import { useViewportWidth } from "./use-viewport-width.js";
 import { tableLayout } from "./table-layout.js";
 import { TableLoadingRows } from "./table-loading.js";
@@ -71,19 +72,29 @@ export function TableView<T extends object>({
     [scrollRef],
   );
   const rows = table.getRowModel().rows;
+  const getScrollElement = useCallback(() => container.current, []);
+  const estimateSize = useCallback(() => rowHeight, [rowHeight]);
+  const getItemKey = useCallback((index: number) => rows[index]?.id ?? index, [rows]);
   const virtual = useVirtualizer({
     count: rows.length,
-    getScrollElement: () => container.current,
-    estimateSize: () => rowHeight,
-    getItemKey: (index) => rows[index]?.id ?? index,
+    getScrollElement,
+    estimateSize,
+    getItemKey,
     overscan: 8,
   });
   const viewportWidth = useViewportWidth(container);
-  const { columns, totalWidth, pinningActive, cellStyle } = tableLayout(
-    table,
-    viewportWidth,
-    rowHeight,
+  const startColumns = table.getStartVisibleLeafColumns();
+  const centerColumns = table.getCenterVisibleLeafColumns();
+  const endColumns = table.getEndVisibleLeafColumns();
+  const sizing = table.state.columnSizing;
+  const layout = useMemo(
+    () => tableLayout(table, viewportWidth, rowHeight),
+    [table, startColumns, centerColumns, endColumns, sizing, viewportWidth, rowHeight],
   );
+  const { totalWidth, pinningActive } = layout;
+  const focused = table.getFocusedCell();
+  const { columns, cellStyle } = useColumnWindow(layout, container, focused?.column.id);
+  const columnIndexes = new Map(layout.columns.map((column, index) => [column.id, index]));
   const { announcement, copied, onKeyDown } = useTableInteraction({
     table,
     pinningActive,
@@ -135,7 +146,6 @@ export function TableView<T extends object>({
     loadMore?.loading,
     loadMore?.error,
   ]);
-  const focused = table.getFocusedCell();
   const headersById = new Map(table.getFlatHeaders().map((header) => [header.column.id, header]));
 
   return (
@@ -148,7 +158,7 @@ export function TableView<T extends object>({
         role="grid"
         aria-label={label}
         aria-rowcount={rows.length + 1}
-        aria-colcount={columns.length}
+        aria-colcount={layout.columns.length}
         aria-busy={status === "loading" || refreshing}
         style={{ height }}
         className={cn(
@@ -163,12 +173,12 @@ export function TableView<T extends object>({
           className="sticky top-0 z-20 flex min-w-full border-b bg-background"
           style={{ width: totalWidth }}
         >
-          {columns.map((column, index) => (
+          {columns.map((column) => (
             <TableHeaderCell
               key={column.id}
               table={table}
               header={headersById.get(column.id)!}
-              index={index}
+              index={columnIndexes.get(column.id)!}
               style={cellStyle(column)}
               renderHeader={renderHeader}
               contentClassName={contentClassName}
@@ -209,6 +219,10 @@ export function TableView<T extends object>({
               start={item.start}
               rowHeight={rowHeight}
               cellStyle={cellStyle}
+              columns={columns}
+              columnIndexes={columnIndexes}
+              contentVersion={table.options}
+              contentState={table.state}
               focusedId={focused?.id}
               copied={copied}
               contentClassName={contentClassName}

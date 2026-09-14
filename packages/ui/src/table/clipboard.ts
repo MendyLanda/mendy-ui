@@ -7,7 +7,9 @@ export const interactiveSelector =
 export function selectedCellsText<T extends object>(table: DataTableInstance<T>): string {
   const selected = new Set(table.getSelectedCellIds());
   const rows = table
-    .getRowsInDisplayOrder()
+    .getCellSelectionRowIds()
+    .map((id) => table.getRow(id))
+    .sort((a, b) => a.getDisplayIndex() - b.getDisplayIndex())
     .filter((row) => row.getVisibleCells().some((cell) => selected.has(cell.id)));
   const columns = new Set(
     rows.flatMap((row) =>

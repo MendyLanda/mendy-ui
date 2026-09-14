@@ -25,6 +25,12 @@ export default defineConfig({
   ],
   webServer: [
     {
+      command: "node tests/table-performance/serve.mjs",
+      url: "http://127.0.0.1:8796",
+      reuseExistingServer: !process.env.CI,
+      timeout: 60000,
+    },
+    {
       command: "node scripts/serve-test-build.mjs",
       url: "http://127.0.0.1:8787",
       reuseExistingServer: !process.env.CI,

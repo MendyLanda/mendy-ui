@@ -7,6 +7,7 @@ import type { PreferenceStorage, TablePreferences } from "./state.js";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTable } from "@tanstack/react-table";
 import { tableFeaturesDefault } from "./features.js";
+import { useStableArray } from "./use-stable-array.js";
 import { reconcilePreferences } from "./state.js";
 
 export type DataTableInstance<T extends object> = ReactTable<DataTableFeatures, T>;
@@ -58,12 +59,14 @@ export function applyTablePreferences<T extends object>(
   table.setColumnPinning(value.columnPinning);
 }
 export function useDataTable<T extends object>({
-  rows,
-  columns,
+  rows: inputRows,
+  columns: inputColumns,
   processing,
   preferences,
   ...options
 }: UseDataTableOptions<T>): DataTableInstance<T> {
+  const rows = useStableArray(inputRows);
+  const columns = useStableArray(inputColumns);
   const defaults = useMemo(
     () => reconcilePreferences(null, columns, options.initialState),
     [columns, options.initialState],
@@ -120,7 +123,18 @@ export function useDataTable<T extends object>({
       active = false;
     };
   }, [key, storage]);
-  const serialized = JSON.stringify(captureTablePreferences(table));
+  const { columnOrder, columnPinning, columnSizing, columnVisibility } = table.state;
+  const serialized = useMemo(
+    () =>
+      JSON.stringify({
+        version: 1,
+        columnOrder,
+        columnPinning,
+        columnSizing,
+        columnVisibility,
+      }),
+    [columnOrder, columnPinning, columnSizing, columnVisibility],
+  );
   useEffect(() => {
     if (!key || restoredKey !== key) return;
     const timer = setTimeout(() => {

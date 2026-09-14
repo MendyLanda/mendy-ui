@@ -1,10 +1,11 @@
 "use client";
 import type { CSSProperties, ReactNode, MouseEvent, TouchEvent } from "react";
-import type { Column, Header, Row } from "@tanstack/react-table";
+import type { Cell, Column, Header, Row } from "@tanstack/react-table";
 import type { DataTableFeatures } from "./features.js";
 import type { DataTableInstance } from "./use-data-table.js";
 import type { TableColumn } from "./columns.js";
-import { flexRender } from "@tanstack/react-table";
+import { memo, useMemo } from "react";
+import { constructCell, flexRender } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { Button } from "../primitives/button.js";
 import { cn } from "../utils.js";
@@ -33,6 +34,7 @@ export function TableHeaderCell<T extends object>({
     <div
       key={column.id}
       role="columnheader"
+      data-column-id={column.id}
       aria-colindex={index + 1}
       aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
       style={style}
@@ -63,6 +65,10 @@ export function TableBodyRow<T extends object>({
   start,
   rowHeight,
   cellStyle,
+  columns,
+  columnIndexes,
+  contentVersion,
+  contentState,
   focusedId,
   copied,
   contentClassName,
@@ -74,17 +80,30 @@ export function TableBodyRow<T extends object>({
   start: number;
   rowHeight: number;
   cellStyle: (column: Column<DataTableFeatures, T>) => CSSProperties;
+  columns: Column<DataTableFeatures, T>[];
+  columnIndexes: Map<string, number>;
+  contentVersion: unknown;
+  contentState: unknown;
   focusedId?: string;
   copied: boolean;
   contentClassName?: string;
   onRowActivate?: (row: T) => void;
   isRowHighlighted?: (row: T) => boolean;
 }) {
-  const cells = [
-    ...row.getStartVisibleCells(),
-    ...row.getCenterVisibleCells(),
-    ...row.getEndVisibleCells(),
-  ];
+  // The engine's getAllCells API eagerly allocates every column. Build only the
+  // viewport cells with its public constructor, and release them with this row.
+  const cache = useMemo(
+    () => new WeakMap<Column<DataTableFeatures, T>, Cell<DataTableFeatures, T, unknown>>(),
+    [row],
+  );
+  const cells = columns.map((column) => {
+    let cell = cache.get(column);
+    if (!cell) {
+      cell = constructCell(column, row, row.table);
+      cache.set(column, cell);
+    }
+    return cell;
+  });
   return (
     <div
       key={row.id}
@@ -96,7 +115,8 @@ export function TableBodyRow<T extends object>({
       className="group absolute left-0 top-0 flex min-w-full hover:bg-accent/50 data-[highlighted=true]:bg-accent"
       style={{ height: rowHeight, transform: `translateY(${start}px)` }}
     >
-      {cells.map((cell, index) => {
+      {cells.map((cell) => {
+        const index = columnIndexes.get(cell.column.id)!;
         const selected = cell.getIsSelected();
         const definition = cell.column.columnDef as TableColumn<T>;
         const edge = selected ? cell.getSelectionEdges() : null;
@@ -157,10 +177,12 @@ export function TableBodyRow<T extends object>({
               />
             )}
             <div className={cn("max-h-full min-w-0 max-w-full truncate", contentClassName)}>
-              {flexRender(
-                cell.column.columnDef.cell ?? (() => String(cell.getValue() ?? "")),
-                cell.getContext(),
-              )}
+              <TableCellContent
+                cell={cell}
+                renderer={cell.column.columnDef.cell}
+                version={contentVersion}
+                state={contentState}
+              />
             </div>
           </div>
         );
@@ -267,3 +289,21 @@ function TableHeaderContent<T extends object>({
     </Button>
   );
 }
+
+// Geometry-only updates do not need to rerun application-owned cell renderers.
+const TableCellContent = memo(function TableCellContent<T extends object>({
+  cell,
+  renderer,
+}: {
+  cell: Cell<DataTableFeatures, T, unknown>;
+  renderer: TableColumn<T>["cell"];
+  version: unknown;
+  state: unknown;
+}) {
+  return renderer ? flexRender(renderer, cell.getContext()) : String(cell.getValue() ?? "");
+}) as <T extends object>(props: {
+  cell: Cell<DataTableFeatures, T, unknown>;
+  renderer: TableColumn<T>["cell"];
+  version: unknown;
+  state: unknown;
+}) => ReactNode;

@@ -17,6 +17,7 @@ import { TableLoadingRows } from "./table-loading.js";
 import { TableInitialState } from "./table-feedback.js";
 import { useTableInteraction } from "./use-table-interaction.js";
 import { useTableResults } from "./use-table-results.js";
+import { useInlineRowSelection } from "./use-inline-row-selection.js";
 
 export interface TableDataState {
   status?: "loading" | "ready" | "error";
@@ -51,6 +52,8 @@ export interface TableViewProps<T extends object> extends TableDataState {
   /** Optional double-click and Enter action. Interactive controls keep their own behavior. */
   onRowActivate?: (row: T) => void;
   isRowHighlighted?: (row: T) => boolean;
+  /** Inline checkboxes for enabled row selection. Set false for custom selection controls. */
+  rowSelectionControls?: boolean;
   onCopyError?: (error: unknown) => void;
 }
 export function TableView<T extends object>({
@@ -76,6 +79,7 @@ export function TableView<T extends object>({
   onRowClick,
   onRowActivate,
   isRowHighlighted,
+  rowSelectionControls = true,
   onCopyError,
 }: TableViewProps<T>) {
   const { resultKey, hasFilters, clearFilters } = useTableResults(table, queryKey, filters);
@@ -111,6 +115,11 @@ export function TableView<T extends object>({
     [table, startColumns, centerColumns, endColumns, sizing, viewportWidth, rowHeight],
   );
   const { totalWidth, pinningActive } = layout;
+  const { inlineSelection, selectLoaded } = useInlineRowSelection(
+    table,
+    layout.columns,
+    rowSelectionControls,
+  );
   const focused = table.getFocusedCell();
   const { columns, columnGaps, cellStyle } = useColumnWindow(
     layout,
@@ -224,6 +233,7 @@ export function TableView<T extends object>({
                 style={cellStyle(column)}
                 renderHeader={renderHeader}
                 contentClassName={contentClassName}
+                selectLoaded={selectLoaded}
               />
             </Fragment>
           ))}
@@ -287,6 +297,7 @@ export function TableView<T extends object>({
               onRowClick={onRowClick}
               onRowActivate={onRowActivate}
               isRowHighlighted={isRowHighlighted}
+              inlineSelection={inlineSelection}
             />
           ))}
         </div>

@@ -68,6 +68,7 @@ interface RootContext {
   groups: FilterMenuGroup[];
   disabled: boolean;
   trigger: React.RefObject<HTMLElement | null>;
+  editingField: React.MutableRefObject<string | null>;
   ambiguous: PasteAmbiguity[];
   setAmbiguous(value: PasteAmbiguity[]): void;
 }
@@ -128,7 +129,11 @@ function FilterRootContent({
   const [cache] = useState(() => new Map());
   const [ambiguous, setAmbiguous] = useState<PasteAmbiguity[]>([]);
   const trigger = useRef<HTMLElement>(null);
+  const editingField = useRef(filters.editField);
   const [direction, setDirection] = useState<"ltr" | "rtl">("ltr");
+  useLayoutEffect(() => {
+    editingField.current = filters.editField;
+  }, [filters.editField]);
   useLayoutEffect(() => {
     if (filters.menuOpen && trigger.current)
       setDirection(getComputedStyle(trigger.current).direction === "rtl" ? "rtl" : "ltr");
@@ -143,6 +148,7 @@ function FilterRootContent({
       groups,
       disabled,
       trigger,
+      editingField,
       ambiguous,
       setAmbiguous,
     }),
@@ -598,14 +604,12 @@ function FieldChip({ entry }: { entry: FilterEntry }) {
   );
 }
 function useChipEditor({ id, field, value }: FilterEntry) {
-  const { filters, trigger } = useRoot();
+  const { filters, trigger, editingField } = useRoot();
   const active = field.isActive(value);
   const currentlyActive = useRef(active);
-  const editingField = useRef(filters.editField);
   useLayoutEffect(() => {
     currentlyActive.current = active;
-    editingField.current = filters.editField;
-  }, [active, filters.editField]);
+  }, [active]);
   return {
     onCloseAutoFocus(event: Event) {
       // The outgoing popup must not steal focus back from its replacement.
@@ -621,7 +625,13 @@ function useChipEditor({ id, field, value }: FilterEntry) {
         filters.commit(id, field.suggestion.value, "suggestion");
         return;
       }
-      if (open || editingField.current === id) filters.edit(open ? id : null);
+      if (open) {
+        editingField.current = id;
+        filters.edit(id);
+      } else if (editingField.current === id) {
+        editingField.current = null;
+        filters.edit(null);
+      }
     },
   };
 }

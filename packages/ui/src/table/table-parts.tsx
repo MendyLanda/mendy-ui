@@ -8,6 +8,7 @@ import { Fragment, memo, useMemo } from "react";
 import { constructCell, flexRender } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { Button } from "../primitives/button.js";
+import { Checkbox } from "../primitives/checkbox.js";
 import { cn } from "../utils.js";
 import { interactiveSelector } from "./clipboard.js";
 export function TableHeaderCell<T extends object>({
@@ -17,6 +18,7 @@ export function TableHeaderCell<T extends object>({
   style,
   renderHeader,
   contentClassName,
+  selectLoaded,
 }: {
   table: DataTableInstance<T>;
   header: Header<DataTableFeatures, T, unknown>;
@@ -24,6 +26,7 @@ export function TableHeaderCell<T extends object>({
   style: CSSProperties;
   renderHeader?: (header: Header<DataTableFeatures, T, unknown>) => ReactNode;
   contentClassName?: string;
+  selectLoaded?: { checked: boolean | "indeterminate"; disabled: boolean };
 }) {
   const column = header.column;
   const definition = column.columnDef as TableColumn<T>;
@@ -38,8 +41,17 @@ export function TableHeaderCell<T extends object>({
       aria-colindex={index + 1}
       aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
       style={style}
-      className="relative flex shrink-0 items-center gap-1 border-e bg-background px-3 font-medium text-muted-foreground"
+      className="group relative flex shrink-0 items-center gap-1 border-e bg-background px-3 font-medium text-muted-foreground"
     >
+      {selectLoaded && index === 0 && (
+        <Checkbox
+          aria-label="Select loaded rows"
+          disabled={selectLoaded.disabled}
+          checked={selectLoaded.checked}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(value === true)}
+          className="me-1 opacity-0 group-hover:opacity-50 hover:opacity-100 focus-visible:opacity-100 disabled:opacity-0! group-hover:disabled:opacity-50! data-[state=checked]:opacity-100 data-[state=indeterminate]:opacity-100 [@media(hover:none)]:opacity-100 [@media(hover:none)]:disabled:opacity-100!"
+        />
+      )}
       <div
         className={cn(
           "min-w-0 flex-1 overflow-hidden",
@@ -81,6 +93,7 @@ function TableBodyRowImpl<T extends object>({
   onRowClick,
   onRowActivate,
   isRowHighlighted,
+  inlineSelection,
 }: {
   row: Row<DataTableFeatures, T>;
   rowIndex: number;
@@ -103,6 +116,7 @@ function TableBodyRowImpl<T extends object>({
   onRowClick?: (row: T) => void;
   onRowActivate?: (row: T) => void;
   isRowHighlighted?: (row: T) => boolean;
+  inlineSelection: boolean;
 }) {
   // The engine's getAllCells API eagerly allocates every column. Build only the
   // viewport cells with its public constructor, and release them with this row.
@@ -223,6 +237,17 @@ function TableBodyRowImpl<T extends object>({
                     borderLeftWidth: edge?.left ? 2 : 0,
                     borderRightWidth: edge?.right ? 2 : 0,
                   }}
+                />
+              )}
+              {inlineSelection && index === 0 && (
+                <Checkbox
+                  aria-label={`Select row ${rowIndex + 1}`}
+                  checked={row.getIsSelected()}
+                  disabled={!row.getCanSelect()}
+                  onCheckedChange={(value) => row.toggleSelected(value === true)}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onClick={(event) => event.stopPropagation()}
+                  className="me-2 opacity-0 group-hover:opacity-50 hover:opacity-100 focus-visible:opacity-100 disabled:opacity-0! group-hover:disabled:opacity-50! data-[state=checked]:opacity-100 data-[state=checked]:disabled:opacity-100! data-[state=indeterminate]:opacity-100 data-[state=indeterminate]:disabled:opacity-100! [@media(hover:none)]:opacity-100 [@media(hover:none)]:disabled:opacity-100!"
                 />
               )}
               <div

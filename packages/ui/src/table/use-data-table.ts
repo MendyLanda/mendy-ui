@@ -79,6 +79,10 @@ export function useDataTable<T extends object>({
     defaultColumn: { size: 180, minSize: 48, maxSize: 1200, ...options.defaultColumn },
     columnResizeMode: options.columnResizeMode ?? "onChange",
     enableCellSelection: options.enableCellSelection ?? true,
+    enableRowSelection:
+      options.enableRowSelection ??
+      (Boolean(options.onRowSelectionChange) ||
+        columns.some((column) => column.id === "_selection")),
     enableColumnPinning: options.enableColumnPinning ?? true,
     autoResetCellSelection: options.autoResetCellSelection ?? false,
     manualFiltering: processing?.filtering === "external",

@@ -11,6 +11,7 @@ type ColumnFiltersState = TableState["columnFilters"];
 type PaginationState = TableState["pagination"];
 type SortingState = TableState["sorting"];
 export type TableDefaultsMode =
+  | "inline"
   | "sizing"
   | "height"
   | "state"
@@ -51,6 +52,7 @@ declare global {
 }
 
 export function TableDefaultsFixture({ mode }: { mode: TableDefaultsMode }) {
+  if (mode === "inline") return <InlineSelectionFixture />;
   if (mode === "sizing") return <SizingFixture />;
   if (mode === "state") return <StateFixture />;
   if (mode === "controller" || mode === "controller-empty" || mode === "locked")
@@ -311,6 +313,39 @@ function SizingFixture() {
             <button>Create record</button>
           </div>
         }
+      />
+    </FixtureFrame>
+  );
+}
+
+function InlineSelectionFixture() {
+  const [count, setCount] = useState(3);
+  const [controls, setControls] = useState(true);
+  const [enabled, setEnabled] = useState(true);
+  const [mixedMulti, setMixedMulti] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const table = useDataTable({
+    rows: makeRows(count),
+    columns: columns.filter((column) => column.id !== "_selection"),
+    getRowId: (row) => row.id,
+    enableRowSelection: enabled ? (row) => row.id !== "default-1" : false,
+    enableMultiRowSelection: mixedMulti ? (row) => row.id !== "default-2" : true,
+    state: { columnVisibility: { title: !hidden } },
+  });
+  return (
+    <FixtureFrame>
+      <button onClick={() => setCount(1000)}>Append selection rows</button>
+      <button onClick={() => setControls(!controls)}>Custom selection controls</button>
+      <button onClick={() => setEnabled(!enabled)}>Toggle row selection</button>
+      <button onClick={() => setMixedMulti(!mixedMulti)}>Toggle mixed multi-row selection</button>
+      <button onClick={() => setHidden(!hidden)}>Hide first column</button>
+      <output aria-label="Selected IDs">{Object.keys(table.state.rowSelection).join(",")}</output>
+      <DataTable
+        table={table}
+        label="Inline selection"
+        height={240}
+        rowSelectionControls={controls}
+        showColumnSettings={false}
       />
     </FixtureFrame>
   );

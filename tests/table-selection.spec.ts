@@ -174,6 +174,7 @@ for (const theme of ["light", "dark"]) {
 }
 
 test("incremental loading shows a spinner beside its status text", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("http://127.0.0.1:8796/?rows=10&columns=6&loading");
   const status = page.getByRole("status").filter({ hasText: "Loading more" });
   await expect(status).toBeVisible();

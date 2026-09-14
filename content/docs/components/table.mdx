@@ -37,7 +37,9 @@ Rows and columns are virtualized, headers stick to the top, and columns can be r
 
 Click and drag to select cells. Shift extends a selection; arrow keys move between cells. Copy uses displayed column order and preserves blank cells in disjoint selections. Buttons, links, disclosure controls, inputs, and native text selections retain their own interaction.
 
-`onRowClick` handles a single click and becomes the Enter action when `onRowActivate` is absent. Supply both callbacks when a single click selects a row while double-click or Enter opens it. Selected rows receive the table highlight automatically. `isRowHighlighted` can add another application-owned highlight. Row checkboxes are opt-in with `selectionColumn()` and `enableRowSelection`.
+`onRowClick` handles a single click and becomes the Enter action when `onRowActivate` is absent. Supply both callbacks when a single click selects a row while double-click or Enter opens it. Selected rows receive the table highlight automatically. `isRowHighlighted` can add another application-owned highlight. Enable `enableRowSelection` to show checkboxes inside the first visible column. They appear on row hover, keyboard focus, or selection, and stay visible on touch screens. Space toggles a focused checkbox. The header checkbox selects the loaded rows, so loading another page does not silently select its records.
+
+Use `rowSelectionControls={false}` for custom controls. `selectionColumn()` remains available when a dedicated checkbox column suits the application; it replaces the inline controls. Without row selection enabled, the table reserves no checkbox space.
 
 The table fits its rows, headers, and empty content by default and stops growing at 65dvh. Short tables have no vertical scrollbar unless their content exceeds that cap. Set an explicit `height` for a full-page table or another fixed viewport. Rows stay at 44px by default. Use `rowHeight="auto"` for badges, wrapping text, or editable controls that need measured height. `rowClassName` applies a class from the row record.
 

@@ -76,9 +76,10 @@ export async function chipChecks(browser, check) {
       const { context, page } = await fixture();
       try {
         await page.getByRole("button", { name: "ready", exact: true }).click();
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 10; i++) {
           await page.getByRole("button", { name: "Edit Status filter", exact: true }).click();
           await page.getByRole("button", { name: "Edit Custom filter", exact: true }).click();
+          await expect(page.locator('[data-slot="filter-editor-content"]')).toHaveCount(1);
           await expect(page.getByRole("textbox", { name: "Custom search" })).toBeFocused();
           // Radix schedules the outgoing focus restoration after unmount.
           await page.waitForTimeout(150);

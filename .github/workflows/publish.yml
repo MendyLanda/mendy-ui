@@ -1,29 +1,79 @@
 name: Publish npm package
 on:
+  workflow_run:
+    workflows: [Check and deploy]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful main CI run ID to publish or retry
+        required: true
+        type: string
 permissions:
   contents: read
-  id-token: write
+  actions: read
 concurrency:
   group: mendy-ui-npm-publish
-  cancel-in-progress: false
+  queue: max
 jobs:
-  publish:
-    if: github.ref == 'refs/heads/main'
+  source:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      run-id: ${{ steps.source.outputs.run-id }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        id: source
+        env:
+          REQUESTED_RUN: ${{ inputs.run_id || github.event.workflow_run.id }}
+        with:
+          script: |
+            const { assertCheckedRun } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/release/checked-run.mjs`);
+            const run_id = Number(process.env.REQUESTED_RUN);
+            if (!Number.isSafeInteger(run_id) || run_id < 1) throw new Error('Invalid CI run ID');
+            const { data: run } = await github.rest.actions.getWorkflowRun({ ...context.repo, run_id });
+            core.setOutput('sha', assertCheckedRun(run, process.env.GITHUB_REPOSITORY));
+            core.setOutput('run-id', run_id);
+
+  publish:
+    needs: source
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.source.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
-          registry-url: https://registry.npmjs.org
-      - run: npm install --global npm@11
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build && pnpm lint && pnpm format && pnpm typecheck
-      - run: pnpm exec playwright install --with-deps chromium firefox webkit
-      - run: pnpm test:unit && pnpm test && pnpm verify:consumers
-      - run: STRESS_BROWSERS=chromium,firefox,webkit pnpm test:stress
-      - run: pnpm package:pack
-      - run: npm publish ./artifacts/*.tgz --access public --provenance
+      - run: npm install --global npm@11.19.1
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          name: mendy-ui-package
+          path: checked-package
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.source.outputs.run-id }}
+      - name: Extract the package validated by CI
+        run: |
+          mkdir release-package
+          tar -xzf checked-package/*.tgz -C release-package
+      - name: Publish eligible stable release and development snapshot
+        run: node scripts/release/publish.mjs
+        env:
+          RELEASE_SHA: ${{ needs.source.outputs.sha }}
+          GH_TOKEN: ${{ github.token }}

@@ -13,3 +13,5 @@ The npm package in `packages/ui` owns the implementation. The website and exampl
 For UI changes, inspect desktop and mobile screenshots in both themes and run the existing interaction checks. For package changes, build and install the packed tarball in fresh consumers before publishing. Run `pnpm verify:consumers` to check Vite without Tailwind or nuqs, Next.js with nuqs, and the project type fixtures.
 
 Keep internal utility strings in static `className`, `cn`, or `cva` expressions so the package build can give them private class names. Test new styling patterns in packed consumers with and without Tailwind.
+
+Use Conventional Commits for commits and PR titles. Follow [RELEASING.md](RELEASING.md) for publishing: main CI publishes development snapshots; the Release Please PR owns stable versions and changelog updates.

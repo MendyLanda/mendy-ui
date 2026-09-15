@@ -1,0 +1,31 @@
+name: Prepare release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+concurrency:
+  group: release-please
+  queue: max
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@8b8fd2cc23b2e18957157a9d923d75aa0c6f6ad5 # v4
+        id: release
+      # GITHUB_TOKEN-created PRs don't trigger pull_request workflows. Explicitly
+      # dispatch CI on the release branch; no extra GitHub token is needed.
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        if: steps.release.outputs.pr != ''
+        env:
+          RELEASE_PR: ${{ steps.release.outputs.pr }}
+        with:
+          script: |
+            const pr = JSON.parse(process.env.RELEASE_PR);
+            await github.rest.actions.createWorkflowDispatch({
+              ...context.repo, workflow_id: 'ci.yml', ref: pr.headBranchName,
+            });

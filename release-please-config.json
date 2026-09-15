@@ -8,21 +8,62 @@
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": false,
       "extra-files": [
-        { "type": "json", "path": "packages/ui/package.json", "jsonpath": "$.version" }
+        {
+          "type": "json",
+          "path": "packages/ui/package.json",
+          "jsonpath": "$.version"
+        }
       ],
       "changelog-sections": [
-        { "type": "feat", "section": "Features" },
-        { "type": "fix", "section": "Fixes" },
-        { "type": "perf", "section": "Performance" },
-        { "type": "revert", "section": "Reverts" },
-        { "type": "docs", "section": "Documentation" },
-        { "type": "refactor", "section": "Maintenance" },
-        { "type": "build", "section": "Build" },
-        { "type": "ci", "section": "Automation" },
-        { "type": "test", "section": "Tests", "hidden": true },
-        { "type": "chore", "section": "Maintenance", "hidden": true },
-        { "type": "style", "section": "Maintenance", "hidden": true }
-      ]
+        {
+          "type": "feat",
+          "section": "Features"
+        },
+        {
+          "type": "fix",
+          "section": "Fixes"
+        },
+        {
+          "type": "perf",
+          "section": "Performance"
+        },
+        {
+          "type": "revert",
+          "section": "Reverts"
+        },
+        {
+          "type": "docs",
+          "section": "Documentation"
+        },
+        {
+          "type": "refactor",
+          "section": "Maintenance"
+        },
+        {
+          "type": "build",
+          "section": "Build"
+        },
+        {
+          "type": "ci",
+          "section": "Automation"
+        },
+        {
+          "type": "test",
+          "section": "Tests",
+          "hidden": true
+        },
+        {
+          "type": "chore",
+          "section": "Maintenance",
+          "hidden": true
+        },
+        {
+          "type": "style",
+          "section": "Maintenance",
+          "hidden": true
+        }
+      ],
+      "pull-request-header": "Review the version and changelog below. Squash-merge this PR when you want to publish the next stable npm release; publication waits for main CI to pass."
     }
   }
 }

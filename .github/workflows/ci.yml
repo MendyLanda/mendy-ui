@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: mendy-ui-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  group: mendy-ui-${{ github.ref != 'refs/heads/main' && github.ref || github.run_id }}
   cancel-in-progress: true
 jobs:
   commits:

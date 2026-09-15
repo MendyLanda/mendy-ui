@@ -9,19 +9,19 @@ test("matching selection survives pagination, keeps exclusions, and resets with 
 }) => {
   await page.getByRole("button", { name: "Select all matching", exact: true }).click();
   await expect(page.getByLabel("Count", { exact: true })).toHaveText("10000");
-  await page.getByRole("checkbox", { name: "Select row item-0", exact: true }).click();
+  await page.getByRole("checkbox", { name: "Select row Item 0", exact: true }).click();
   await expect(page.getByLabel("Selection", { exact: true })).toContainText(
     '"excludedIds":["item-0"]',
   );
   await page.getByRole("button", { name: "Another page" }).click();
   await expect(
-    page.getByRole("checkbox", { name: "Select row item-20", exact: true }),
+    page.getByRole("checkbox", { name: "Select row Item 20", exact: true }),
   ).toBeChecked();
   await expect(page.getByLabel("Count", { exact: true })).toHaveText("9999");
   await page.getByRole("button", { name: "Change scope" }).click();
   await expect(page.getByLabel("Count", { exact: true })).toHaveText("0");
   await expect(
-    page.getByRole("checkbox", { name: "Select row item-20", exact: true }),
+    page.getByRole("checkbox", { name: "Select row Item 20", exact: true }),
   ).not.toBeChecked();
   await page.getByRole("button", { name: "Change scope" }).click();
   await expect(page.getByLabel("Count", { exact: true })).toHaveText("0");
@@ -237,7 +237,7 @@ test("column settings support keyboard reordering, pin cycling, visibility and r
         .locator("[data-column-setting]")
         .evaluateAll((els) => els.map((el) => el.getAttribute("data-column-setting"))),
     )
-    .toEqual(["_selection", "amount", "title", "actions"]);
+    .toEqual(["amount", "title", "actions"]);
   await dialog.getByRole("button", { name: "Pin Amount to left", exact: true }).click();
   await dialog.getByRole("button", { name: "Pin Amount to right", exact: true }).click();
   await dialog.getByRole("button", { name: "Unpin Amount", exact: true }).click();
@@ -245,7 +245,7 @@ test("column settings support keyboard reordering, pin cycling, visibility and r
   await expect(dialog).toContainText("1 hidden");
   await dialog.getByRole("button", { name: "Reset columns", exact: true }).click();
   await expect(dialog.getByRole("checkbox", { name: "Show Amount", exact: true })).toBeChecked();
-  await expect(dialog.locator("[data-column-setting]").nth(2)).toHaveAttribute(
+  await expect(dialog.locator("[data-column-setting]").nth(1)).toHaveAttribute(
     "data-column-setting",
     "amount",
   );
@@ -281,7 +281,7 @@ test("column settings support pointer dragging without closing the panel", async
         .locator("[data-column-setting]")
         .evaluateAll((els) => els.map((el) => el.getAttribute("data-column-setting"))),
     )
-    .toEqual(["_selection", "amount", "title", "actions"]);
+    .toEqual(["amount", "title", "actions"]);
   const accessibility = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
   expect(accessibility.violations).toEqual([]);
 });

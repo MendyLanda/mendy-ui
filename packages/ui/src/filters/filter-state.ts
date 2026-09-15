@@ -1,3 +1,4 @@
+import { decodeUrlValue, encodeUrlValue } from "./url-value.js";
 import type { FilterDefinitions, RuntimeField } from "./filter-definition.js";
 import { equalValues } from "./filter-definition.js";
 
@@ -74,7 +75,10 @@ export function decodeFilters(
       // Explicit null is distinct from an absent key when a field has an applied default.
       if (raw === "~null") return [key, null];
       try {
-        const decoded = field.codec.parse(raw.startsWith("~~") ? raw.slice(1) : raw);
+        const unwrapped = decodeUrlValue(raw);
+        const decoded = field.codec.parse(
+          unwrapped.startsWith("~~") ? unwrapped.slice(1) : unwrapped,
+        );
         if (decoded === null || field.validate(decoded)) return [key, field.defaultValue];
         return [key, decoded];
       } catch {
@@ -95,7 +99,10 @@ export function encodeFilters(
     if (equalValues(value, field.defaultValue)) params.delete(urlKey);
     else {
       const raw = value === null ? "~null" : field.codec.serialize(value);
-      params.set(urlKey, value !== null && raw.startsWith("~") ? `~${raw}` : raw);
+      params.set(
+        urlKey,
+        value === null ? raw : raw.startsWith("~") ? `~${raw}` : encodeUrlValue(raw),
+      );
     }
   }
   return params;

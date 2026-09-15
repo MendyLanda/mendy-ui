@@ -11,6 +11,19 @@ Click and drag to select cells. Shift extends a selection; arrow keys move betwe
 
 Use `rowSelectionControls={false}` for custom controls. `selectionColumn()` remains available when a dedicated checkbox column suits the application; it replaces the inline controls. Without row selection enabled, the table reserves no checkbox space.
 
+Selection controls describe the record using the first visible value column's text. Set `getRowLabel` on `DataTable` or `useDataTable` for a more specific description:
+
+```tsx
+const table = useDataTable({
+  rows,
+  columns,
+  getRowId: (row) => row.id,
+  getRowLabel: (row) => `${row.name}, ${row.reference}`,
+});
+```
+
+The label applies to both inline checkboxes and `selectionColumn()`. When no value column is available, the default uses the row number. Internal row IDs are not used as accessible names. Clicking the padding in a dedicated selection cell toggles selection; it does not invoke `onRowClick` or `onRowActivate`.
+
 ## All matching results
 
 `useResultSelection({ scope: { key, value }, rowIds, totalCount })` manages loaded-row selection and selecting every matching result. Its descriptor is either `{ mode: 'ids', ids }` or `{ mode: 'matching', scope, excludedIds }`. Wire its `rowSelection` and `onRowSelectionChange` into `useDataTable` and call `selectAllMatching` from your action controls. Changing the scope key resets selection. The application translates the descriptor into an authorized backend operation.

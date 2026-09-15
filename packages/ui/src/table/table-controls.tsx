@@ -1,4 +1,5 @@
 "use client";
+import { rowSelectionLabel } from "./row-selection-label.js";
 import { useMendyLocale } from "../locale-context.js";
 import type { ReactNode } from "react";
 import type { DataTableInstance } from "./use-data-table.js";
@@ -102,7 +103,7 @@ export function selectionColumn<T extends object>(): TableColumn<T> {
     ),
     cell: ({ row }) => (
       <SelectionCheckbox
-        rowId={row.id}
+        rowLabel={rowSelectionLabel(row)}
         checked={row.getIsSelected()}
         disabled={!row.getCanSelect()}
         onCheckedChange={(value) => row.toggleSelected(value === true)}
@@ -228,14 +229,14 @@ export function TableSavedViews<F>({
 }
 
 function SelectionCheckbox({
-  rowId,
+  rowLabel,
   ...props
-}: React.ComponentProps<typeof Checkbox> & { rowId?: string }) {
+}: React.ComponentProps<typeof Checkbox> & { rowLabel?: string | number }) {
   const { t } = useMendyLocale();
   return (
     <Checkbox
       {...props}
-      aria-label={rowId === undefined ? t("selectLoaded") : t("selectRow", { id: rowId })}
+      aria-label={rowLabel === undefined ? t("selectLoaded") : t("selectRow", { id: rowLabel })}
     />
   );
 }

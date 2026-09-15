@@ -156,10 +156,18 @@ test("ancestor and inserted sibling resizing preserves scroll and selection with
   const rowId = await visibleTitleRowId(grid);
   const selectedCell = grid.locator(`[data-row-id="${rowId}"][data-column-id="title"]`);
   await selectedCell.click();
-  await grid.getByRole("checkbox", { name: `Select row ${rowId}`, exact: true }).click();
+  await grid
+    .getByRole("checkbox", {
+      name: `Select row Fill row ${rowId!.slice(5).padStart(3, "0")}`,
+      exact: true,
+    })
+    .click();
   await expect(selectedCell).toHaveAttribute("aria-selected", "true");
   await expect(
-    grid.getByRole("checkbox", { name: `Select row ${rowId}`, exact: true }),
+    grid.getByRole("checkbox", {
+      name: `Select row Fill row ${rowId!.slice(5).padStart(3, "0")}`,
+      exact: true,
+    }),
   ).toHaveAttribute("aria-checked", "true");
 
   await page.waitForTimeout(100);
@@ -181,7 +189,10 @@ test("ancestor and inserted sibling resizing preserves scroll and selection with
   expect(await grid.evaluate((element) => element.scrollTop)).toBeCloseTo(scrollBefore, 0);
   await expect(selectedCell).toHaveAttribute("aria-selected", "true");
   await expect(
-    grid.getByRole("checkbox", { name: `Select row ${rowId}`, exact: true }),
+    grid.getByRole("checkbox", {
+      name: `Select row Fill row ${rowId!.slice(5).padStart(3, "0")}`,
+      exact: true,
+    }),
   ).toHaveAttribute("aria-checked", "true");
   await page.waitForTimeout(100);
   expect(await page.evaluate(() => window.fillLayoutFixture!.titleCellRenders())).toBe(

@@ -31,3 +31,5 @@ The example assumes application rows, columns, identity, and error reporting. Ch
 Capture column preferences with `captureTablePreferences(table)`. On apply, call `applyTablePreferences(table, view.preferences)` and restore the view's filters and sorting through their existing state owners. Applying only preferences will not update a backend query.
 
 See [Table API](/docs/table/api#preferences-and-saved-views) for the related exports.
+
+Column settings omit columns with `enableHiding: false`, including `selectionColumn()`. Reordering the listed columns preserves the fixed columns in their existing positions.

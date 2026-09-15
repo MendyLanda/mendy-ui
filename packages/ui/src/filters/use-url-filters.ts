@@ -6,6 +6,8 @@ import type { FilterChange } from "./use-filters.js";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { decodeFilters, encodeFilters, validateDefinitions } from "./filter-state.js";
+import { filterUrlParser } from "./url-parser.js";
+import { decodeUrlValue, encodeUrlValue } from "./url-value.js";
 import { useFilterController } from "./use-filters.js";
 
 export interface UrlFilterOptions {
@@ -67,7 +69,14 @@ export function useUrlFilters<const D extends FilterDefinitions>(
     searchKey,
     markerKey,
   ];
-  const parsers = Object.fromEntries(keys.map((key) => [key, parseAsString]));
+  const parsers = Object.fromEntries([
+    ...Object.entries(definitions).map(([id, field]) => [
+      field.urlKey ?? id,
+      filterUrlParser(field),
+    ]),
+    [searchKey, parseAsString],
+    [markerKey, parseAsString],
+  ]);
   const [raw, setRaw] = useQueryStates(parsers, {
     history: options.history ?? "replace",
     shallow: options.shallow ?? true,
@@ -86,7 +95,7 @@ export function useUrlFilters<const D extends FilterDefinitions>(
   const pending = useRef<{ values: Record<string, unknown>; search: string } | null>(null);
   const fullParams = appliedParams(raw, keys, marker, overflow, storedQuery, options.scope);
   const values = decodeFilters(definitions, fullParams) as FilterValues<D>;
-  const search = fullParams.get(searchKey) ?? "";
+  const search = decodeUrlValue(fullParams.get(searchKey) ?? "");
   useLayoutEffect(() => {
     pending.current = { values, search };
   }, [values, search]);
@@ -111,7 +120,7 @@ export function useUrlFilters<const D extends FilterDefinitions>(
     pending.current = { values, search };
     const full = encodeFilters(definitions, values, new URLSearchParams(window.location.search));
     full.delete(markerKey);
-    if (search) full.set(searchKey, search);
+    if (search) full.set(searchKey, encodeUrlValue(search));
     else full.delete(searchKey);
     const owned = new URLSearchParams();
     for (const key of keys) if (full.has(key)) owned.set(key, full.get(key)!);
@@ -167,7 +176,7 @@ export function useUrlFilters<const D extends FilterDefinitions>(
       if (saved) {
         const params = new URLSearchParams(saved.query);
         const restored = decodeFilters(current.definitions, params);
-        update(restored, params.get(searchKey) ?? "", "edit");
+        update(restored, decodeUrlValue(params.get(searchKey) ?? ""), "edit");
       }
     }
     // Restoration runs once per storage scope. URL changes subsequently belong to nuqs.
@@ -199,7 +208,7 @@ export function useUrlFilters<const D extends FilterDefinitions>(
       const url = new URL(base, window.location.origin);
       const params = encodeFilters(definitions, values, url.searchParams);
       params.delete(markerKey);
-      if (search) params.set(searchKey, search);
+      if (search) params.set(searchKey, encodeUrlValue(search));
       else params.delete(searchKey);
       url.search = params.toString();
       return url.toString();

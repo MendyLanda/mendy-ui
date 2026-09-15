@@ -64,6 +64,8 @@ The rows/columns form also accepts the controller options below. Both forms acce
 const table = useDataTable({ rows, columns, getRowId: (row) => row.id });
 ```
 
+`getRowLabel: (row) => string` customizes the record description used by selection checkboxes. It defaults to the first visible value column, then the row number.
+
 `UseDataTableOptions<Row>` extends the engine's table options, replacing its data and processing configuration with the fields below. Controlled state and change callbacks are forwarded to the engine.
 
 | Option                                                          | Default                 | Purpose                                                                      |

@@ -110,6 +110,10 @@ Applied changes update the URL; drafts and open menus do not. Nuqs handles brows
 
 If a selection exceeds the URL budget, the full values are saved in session storage and the URL contains a session reference. Recent references are retained for navigation. `shareable` becomes false and `persistenceMessage` explains the limitation. Opening that reference in a different session reports that the values are unavailable. `createLink(base)` returns null when the complete current selection cannot be represented by the URL.
 
+Filter values that look like JSON use a `~ui:` URL prefix so routers cannot reinterpret them before the filter codec runs. Ordinary text stays readable. `decodeFilters` accepts both this representation and earlier JSON URLs; use it instead of manually parsing filter parameters. The prefix is transport syntax and is not passed to custom codecs.
+
+With TanStack Router, wrap the route outlet in `NuqsAdapter` from `nuqs/adapters/tanstack-router`. The router's default search parser can remain enabled. The browser integration tests cover this adapter's updates, reloads, and back/forward navigation. [nuqs currently describes its TanStack adapter as experimental and does not claim full TanStack Start support](https://nuqs.dev/docs/adapters#tanstack-router); this URL fix does not establish broader SSR compatibility for that adapter.
+
 The pure `encodeFilters` and `decodeFilters` functions from `@mendylanda/ui/filters/core` can be used with server-readable definitions. Keep those definitions free of client-only imports when using them on a server.
 
 ## Binding existing state

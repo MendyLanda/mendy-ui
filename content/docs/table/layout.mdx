@@ -80,3 +80,5 @@ Content above `TableView` is reflected in its top position. Pass controls below 
 Use `rowHeight="auto"` when cells wrap. Return content from `renderRowDetail(row)` to expand a record, and `null` to collapse it. Details use the table viewport width so nested content can scroll independently.
 
 Automatic row heights retain all columns for consistent measurement. See the [performance guide](/docs/table/performance) before enabling them on very wide tables.
+
+Empty and initial error content stays centered in the visible grid viewport, including in fill layout and when the columns overflow horizontally. Horizontal scrolling keeps this feedback in view.

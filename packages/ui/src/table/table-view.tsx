@@ -233,6 +233,7 @@ export function TableView<T extends object>({
         className={cn(
           "relative isolate overflow-auto rounded-md border bg-background text-sm outline-none",
           fill && "min-h-0 flex-1",
+          hasInitialFeedback && status !== "loading" && "flex flex-col",
           className,
         )}
         onKeyDown={onKeyDown}
@@ -240,7 +241,7 @@ export function TableView<T extends object>({
         <div
           role="row"
           aria-rowindex={1}
-          className="sticky top-0 z-20 flex min-w-full border-b bg-background"
+          className="sticky top-0 z-20 flex shrink-0 min-w-full border-b bg-background"
           style={{ width: totalWidth }}
         >
           {columns.map((column) => (
@@ -266,6 +267,8 @@ export function TableView<T extends object>({
           ))}
         </div>
         <TableInitialState
+          width={Math.max(totalWidth, viewportWidth ?? 0)}
+          viewportWidth={viewportWidth}
           columnCount={layout.columns.length}
           status={status}
           hasRows={rows.length > 0}
@@ -298,7 +301,7 @@ export function TableView<T extends object>({
         />
         <div
           role="rowgroup"
-          className="relative min-w-full"
+          className="relative shrink-0 min-w-full"
           style={{ height: virtual.getTotalSize(), width: totalWidth }}
         >
           {items.map((item) => (

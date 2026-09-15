@@ -26,11 +26,14 @@ export function TableColumnSettings<T extends object>({
   const id = useId();
   const { t, direction } = useMendyLocale();
   const { portalContainer } = useMendyUI();
-  const columns = table.getAllLeafColumns();
+  const allColumns = table.getAllLeafColumns();
+  const columns = allColumns.filter((column) => column.getCanHide());
   const byId = new Map(columns.map((column) => [column.id, column]));
-  const order = [
-    ...new Set([...table.state.columnOrder, ...columns.map((column) => column.id)]),
-  ].filter((key) => byId.has(key));
+  const allIds = new Set(allColumns.map((column) => column.id));
+  const fullOrder = [...new Set([...table.state.columnOrder, ...allIds])].filter((key) =>
+    allIds.has(key),
+  );
+  const order = fullOrder.filter((key) => byId.has(key));
   const ordered = order.map((key) => byId.get(key)!);
   const hidden = columns.filter((column) => !column.getIsVisible()).length;
   const start = columns.filter((column) => column.getIsPinned() === "start").length;
@@ -47,7 +50,9 @@ export function TableColumnSettings<T extends object>({
     const next = [...order];
     const [moved] = next.splice(result.source.index, 1);
     next.splice(result.destination.index, 0, moved);
-    table.setColumnOrder(next);
+    // Keep fixed columns in their existing slots when editable columns move.
+    let index = 0;
+    table.setColumnOrder(fullOrder.map((key) => (byId.has(key) ? next[index++]! : key)));
   }
   return (
     <Popover>

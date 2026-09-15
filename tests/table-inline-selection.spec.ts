@@ -10,7 +10,7 @@ test("inline selection shares the data column and preserves focus, layout, and l
   await expect(grid.getByRole("columnheader")).toHaveCount(2);
   const cell = grid.locator('[data-row-id="default-0"][data-column-id="title"]');
   const checkbox = cell.getByRole("checkbox");
-  const disabledCheckbox = grid.getByRole("checkbox", { name: "Select row 2", exact: true });
+  const disabledCheckbox = grid.getByRole("checkbox", { name: "Select row Item 001", exact: true });
   await page.mouse.move(0, 0);
   if (!testInfo.project.use.isMobile) {
     await expect(checkbox).toHaveCSS("opacity", "0");

@@ -19,6 +19,8 @@ export interface UseDataTableOptions<T extends object> extends Omit<
   rows: readonly T[];
   columns: TableColumn<T>[];
   getRowId: (row: T, index: number) => string;
+  /** Human-readable record description for selection controls. Defaults to the first visible value column. */
+  getRowLabel?: (row: T) => string;
   processing?: {
     filtering?: "client" | "external";
     sorting?: "client" | "external";

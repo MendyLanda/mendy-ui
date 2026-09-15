@@ -11,6 +11,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { Button } from "../primitives/button.js";
 import { Checkbox } from "../primitives/checkbox.js";
 import { cn } from "../utils.js";
+import { rowSelectionLabel } from "./row-selection-label.js";
 import { interactiveSelector } from "./clipboard.js";
 export function TableHeaderCell<T extends object>({
   table,
@@ -216,12 +217,32 @@ function TableBodyRowImpl<T extends object>({
                 cell.getSelectionStartHandler()(event);
               }}
               onMouseEnter={cell.getSelectionExtendHandler()}
+              onKeyDown={(event) => {
+                if (
+                  cell.column.id !== "_selection" ||
+                  (event.target as Element).closest(interactiveSelector)
+                )
+                  return;
+                if (event.key === " " || event.key === "Enter") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  if (!event.repeat && row.getCanSelect()) row.toggleSelected();
+                }
+              }}
               onClick={(event) => {
+                if (cell.column.id === "_selection") {
+                  if (!(event.target as Element).closest(interactiveSelector) && row.getCanSelect())
+                    row.toggleSelected();
+                  return;
+                }
                 if (event.detail <= 1 && !(event.target as Element).closest(interactiveSelector))
                   onRowClick?.(row.original);
               }}
               onDoubleClick={(event) => {
-                if (!(event.target as Element).closest(interactiveSelector))
+                if (
+                  cell.column.id !== "_selection" &&
+                  !(event.target as Element).closest(interactiveSelector)
+                )
                   onRowActivate?.(row.original);
               }}
             >
@@ -248,7 +269,7 @@ function TableBodyRowImpl<T extends object>({
               )}
               {inlineSelection && index === 0 && (
                 <Checkbox
-                  aria-label={t("selectRow", { id: rowIndex + 1 })}
+                  aria-label={t("selectRow", { id: rowSelectionLabel(row) })}
                   checked={row.getIsSelected()}
                   disabled={!row.getCanSelect()}
                   onCheckedChange={(value) => row.toggleSelected(value === true)}

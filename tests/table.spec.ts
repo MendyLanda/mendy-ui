@@ -29,7 +29,7 @@ test("table virtualizes, sorts, resizes and keeps interactive controls usable", 
   await resize.focus();
   await page.keyboard.press("ArrowRight");
   await expect(resize).toHaveAttribute("aria-valuenow", String(before + 10));
-  await grid.getByRole("checkbox", { name: "Select row 1", exact: true }).click();
+  await grid.getByRole("checkbox", { name: "Select row Project 1", exact: true }).click();
   await expect(page.getByRole("region", { name: "Selected row actions" })).toContainText(
     "1 selected",
   );

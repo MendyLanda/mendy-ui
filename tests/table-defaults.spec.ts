@@ -33,7 +33,7 @@ test("default height fits content, grows to its cap, and selected rows join cust
   const selectedRow = grid.locator('[role="row"][data-index="0"]');
   const customRow = grid.locator('[role="row"][data-index="1"]');
   await expect(customRow).toHaveAttribute("data-highlighted", "true");
-  await grid.getByRole("checkbox", { name: "Select row default-0", exact: true }).click();
+  await grid.getByRole("checkbox", { name: "Select row Item 000", exact: true }).click();
   await expect(selectedRow).toHaveAttribute("data-highlighted", "true");
   await expect(customRow).toHaveAttribute("data-highlighted", "true");
   const selectedBackground = await selectedRow
@@ -41,7 +41,7 @@ test("default height fits content, grows to its cap, and selected rows join cust
     .first()
     .evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(selectedBackground).not.toBe("rgba(0, 0, 0, 0)");
-  await grid.getByRole("checkbox", { name: "Select row default-0", exact: true }).click();
+  await grid.getByRole("checkbox", { name: "Select row Item 000", exact: true }).click();
   await expect(selectedRow).not.toHaveAttribute("data-highlighted", "true");
 
   await page.getByRole("button", { name: "Append rows", exact: true }).click();

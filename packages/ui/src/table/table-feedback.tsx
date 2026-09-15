@@ -1,5 +1,5 @@
 import { useMendyLocale } from "../locale-context.js";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { TableDataState } from "./table-view.js";
 import { Button } from "../primitives/button.js";
 
@@ -8,14 +8,16 @@ export function TableFeedbackRow({
   columnCount,
   rowIndex,
   className,
+  style,
 }: {
   children: ReactNode;
   columnCount: number;
   rowIndex: number;
   className?: string;
+  style?: CSSProperties;
 }) {
   return (
-    <div role="row" aria-rowindex={rowIndex} className={className}>
+    <div role="row" aria-rowindex={rowIndex} className={className} style={style}>
       <div role="gridcell" aria-colindex={1} aria-colspan={Math.max(1, columnCount)}>
         {children}
       </div>
@@ -35,8 +37,12 @@ export function TableInitialState({
   clearFilters,
   firstPage,
   columnCount,
+  width,
+  viewportWidth,
 }: Pick<TableDataState, "status" | "error" | "retry"> & {
   hasRows: boolean;
+  width: number;
+  viewportWidth: number | null;
   columnCount: number;
   loadingState?: ReactNode;
   emptyState?: ReactNode;
@@ -55,7 +61,7 @@ export function TableInitialState({
     );
   if (status === "error")
     return (
-      <TableFeedbackRow columnCount={columnCount} rowIndex={2}>
+      <TableCenteredFeedback columnCount={columnCount} width={width} viewportWidth={viewportWidth}>
         <div role="alert" className="p-6 text-center">
           {error ?? t("loadRowsError")}
           {retry && (
@@ -64,10 +70,10 @@ export function TableInitialState({
             </Button>
           )}
         </div>
-      </TableFeedbackRow>
+      </TableCenteredFeedback>
     );
   return (
-    <TableFeedbackRow columnCount={columnCount} rowIndex={2}>
+    <TableCenteredFeedback columnCount={columnCount} width={width} viewportWidth={viewportWidth}>
       <div
         role="status"
         className="flex flex-col items-center gap-2 p-8 text-center text-muted-foreground"
@@ -93,7 +99,34 @@ export function TableInitialState({
             t("noRows")
           ))}
       </div>
-    </TableFeedbackRow>
+    </TableCenteredFeedback>
+  );
+}
+
+function TableCenteredFeedback({
+  children,
+  columnCount,
+  width,
+  viewportWidth,
+}: {
+  children: ReactNode;
+  columnCount: number;
+  width: number;
+  viewportWidth: number | null;
+}) {
+  return (
+    // A full-width containing block gives sticky feedback room to follow the
+    // viewport in RTL Safari as well as Chromium and Firefox.
+    <div role="rowgroup" className="flex flex-1 flex-col" style={{ width }}>
+      <TableFeedbackRow
+        columnCount={columnCount}
+        rowIndex={2}
+        style={{ width: viewportWidth ?? "100%" }}
+        className="sticky start-0 flex flex-1 items-center justify-center"
+      >
+        {children}
+      </TableFeedbackRow>
+    </div>
   );
 }
 

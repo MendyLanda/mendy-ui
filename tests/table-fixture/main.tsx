@@ -11,6 +11,8 @@ import {
 import "@mendylanda/ui/styles.css";
 import { TableDefaultsFixture, type TableDefaultsMode } from "../table-defaults/fixture";
 import { TableFillLayoutFixture } from "../table-fill-layout/fixture";
+import { UrlRouterFixture } from "../table-consumer/url-router";
+import { TableIssuesFixture } from "../table-consumer/issues";
 import { TableConsumerFixture } from "../table-consumer/fixture";
 type Item = { id: string; title: string; amount: number };
 const allRows = Array.from({ length: 10000 }, (_, i) => ({
@@ -106,7 +108,15 @@ const defaultsMode = new URLSearchParams(location.search).get(
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     {location.search.includes("consumer") ? (
-      <TableConsumerFixture />
+      new URLSearchParams(location.search).has("issues") ? (
+        new URLSearchParams(location.search).has("router") ? (
+          <UrlRouterFixture />
+        ) : (
+          <TableIssuesFixture />
+        )
+      ) : (
+        <TableConsumerFixture />
+      )
     ) : location.search.includes("fill=") ? (
       <TableFillLayoutFixture />
     ) : defaultsMode ? (

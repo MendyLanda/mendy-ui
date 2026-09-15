@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.1](https://github.com/MendyLanda/mendy-ui/compare/v0.4.0...v0.4.1) (2026-09-15)
+
+
+### Fixes
+
+* **filters:** round exposed editor corners at panel joins ([9f3005e](https://github.com/MendyLanda/mendy-ui/commit/9f3005e21c7918e7b199b6257de6add79fb08234))
+* **release:** skip dev snapshots for stable release commits ([619e145](https://github.com/MendyLanda/mendy-ui/commit/619e1451770c36dcc629ed48b5539001a9dc57e4))
+* resolve table and URL filter integration issues ([603fbe5](https://github.com/MendyLanda/mendy-ui/commit/603fbe5cc95f781186d8ff51a1277289733685a7))
+
 ## [0.4.0](https://github.com/MendyLanda/mendy-ui/compare/v0.3.1...v0.4.0) (2026-09-15)
 
 

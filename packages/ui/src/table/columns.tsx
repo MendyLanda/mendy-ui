@@ -40,6 +40,8 @@ export interface ValueFormat<V> {
 }
 interface ValueOptions<T extends object, V> {
   label: string;
+  /** Override the formatter's alignment without changing display, copy, or export text. */
+  align?: "start" | "center" | "end";
   size?: number;
   grow?: number | false;
   minSize?: number;
@@ -72,7 +74,7 @@ function valueColumn<T extends object, V>(
     maxSize: options.maxSize,
     defaultHidden: options.hidden,
     pin: options.pin,
-    align: options.format?.align,
+    align: options.align ?? options.format?.align,
     enableSorting: options.sortable ?? true,
     cell: ({ row }) => {
       const v = value(row.original);

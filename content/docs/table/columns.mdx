@@ -42,6 +42,16 @@ const columns = defineColumns<Project>((column) => [
 
 A formatter supplies `display(value)`, `text(value)`, and optional `align`. The same formatter drives visible content, clipboard text, and CSV text unless you override them.
 
+Number and currency formatters default to end alignment. Set `align` on the column to override that preference without losing formatting, copy, or export behavior. For example, this puts counts at the reading edge in either direction:
+
+```tsx
+column.accessor("count", {
+  label: "Count",
+  align: "start",
+  format: format.number({}, "he-IL"),
+});
+```
+
 | Factory                              | Value  | Example                                                |
 | ------------------------------------ | ------ | ------------------------------------------------------ |
 | `format.currency(currency, locale?)` | Number | `format.currency("USD", "en-US")`                      |

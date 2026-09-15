@@ -15,6 +15,7 @@ Use either `rows`, `columns`, and `getRowId`, or an existing `table` instance fr
 | `columns`              | Required without `table` | `TableColumn<Row>[]`.                                                               |
 | `getRowId(row, index)` | Required without `table` | Stable record identity.                                                             |
 | `table`                | Optional                 | Existing `DataTableInstance<Row>`; owns state and processing.                       |
+| `toolbarStart`         | None                     | Custom controls beside the filter bar, before actions and column settings.          |
 | `toolbar`              | None                     | Application actions beside the filters or above the grid.                           |
 | `footer`               | None                     | Content below the grid, reserved by fill layout.                                    |
 | `showColumnSettings`   | `true`                   | Built-in visibility, order, pinning, and sizing controls.                           |
@@ -28,33 +29,34 @@ The rows/columns form also accepts the controller options below. Both forms acce
 
 `TableView` renders the grid around a required `table` instance, without the assembled toolbar or column settings. These props also work on `DataTable`.
 
-| Prop                    | Default                     | Purpose                                                                  |
-| ----------------------- | --------------------------- | ------------------------------------------------------------------------ |
-| `label`                 | `"Data table"`              | Accessible name for the grid. Use a dataset-specific name.               |
-| `layout`                | `"content"`                 | `"content"` fits rows; `"fill"` uses remaining viewport height.          |
-| `height`                | `"auto"`                    | Number or CSS height in content layout. Fill layout takes precedence.    |
-| `rowHeight`             | `44`                        | Fixed pixels or `"auto"` for measured rows.                              |
-| `status`                | `"ready"`                   | `"loading"`, `"ready"`, or `"error"`.                                    |
-| `refreshing`            | `false`                     | Report a background refresh while keeping existing rows.                 |
-| `error`                 | None                        | Error content for a failed query.                                        |
-| `retry`                 | None                        | Callback for initial error recovery.                                     |
-| `loadMore`              | None                        | `{ available, loading, load, error? }` for incremental loading.          |
-| `emptyState`            | Automatic                   | Custom empty content; replaces automatic recovery actions too.           |
-| `loadingState`          | Skeleton rows               | Custom initial loading content.                                          |
-| `queryKey`              | Derived from observed state | Additional result identity; keep stable when appending pages.            |
-| `filters`               | None                        | Controller for scroll/selection resets and empty-result recovery.        |
-| `onRowClick(row)`       | None                        | Single-click callback, also Enter's fallback action.                     |
-| `onRowActivate(row)`    | None                        | Double-click and Enter callback.                                         |
-| `isRowHighlighted(row)` | None                        | Application-owned row highlight.                                         |
-| `rowSelectionControls`  | `true`                      | Inline controls when row selection is enabled.                           |
-| `renderRowDetail(row)`  | None                        | Expanded content; return `null` for collapsed rows.                      |
-| `renderHeader(header)`  | Standard header             | Custom header content. Preserve sorting/accessibility when replacing it. |
-| `onCopyError(error)`    | None                        | Report a clipboard failure.                                              |
-| `scrollRef`             | None                        | Ref for the grid scroll element.                                         |
-| `className`             | None                        | Grid container classes.                                                  |
-| `contentClassName`      | None                        | Classes for application-owned cell content.                              |
-| `rowClassName(row)`     | None                        | Per-record row classes.                                                  |
-| `footer`                | None                        | Content below the grid; included in fill-height calculation.             |
+| Prop                    | Default                     | Purpose                                                                                       |
+| ----------------------- | --------------------------- | --------------------------------------------------------------------------------------------- |
+| `label`                 | `"Data table"`              | Accessible name for the grid. Use a dataset-specific name.                                    |
+| `layout`                | `"content"`                 | `"content"` fits rows; `"fill"` uses remaining viewport height.                               |
+| `minHeight`             | `240`                       | Minimum fill frame height in pixels, including toolbar and footer. Ignored in content layout. |
+| `height`                | `"auto"`                    | Number or CSS height in content layout. Fill layout takes precedence.                         |
+| `rowHeight`             | `44`                        | Fixed pixels or `"auto"` for measured rows.                                                   |
+| `status`                | `"ready"`                   | `"loading"`, `"ready"`, or `"error"`.                                                         |
+| `refreshing`            | `false`                     | Report a background refresh while keeping existing rows.                                      |
+| `error`                 | None                        | Error content for a failed query.                                                             |
+| `retry`                 | None                        | Callback for initial error recovery.                                                          |
+| `loadMore`              | None                        | `{ available, loading, load, error? }` for incremental loading.                               |
+| `emptyState`            | Automatic                   | Custom empty content; replaces automatic recovery actions too.                                |
+| `loadingState`          | Skeleton rows               | Custom initial loading content.                                                               |
+| `queryKey`              | Derived from observed state | Additional result identity; keep stable when appending pages.                                 |
+| `filters`               | None                        | Controller for scroll/selection resets and empty-result recovery.                             |
+| `onRowClick(row)`       | None                        | Single-click callback, also Enter's fallback action.                                          |
+| `onRowActivate(row)`    | None                        | Double-click and Enter callback.                                                              |
+| `isRowHighlighted(row)` | None                        | Application-owned row highlight.                                                              |
+| `rowSelectionControls`  | `true`                      | Inline controls when row selection is enabled.                                                |
+| `renderRowDetail(row)`  | None                        | Expanded content; return `null` for collapsed rows.                                           |
+| `renderHeader(header)`  | Standard header             | Custom header content. Preserve sorting/accessibility when replacing it.                      |
+| `onCopyError(error)`    | None                        | Report a clipboard failure.                                                                   |
+| `scrollRef`             | None                        | Ref for the grid scroll element.                                                              |
+| `className`             | None                        | Grid container classes.                                                                       |
+| `contentClassName`      | None                        | Classes for application-owned cell content.                                                   |
+| `rowClassName(row)`     | None                        | Per-record row classes.                                                                       |
+| `footer`                | None                        | Content below the grid; included in fill-height calculation.                                  |
 
 ## useDataTable
 

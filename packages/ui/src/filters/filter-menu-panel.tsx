@@ -329,13 +329,18 @@ function EditorHeading({
 
 function MenuHeading({ label }: { label: string }) {
   const ref = useRef<HTMLSpanElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
   const [overflow, setOverflow] = useState(false);
   const [below, setBelow] = useState(false);
   const measure = () => {
     const element = ref.current;
-    if (!element) return;
-    setOverflow(element.scrollHeight > element.clientHeight + 1);
-    setBelow(element.scrollHeight - element.clientHeight - element.scrollTop > 1);
+    const text = textRef.current;
+    if (!element || !text) return;
+    // Measure the text's line boxes, not glyph overflow. Fonts can paint below a
+    // single line without the title having another line to scroll to.
+    const height = text.getBoundingClientRect().height;
+    setOverflow(height > element.clientHeight + 1);
+    setBelow(height - element.clientHeight - element.scrollTop > 1);
   };
   useLayoutEffect(() => {
     const element = ref.current;
@@ -344,6 +349,7 @@ function MenuHeading({ label }: { label: string }) {
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
+    if (textRef.current) observer.observe(textRef.current);
     return () => observer.disconnect();
   }, [label]);
   return (
@@ -353,9 +359,14 @@ function MenuHeading({ label }: { label: string }) {
       title={label}
       tabIndex={overflow ? 0 : undefined}
       data-more-below={below}
-      className="max-h-[min(6rem,calc(var(--filter-menu-height)*0.25))] min-w-0 flex-1 overflow-y-auto whitespace-normal [overflow-wrap:anywhere] [scrollbar-width:thin] data-[more-below=true]:[mask-image:linear-gradient(#000_calc(100%_-_1rem),transparent)] focus-visible:outline-1 focus-visible:outline-ring"
+      className={cn(
+        "max-h-[min(6rem,calc(var(--filter-menu-height)*0.25))] min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere] [scrollbar-width:thin] data-[more-below=true]:[mask-image:linear-gradient(#000_calc(100%_-_1rem),transparent)] focus-visible:outline-1 focus-visible:outline-ring",
+        overflow ? "overflow-y-auto" : "overflow-visible",
+      )}
     >
-      {label}
+      <span ref={textRef} className="block">
+        {label}
+      </span>
     </span>
   );
 }

@@ -138,3 +138,24 @@ export function TableLoadMore({
     </TableFeedbackRow>
   );
 }
+
+export function TableRefreshError({
+  columnCount,
+  rowIndex,
+  error,
+  retry,
+}: Pick<TableDataState, "error" | "retry"> & { columnCount: number; rowIndex: number }) {
+  const { t } = useMendyLocale();
+  return (
+    <TableFeedbackRow columnCount={columnCount} rowIndex={rowIndex} className="sticky bottom-0">
+      <div role="alert" className="bg-background p-3">
+        {error ?? t("refreshError")}
+        {retry && (
+          <Button onClick={retry} variant="outline" size="sm">
+            {t("retry")}
+          </Button>
+        )}
+      </div>
+    </TableFeedbackRow>
+  );
+}

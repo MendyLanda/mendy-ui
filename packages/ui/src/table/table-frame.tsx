@@ -8,6 +8,7 @@ import { useFillLayout } from "./use-fill-layout.js";
 /** Shared sizing for the composed view and the table with built-in controls. */
 export function TableFrame({
   layout,
+  minHeight = 240,
   stretch = false,
   slot = "table-view",
   header,
@@ -15,6 +16,7 @@ export function TableFrame({
   children,
 }: {
   layout: "content" | "fill";
+  minHeight?: number;
   stretch?: boolean;
   slot?: string;
   header?: ReactNode;
@@ -23,7 +25,7 @@ export function TableFrame({
 }) {
   const { direction, code, configured } = useMendyLocale();
   const fill = layout === "fill";
-  const ref = useFillLayout(fill);
+  const ref = useFillLayout(fill, minHeight);
   return (
     <div
       ref={ref}
@@ -33,7 +35,7 @@ export function TableFrame({
       lang={code}
       data-layout={layout}
       className={cn("min-w-0", fill ? "flex min-h-0 flex-col gap-2" : "space-y-2")}
-      style={!fill && stretch ? { height: "100%" } : undefined}
+      style={fill ? { height: minHeight, minHeight } : stretch ? { height: "100%" } : undefined}
     >
       {header && <div className="shrink-0">{header}</div>}
       <div

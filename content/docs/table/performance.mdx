@@ -28,3 +28,9 @@ You do not have to memoize every inline callback to use the table. If your appli
 ## Try a large dataset
 
 The [overview demo](/docs/components/table) switches between 80 and 10,000 local records. This demonstrates rendering behavior, not a promise about server latency or every application's frame rate. Profile production builds with the columns, viewport sizes, and interactions your users have.
+
+## Server rendering
+
+The server renders a small initial window of rows rather than an empty row group. The initial client render uses the same estimate to preserve hydration; measured viewport dimensions take over after mount. Large datasets stay virtualized, so server markup does not include every record. This is an initial-content fallback, not a full static export of the dataset.
+
+Use stable row IDs, the same data on the server and first client render, and explicit locales for formatters. Custom cell renderers must also be safe to render on the server.

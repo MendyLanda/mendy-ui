@@ -34,6 +34,19 @@ test("nested accessors handle missing records and format meaningful copy values"
   assert.equal(columns[2].copyValue?.({ id: "a", amount: 10 }), "");
   assert.equal(columns[1].copyValue?.({ id: "a", amount: 10 }), "$10.00");
 });
+
+test("column alignment overrides numeric defaults while preserving display, copy and export", () => {
+  for (const formatter of [format.number({}, "he-IL"), format.currency("ILS", "he-IL")]) {
+    const [column] = defineColumns<Item>((c) => [
+      c.accessor("amount", { label: "Amount", align: "start", format: formatter }),
+    ]);
+    assert.equal(column.align, "start");
+    assert.equal(column.copyValue?.({ id: "one", amount: 1234 }), formatter.text(1234));
+    assert.ok(column.exportOptions && !Array.isArray(column.exportOptions));
+    assert.equal(column.exportOptions.value({ id: "one", amount: 1234 }), formatter.text(1234));
+    assert.equal(formatter.display(1234), formatter.text(1234));
+  }
+});
 test("CSV quotes delimiters and prevents formula execution; TSV preserves multi-line cells", () => {
   assert.equal(csvValue("=SUM(A1)"), '"\'=SUM(A1)"');
   assert.equal(csvValue('a,"b"'), '"a,""b"""');

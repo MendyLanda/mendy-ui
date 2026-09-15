@@ -10,6 +10,8 @@ import { TableFrame } from "./table-frame.js";
 
 type Appearance<T extends object> = Omit<TableViewProps<T>, "table"> & {
   toolbar?: ReactNode;
+  /** Custom controls beside the filter bar, before toolbar actions and column settings. */
+  toolbarStart?: ReactNode;
   footer?: ReactNode;
   showColumnSettings?: boolean;
   showPagination?: boolean;
@@ -21,29 +23,32 @@ export type DataTableProps<T extends object> = Appearance<T> &
 function ControlledTable<T extends object>({
   table,
   toolbar,
+  toolbarStart,
   footer,
   showColumnSettings = true,
   showPagination = false,
   filters,
   filterBar,
   layout = "content",
+  minHeight,
   ...view
 }: Appearance<T> & { table: DataTableInstance<T> }) {
   const fill = layout === "fill";
   return (
     <TableFrame
       layout={layout}
+      minHeight={minHeight}
       slot="data-table"
       header={
-        (toolbar || showColumnSettings || (filters && filterBar !== false)) && (
-          <div className="flex shrink-0 flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0 flex-1 space-y-2">
-              {filters && filterBar !== false && <TableFilters {...filterBar} filters={filters} />}
-              {!filters && toolbar}
-            </div>
-            {filters && toolbar}
-            {showColumnSettings && <TableColumnSettings table={table} />}
-          </div>
+        (toolbarStart || toolbar || showColumnSettings || (filters && filterBar !== false)) && (
+          <TableToolbar
+            table={table}
+            toolbar={toolbar}
+            toolbarStart={toolbarStart}
+            filters={filters}
+            filterBar={filterBar}
+            showColumnSettings={showColumnSettings}
+          />
         )
       }
       footer={
@@ -78,4 +83,30 @@ function ConfiguredTable<T extends object>(props: Appearance<T> & UseDataTableOp
 }
 export function DataTable<T extends object>(props: DataTableProps<T>) {
   return "table" in props ? <ControlledTable {...props} /> : <ConfiguredTable {...props} />;
+}
+
+function TableToolbar<T extends object>({
+  table,
+  toolbar,
+  toolbarStart,
+  filters,
+  filterBar,
+  showColumnSettings,
+}: Pick<
+  Appearance<T>,
+  "toolbar" | "toolbarStart" | "filters" | "filterBar" | "showColumnSettings"
+> & { table: DataTableInstance<T> }) {
+  return (
+    <div className="flex shrink-0 flex-wrap items-start justify-between gap-2">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+        {filters && filterBar !== false && <TableFilters {...filterBar} filters={filters} />}
+        {toolbarStart}
+        {!filters && !toolbarStart && toolbar}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {(filters || toolbarStart) && toolbar}
+        {showColumnSettings && <TableColumnSettings table={table} />}
+      </div>
+    </div>
+  );
 }

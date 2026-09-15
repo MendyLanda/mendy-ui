@@ -9,13 +9,12 @@ import type { FilterController } from "../filters/use-filters.js";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TableHeaderCell, TableBodyRow } from "./table-parts.js";
-import { Button } from "../primitives/button.js";
 import { cn } from "../utils.js";
 import { useColumnWindow } from "./use-column-window.js";
 import { useViewportWidth } from "./use-viewport-width.js";
 import { tableLayout } from "./table-layout.js";
 import { TableLoadingRows } from "./table-loading.js";
-import { TableInitialState, TableFeedbackRow, TableLoadMore } from "./table-feedback.js";
+import { TableInitialState, TableRefreshError, TableLoadMore } from "./table-feedback.js";
 import { useTableInteraction } from "./use-table-interaction.js";
 import { useTableResults } from "./use-table-results.js";
 import { useInlineRowSelection } from "./use-inline-row-selection.js";
@@ -35,6 +34,8 @@ export interface TableViewProps<T extends object> extends TableDataState {
   height?: number | string;
   /** Fill the remaining page height, or fit content by default. Fill overrides height. */
   layout?: "content" | "fill";
+  /** Minimum frame height in pixels for fill layout, including controls. Defaults to 240. */
+  minHeight?: number;
   /** Controls below the grid, included in the available height when layout is fill. */
   footer?: ReactNode;
   /** Auto measures multiline rows and retains all columns to keep their height stable. */
@@ -67,6 +68,7 @@ export function TableView<T extends object>({
   label,
   height = "auto",
   layout: layoutMode = "content",
+  minHeight,
   footer,
   rowHeight: rowHeightOption = 44,
   rowClassName,
@@ -118,6 +120,9 @@ export function TableView<T extends object>({
     estimateSize,
     getItemKey,
     overscan: 8,
+    // Match server markup and the first client render with a bounded window.
+    // Browser measurements replace this estimate as soon as the grid mounts.
+    initialRect: { width: 0, height: rowHeight * 12 },
   });
   const viewportWidth = useViewportWidth(container);
   const startColumns = table.getStartVisibleLeafColumns();
@@ -202,7 +207,12 @@ export function TableView<T extends object>({
   const headersById = new Map(table.getFlatHeaders().map((header) => [header.column.id, header]));
 
   return (
-    <TableFrame layout={layoutMode} stretch={height === "100%"} footer={footer}>
+    <TableFrame
+      layout={layoutMode}
+      minHeight={minHeight}
+      stretch={height === "100%"}
+      footer={footer}
+    >
       <div aria-live="polite" className="sr-only">
         {announcement}
       </div>
@@ -320,20 +330,12 @@ export function TableView<T extends object>({
           ))}
         </div>
         {hasRefreshError && (
-          <TableFeedbackRow
+          <TableRefreshError
             columnCount={layout.columns.length}
             rowIndex={rows.length + 2}
-            className="sticky bottom-0"
-          >
-            <div role="alert" className="bg-background p-3">
-              {error ?? t("refreshError")}
-              {retry && (
-                <Button onClick={retry} variant="outline" size="sm">
-                  {t("retry")}
-                </Button>
-              )}
-            </div>
-          </TableFeedbackRow>
+            error={error}
+            retry={retry}
+          />
         )}
         {loadMore?.available && (
           <TableLoadMore

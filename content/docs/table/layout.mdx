@@ -13,7 +13,32 @@ Use `layout="fill"` for a table that should occupy the rest of the viewport:
 <DataTable table={table} filters={filters} layout="fill" toolbar={<ProjectActions />} />
 ```
 
-Fill layout measures from the top of the component to the bottom of the viewport. It accounts for ancestor bottom padding and borders, and remeasures when the viewport resizes or content above the table changes size. `DataTable` also reserves space for its filter toolbar, column settings, pagination, and `footer`, so the grid uses the remaining height without page overflow. In fill layout, `layout` controls the height and takes precedence over `height`.
+Fill layout measures from the component's unscrolled page position to the bottom of the viewport. It accounts for ancestor bottom padding and borders, and remeasures when the viewport resizes or content above the table changes size. `DataTable` reserves space for its filter toolbar, column settings, pagination, and `footer`. In fill layout, `layout` controls the height and takes precedence over `height`.
+
+The frame has a default minimum height of 240px. A table below a dashboard or other content therefore stays usable even when it starts below the fold. The page can scroll when that minimum cannot fit in the remaining viewport. Set `minHeight` to reserve more space; it includes the toolbar and footer, and only applies to fill layout:
+
+```tsx
+<DataTable table={table} layout="fill" minHeight={400} />
+```
+
+Scrolling the page does not change the measured height. This also keeps a resize after scrolling from making the table progressively taller.
+
+## Keep custom controls in the toolbar
+
+`filters` provides the standard filter bar. Use `toolbarStart` for custom search, tabs, or other controls, and `toolbar` for actions. Column settings remain built in; controls wrap on small screens.
+
+```tsx
+<DataTable
+  table={table}
+  filters={filters}
+  filterBar={false}
+  toolbarStart={<TableFilters filters={filters} searchPlaceholder="Find projects" />}
+  toolbar={<ProjectActions />}
+  layout="fill"
+/>
+```
+
+Keep `filters` attached when replacing its presentation so query resets and empty-result recovery still work. `toolbarStart` can also be used without a filter controller. When the built-in filter bar is visible, custom start controls appear beside it.
 
 ## Column widths
 

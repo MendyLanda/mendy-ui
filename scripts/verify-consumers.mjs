@@ -214,6 +214,11 @@ for (const framework of ["vite", "next", "tailwind3"]) {
     throw new Error("Base consumer unexpectedly installed optional integrations.");
   await run(dir, ["build"]);
   const output = join(dir, framework !== "next" ? "dist" : "out");
+  if (framework === "next") {
+    const html = readFileSync(join(output, "index.html"), "utf8");
+    if (!html.includes('data-row-id="one"') || !html.includes('data-row-id="two"'))
+      throw new Error("Server markup omitted the table's initial rows.");
+  }
   const server = createServer((req, res) => {
     const relative = new URL(req.url, "http://localhost").pathname;
     const file = resolve(output, relative === "/" ? "index.html" : relative.slice(1));

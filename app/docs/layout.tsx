@@ -1,33 +1,20 @@
 import type { ReactNode } from "react";
 import { DocsNav } from "@/components/docs-nav";
+import { docsPages } from "@/lib/docs-navigation";
 import { source } from "@/lib/source";
 
-const order = [
-  "/docs",
-  "/docs/installation",
-  "/docs/defaults",
-  "/docs/components/filters",
-  "/docs/components/table",
-  "/docs/examples",
-  "/docs/advanced",
-  "/docs/system",
-  "/docs/api",
-  "/docs/customization",
-];
-
 export default function DocsLayout({ children }: { children: ReactNode }) {
-  const pages = source
-    .getPages()
-    .map((page) => ({ url: page.url, title: page.data.title }))
-    .sort((a, b) => {
-      const first = order.indexOf(a.url);
-      const second = order.indexOf(b.url);
-      return (first < 0 ? order.length : first) - (second < 0 ? order.length : second);
-    });
+  const pages = docsPages.map((item) => {
+    const page = source.getPage(item.url === "/docs" ? [] : item.url.slice(6).split("/"));
+    return {
+      ...item,
+      description: page?.data.description ?? "",
+      keywords: page?.data.toc.map((heading) => String(heading.title)).join(" ") ?? "",
+    };
+  });
   return (
-    <div className="mx-auto grid max-w-7xl gap-10 px-5 py-8 sm:px-8 lg:grid-cols-[190px_minmax(0,1fr)] lg:gap-14 lg:py-12">
-      <aside className="lg:sticky lg:top-28 lg:self-start">
-        <p className="mb-3 px-3 text-sm font-medium">Documentation</p>
+    <div className="mx-auto grid max-w-[1440px] gap-8 px-5 py-6 sm:px-8 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12 lg:py-10">
+      <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:self-start lg:pb-8">
         <DocsNav pages={pages} />
       </aside>
       {children}

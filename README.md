@@ -1,8 +1,8 @@
 # Mendy UI
 
-My personal collection of components I like to use. One React package, maintained here and shared across projects. Built with shadcn controls and Tailwind. MIT licensed.
+React components by Mendy Landa. My collection currently includes **Table** and **Filters**, maintained in one package and used across projects. MIT licensed.
 
-[Documentation and demos](https://ui.mendylanda.com)
+[Documentation and live examples](https://ui.mendylanda.com)
 
 ```sh
 npm install @mendylanda/ui
@@ -10,16 +10,18 @@ npm install @mendylanda/ui
 
 ```tsx
 import "@mendylanda/ui/styles.css";
-import { defineFilters, filter, FilterBar, useFilters } from "@mendylanda/ui/filters";
 ```
 
-Filters includes typed definitions, local and controlled state, dynamic options, paste recognition, predefined shortcuts, custom editors, and URL persistence through an optional nuqs adapter. The package supplies compiled, scoped CSS. Applications can use it without Tailwind or local copies of shadcn controls.
+## Components
 
-Your app owns definitions, data queries, and business rules. Shared interaction behavior stays in the package. Customize it through theme variables, named classes, typed render callbacks, control replacements, or composition. See the [customization guide](https://ui.mendylanda.com/docs/customization).
+| Component                                                    | Import                   | What it does                                                                                                  |
+| ------------------------------------------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| [Table](https://ui.mendylanda.com/docs/components/table)     | `@mendylanda/ui/table`   | Typed columns, virtual scrolling, sorting, resizing, pinning, selection, copying, and persistent preferences. |
+| [Filters](https://ui.mendylanda.com/docs/components/filters) | `@mendylanda/ui/filters` | Typed definitions, search, menus, editable chips, dynamic options, recognition, and optional URL persistence. |
 
-## Table
+Use either component independently or pass a filter controller to `DataTable` to connect them. Your application owns queries, permissions, and data matching. The package owns shared interaction behavior.
 
-The stable package includes the table under `@mendylanda/ui/table`. It has typed columns, virtual rows and columns, sorting, resizing, pinning, visibility, keyboard cell selection, clipboard copy, scoped preferences, content and fill layouts, and optional pagination. Applications keep their data queries and custom cells. [Table docs](https://ui.mendylanda.com/docs/components/table).
+React 19 is required. Compiled, scoped CSS is included; Tailwind and nuqs are optional. Both components use your application's semantic colors, font, and radius. See [installation](https://ui.mendylanda.com/docs/installation), [styling](https://ui.mendylanda.com/docs/customization), and [keyboard behavior](https://ui.mendylanda.com/docs/accessibility).
 
 ## Development
 

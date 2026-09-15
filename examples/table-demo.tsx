@@ -4,7 +4,6 @@ import {
   DataTable,
   defineColumns,
   format,
-  selectionColumn,
   TableActionBar,
   useDataTable,
 } from "@mendylanda/ui/table";
@@ -18,7 +17,6 @@ type Project = {
   updatedAt: Date;
 };
 const columns = defineColumns<Project>((column) => [
-  selectionColumn<Project>(),
   column.accessor("name", { label: "Project", pin: "start", size: 250 }),
   column.accessor("owner.name", { label: "Owner" }),
   column.accessor("budget", { label: "Budget", format: format.currency("USD") }),

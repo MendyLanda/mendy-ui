@@ -3,12 +3,14 @@
   "pages": [
     "index",
     "installation",
-    "defaults",
     "components",
-    "examples",
-    "advanced",
+    "table",
+    "defaults",
     "system",
+    "advanced",
+    "examples",
     "api",
-    "customization"
+    "customization",
+    "accessibility"
   ]
 }

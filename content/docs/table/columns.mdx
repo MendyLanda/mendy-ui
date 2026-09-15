@@ -1,0 +1,78 @@
+---
+title: Columns and rendering
+description: Describe values once, with types for display, sorting, copying, and export.
+---
+
+## Define columns
+
+`defineColumns<Row>()` gives you three ways to describe a column. Import it from `@mendylanda/ui/table`.
+
+```tsx
+import { defineColumns, format } from "@mendylanda/ui/table";
+
+type Project = {
+  id: string;
+  name: string;
+  owner: { name: string } | null;
+  budget: number;
+  spent: number;
+};
+
+const columns = defineColumns<Project>((column) => [
+  column.accessor("name", { label: "Project", pin: "start", size: 260 }),
+  column.accessor("owner.name", { label: "Owner" }),
+  column.computed("remaining", (row) => row.budget - row.spent, {
+    label: "Remaining",
+    format: format.currency("USD", "en-US"),
+  }),
+  column.display("open", {
+    label: "",
+    size: 80,
+    pin: "end",
+    render: (row) => <a href={`/projects/${row.id}`}>Open</a>,
+  }),
+]);
+```
+
+`accessor` follows typed property paths, including nested fields. Nullable parent objects are supported. `computed` takes a stable ID and a function. Both participate in sorting, cell selection, copying, and export.
+
+`display` is for actions or other content without a sortable value. It does not grow, sort, or participate in cell selection or export by default. Use a blank visible label for an action column and give each control an accessible name.
+
+## Format a value
+
+A formatter supplies `display(value)`, `text(value)`, and optional `align`. The same formatter drives visible content, clipboard text, and CSV text unless you override them.
+
+| Factory                              | Value  | Example                                                |
+| ------------------------------------ | ------ | ------------------------------------------------------ |
+| `format.currency(currency, locale?)` | Number | `format.currency("USD", "en-US")`                      |
+| `format.number(options?, locale?)`   | Number | `format.number({ maximumFractionDigits: 1 }, "en-US")` |
+| `format.date(options?, locale?)`     | Date   | `format.date({ dateStyle: "medium" }, "en-US")`        |
+
+Convert API date strings into `Date` values before using `format.date`, or supply your own formatter. Choose explicit locale and timezone options when server and browser output must agree. Nullish values display as an em dash and copy as an empty string.
+
+## Render custom content
+
+```tsx
+column.accessor("name", {
+  label: "Project",
+  render: ({ row, value }) => <a href={`/projects/${row.id}`}>{value}</a>,
+  copy: (value) => value,
+  export: (value, row) => `${row.id}: ${value}`,
+});
+```
+
+This fragment belongs inside the column builder above. `render` receives an object with `row` and `value`. `copy` and `export` receive the value and row as separate arguments. A rendered React element does not automatically become useful clipboard text.
+
+Interactive cell controls retain their native behavior. A link can navigate without starting a cell-selection drag; an input can edit text without the grid consuming its keys.
+
+## Sizing and visibility
+
+Use `size`, `minSize`, `maxSize`, and `grow` to describe width. Set `hidden: true` for an initially hidden column, `sortable: false` to disable sorting, and `pin: "start"` or `"end"` for sticky placement. Users can change the initial choices through column settings.
+
+See [layout and sizing](/docs/table/layout#column-widths) for growth and [preferences](/docs/table/preferences) for persistence.
+
+## Existing column definitions
+
+`TableColumn<Row>` extends the table engine's column definition with library metadata. Existing definitions can use `label`, `align`, `grow`, `defaultHidden`, `pin`, `copyValue(row)`, and `exportOptions` directly. The builder translates its simpler options into these fields.
+
+Prefer the builder for new tables. If adapting existing engine definitions, use the types exported by this package; an independently installed incompatible engine version can produce mismatched types.

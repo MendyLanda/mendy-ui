@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1
+
+- Give table loading, empty, error, and incremental-loading feedback valid grid row and cell semantics, with matching accessible row counts.
+- Reorganize the documentation around Table and Filters, with a real package table on the homepage and dedicated table guides.
+
+## 0.3.0
+
+- Release Table in the stable package with typed columns, virtualization, selection, clipboard support, preferences, and incremental loading.
+- Add content and viewport-fill layouts, shared filter integration, growing columns, and inline row-selection controls.
+
 ## 0.3.0-alpha.8
 
 - Fit short tables and custom empty states to their natural height without unnecessary vertical scrolling. Keep the viewport cap and fixed-height overrides.

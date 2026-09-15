@@ -1,35 +1,41 @@
 ---
 title: Introduction
-description: My personal collection of components I like to use.
+description: Mendy Landa’s collection of React components.
 ---
 
-I'm Mendy Landa. I put these components here so I can reuse them across projects. I maintain one npm package and use it across my projects. You can use it too.
+I build components I want to use in my own projects, then keep their behavior in one package. Mendy UI currently has two: **Table** and **Filters**. You can use either on its own or connect them.
 
-Filters and [Table](/docs/components/table) are included in the stable package. Define filters once to get editable chips, suggestions, dynamic options, paste recognition, and URL persistence. Use the table for typed columns, virtual scrolling, selection, and persistent preferences.
+## Choose a component
 
-## Start with filters
+| Component                           | Start here                                      | What it owns                                                                                 |
+| ----------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [Table](/docs/components/table)     | Supply rows, typed columns, and stable row IDs. | Rendering, virtualization, sorting, column controls, selection, copying, and loading states. |
+| [Filters](/docs/components/filters) | Define fields and choose a state hook.          | Search, option editors, applied chips, recognition, focus, and optional URL persistence.     |
+
+Your application owns its data queries, permissions, mutations, and matching rules. Neither component requires a particular API or router.
+
+## Install once
 
 <InstallCommand />
 
-[Try the interactive demo](/docs/components/filters), follow the [installation guide](/docs/installation), or browse the [examples](/docs/examples).
+```tsx
+import "@mendylanda/ui/styles.css";
+```
 
-Read [defaults and app configuration](/docs/defaults) to see what every project gets without extra setup.
+Both components share the stylesheet and your application's theme. Use React 19 and TypeScript. Tailwind is optional; Next.js and Vite consumers are tested against the built package. The [installation guide](/docs/installation) covers framework setup and Tailwind 3.
 
-## State
+## Pick your level of control
 
-Use the supplied local or URL state hook, or bind your existing application state. Your app decides how applied values affect its data.
+Start with `DataTable` or `FilterBar`. They assemble the standard interactions. When your application already owns state, connect `useDataTable` or `useControlledFilters`. When you need another layout, compose the exported parts around the same controller.
 
-Update the package dependency to bring shared improvements into a project. Review the [changelog](https://github.com/MendyLanda/mendy-ui/blob/main/CHANGELOG.md), test, and deploy that project.
+A table does not require filters. A filter bar does not require a table. Passing a filter controller to `DataTable` connects the toolbar and empty-state recovery; you still supply the matching rows.
 
-## Supported stack
+## Explore the documentation
 
-- React 19 and TypeScript.
-- Compiled, scoped CSS with shadcn semantic color variables. Tailwind is optional in the consuming app.
-- Bundled Radix-based shadcn controls.
-- Next.js and Vite React applications.
+- **Table:** [columns](/docs/table/columns), [layout](/docs/table/layout), [queries](/docs/table/data), [selection](/docs/table/selection), and [API](/docs/table/api).
+- **Filters:** [defaults](/docs/defaults), [definitions and state](/docs/system), [asynchronous options](/docs/advanced), and [API](/docs/api).
+- **Shared:** [styling](/docs/customization) and [keyboard behavior](/docs/accessibility).
 
-React 19, Next.js, and Vite are checked against the built npm tarball. Custom controls must satisfy the documented replacement contracts.
+## Ownership and license
 
-## License
-
-Mendy UI is [MIT licensed](https://github.com/MendyLanda/mendy-ui/blob/main/LICENSE). Its documentation site is adapted from [startercn](https://github.com/shadcn-labs/startercn). See [attribution](https://github.com/MendyLanda/mendy-ui/blob/main/NOTICE.md).
+Mendy UI is maintained by [Mendy Landa](https://mendylanda.com) and [MIT licensed](https://github.com/MendyLanda/mendy-ui/blob/main/LICENSE). Source, issues, and the changelog live on [GitHub](https://github.com/MendyLanda/mendy-ui). See [attribution](https://github.com/MendyLanda/mendy-ui/blob/main/NOTICE.md) for the documentation site's foundations.

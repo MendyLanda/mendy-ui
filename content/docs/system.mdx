@@ -1,5 +1,5 @@
 ---
-title: Filter system reference
+title: Filter definitions and state
 description: Definitions, dynamic options, persistence, and controlled state.
 ---
 
@@ -131,7 +131,7 @@ const definitions = {
 const filters = useControlledFilters({
   definitions,
   value: existingFilters,
-  onPatch: (updates) => setExistingFilters(updates),
+  onPatch: (updates) => setExistingFilters((current) => ({ ...current, ...updates })),
   search: {
     read: (value) => value.q?.join(", ") ?? "",
     write: (text) => ({ q: text ? text.split(",").map((v) => v.trim()) : null }),
@@ -139,7 +139,7 @@ const filters = useControlledFilters({
 });
 ```
 
-`onPatch` receives one typed patch per operation, plus metadata identifying edit, removal, clear, paste, suggestion, or search. Fields outside the definitions are preserved. A binding's optional `update(value, current)` can update related fields atomically.
+`onPatch` receives one typed patch per operation, plus metadata identifying edit, removal, clear, paste, suggestion, or search. Merge patches into the previous state to preserve fields outside the definitions. A binding's optional `update(value, current)` can update related fields atomically.
 
 `project.composite(keys, { field, read, write })` maps one editor to several state keys. Its write function returns the complete mapped fields so applying or removing a date range updates both endpoints together. The editor receives the field's typed value; the mapping receives the selected state keys.
 

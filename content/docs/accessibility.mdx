@@ -1,0 +1,50 @@
+---
+title: Keyboard and accessibility
+description: Built-in interactions and the responsibilities of custom content.
+---
+
+Both components include keyboard behavior and accessible labels. Custom cells, editors, and controls still need to preserve their own semantics. Automated accessibility checks run against the documentation examples in light and dark themes; they do not establish that every consuming application is accessible.
+
+## Table
+
+| Interaction           | Keyboard behavior                                                                                                 |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Navigate cells        | Arrow keys move the active cell.                                                                                  |
+| Extend cell selection | Shift with movement extends the selection.                                                                        |
+| Copy                  | ⌘C on macOS or Ctrl+C elsewhere copies selected values, including virtualized rows.                               |
+| Activate a row        | Enter calls `onRowActivate`, or `onRowClick` if no activation callback exists.                                    |
+| Select a record       | Space toggles a focused row checkbox.                                                                             |
+| Sort                  | Tab to a sortable header and activate its button.                                                                 |
+| Resize                | Focus the resize handle and use Left/Right.                                                                       |
+| Reorder columns       | In column settings, focus a drag handle, press Space, move with Up/Down, and press Space to drop. Escape cancels. |
+
+Give the grid a dataset-specific `label`. Row-selection checkboxes appear on hover, keyboard focus, or selection, and remain visible on touch devices. Pinning adapts to narrow screens without rewriting preferences.
+
+Links, inputs, buttons, disclosure controls, and native text selections keep their own behavior. A custom row action should be a real button or link with an accessible name. Replacing a header through `renderHeader` makes its sorting controls and labels your responsibility.
+
+## Filters
+
+| Interaction          | Keyboard behavior                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| Open the filter menu | Activate the filter button. The first editor does not open automatically.            |
+| Move between fields  | Up/Down navigate the list.                                                           |
+| Enter an editor      | Enter, Space, or the arrow toward the editor.                                        |
+| Return to the list   | The return arrow from choices; inputs and calendars retain their own arrow behavior. |
+| Select a choice      | Enter or Space. Selecting the current single choice again clears it.                 |
+| Save text or tokens  | Enter saves; Shift+Enter inserts a new line.                                         |
+| Dismiss              | Escape closes desktop menus. On phones it first returns to the list, then closes.    |
+| Leave the menu       | Tab moves through controls and continues in page order.                              |
+
+Desktop hover previews do not take focus. Click or keyboard entry moves focus into an editor. Escape restores focus to the trigger. Applied chips have distinct edit and remove buttons with field-specific accessible labels, even when the visible field label is omitted.
+
+## Custom content
+
+Use `renderOption` for custom choice labels when possible; the built-in editor retains selection and keyboard behavior. A custom `renderEditor` owns its internal navigation. Honor `autoFocus: false` during hover previews, leave Escape available, and label inputs.
+
+Supply text alternatives for icons and badges. Do not rely on color alone to communicate a status. A custom table cell can use `copy` to give clipboard users meaningful text independent of its visual markup.
+
+## Motion and themes
+
+Filter menus and editor popups open instantly by default. Applied chip entrance motion respects reduced-motion preferences. Theme variables control contrast; check the resulting colors whenever you override them.
+
+Use the site's appearance and theme controls to inspect the live examples. See [styling and theming](/docs/customization) for integration details.

@@ -10,7 +10,10 @@ async function dismissEditor(page: Page) {
 
 async function open(page: Page, name: string) {
   await page.getByRole("button", { name: "Open filters" }).first().click();
-  await page.getByRole("button", { name, exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Filters", exact: true })
+    .getByRole("button", { name, exact: true })
+    .click();
 }
 async function paste(page: Page, value: string) {
   const search = page.getByRole("searchbox", { name: "Search references" });

@@ -1,0 +1,30 @@
+---
+title: Performance
+description: Understand the rendering defaults and choose the right data strategy.
+---
+
+## What the table handles
+
+The viewport mounts visible rows and columns with overscan. Pinned columns and the focused column stay mounted. Resizing the viewport reuses cell content while updating its geometry. Copy visits only selected cells, preserving displayed column order and custom copy values. Scrolling a selection out of view does not disable keyboard copying.
+
+These optimizations are defaults. Inline column definitions and callbacks remain supported, and changed renderers receive fresh values. Recreating an array with the same row objects does not rebuild the row model. Update records immutably when their values change.
+
+Virtualization limits rendering, not data processing. Client sorting and filtering still process loaded rows, and copying or exporting a large selection must produce all its values. Use external processing and incremental loading when the dataset should stay on the server. Expensive custom cell components can still benefit from their own memoization.
+
+## Fixed and measured rows
+
+Fixed 44px rows enable row and column virtualization together. A different numeric `rowHeight` keeps that behavior. `rowHeight="auto"` and expanded details measure row heights and retain all columns to keep measurements stable. Use that mode when content needs it, and check wide datasets with your actual renderers.
+
+## Keep updates correct
+
+- Give each record a stable `getRowId` across sorting and page loads.
+- Replace changed records immutably. Mutating an object in place can leave cached output stale.
+- Keep the query key stable when appending pages. Change it for result inputs that the controller cannot observe.
+- Use external sorting and filtering when those operations should run on the server. Virtualization only limits the DOM.
+- Measure expensive custom renderers with realistic content. Images, charts, and subscriptions can cost more than the grid around them.
+
+You do not have to memoize every inline callback to use the table. If your application repeatedly transforms a large array before passing it in, memoizing that transformation can still avoid your own repeated work.
+
+## Try a large dataset
+
+The [overview demo](/docs/components/table) switches between 80 and 10,000 local records. This demonstrates rendering behavior, not a promise about server latency or every application's frame rate. Profile production builds with the columns, viewport sizes, and interactions your users have.

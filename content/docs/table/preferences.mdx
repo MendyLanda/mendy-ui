@@ -1,0 +1,33 @@
+---
+title: Preferences and saved views
+description: Persist column choices and connect your own saved-view storage.
+---
+
+## Column preferences
+
+`preferences={{ key: 'projects', scope: workspaceId + ':' + userId }}` stores column preferences in the browser. Unknown columns are discarded and widths are clamped when restoring preferences. Supply a `storage` adapter with `read` and `write` for remote storage, and `onError` for failures.
+
+`captureTablePreferences` and `applyTablePreferences` work with existing saved-view systems. `TableSavedViews` supplies controls while your application stores views. A `SavedTableView<Filters>` contains an ID, name, filters, sorting, and preferences. Apply filters and sorting using your existing state callbacks.
+
+```tsx
+const table = useDataTable({
+  rows,
+  columns,
+  getRowId: (row) => row.id,
+  preferences: {
+    key: "projects",
+    scope: `${workspaceId}:${userId}`,
+    onError: (error) => reportError(error),
+  },
+});
+```
+
+The example assumes application rows, columns, identity, and error reporting. Choose a stable `key` for this table and a `scope` that separates users or workspaces. Preferences include column order, pinning, sizing, and visibility. They do not persist loaded data or query results.
+
+## Saved views
+
+`TableSavedViews` renders save, apply, and optional delete controls. Supply `views`, `onApply(view)`, and asynchronous `onSave(name)` and `onDelete(view)` callbacks. Storage and authorization stay in your application.
+
+Capture column preferences with `captureTablePreferences(table)`. On apply, call `applyTablePreferences(table, view.preferences)` and restore the view's filters and sorting through their existing state owners. Applying only preferences will not update a backend query.
+
+See [Table API](/docs/table/api#preferences-and-saved-views) for the related exports.

@@ -6,7 +6,7 @@ import { SITE } from "@/constants/site";
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
-      <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-5 sm:gap-4 sm:px-8">
         <Link href="/" className="shrink-0 text-sm font-semibold">
           Mendy UI
         </Link>
@@ -18,12 +18,21 @@ export function SiteHeader() {
             Docs
           </Link>
           <Link
+            href="/docs/components/table"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Table
+          </Link>
+          <Link
             href="/docs/components/filters"
             className="text-muted-foreground hover:text-foreground"
           >
             Filters
           </Link>
-          <a href={SITE.github} className="text-muted-foreground hover:text-foreground">
+          <a
+            href={SITE.github}
+            className="hidden text-muted-foreground hover:text-foreground sm:inline"
+          >
             GitHub
           </a>
           <div className="flex items-center">
@@ -39,7 +48,7 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="border-t">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-muted-foreground sm:px-6">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-6 text-xs text-muted-foreground sm:px-8">
         <p>
           <a href="https://mendylanda.com" className="hover:text-foreground">
             Mendy Landa

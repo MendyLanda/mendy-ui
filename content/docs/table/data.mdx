@@ -1,0 +1,128 @@
+---
+title: Data and queries
+description: Connect application queries without changing their API or state shape.
+---
+
+import { TableStatesDemo } from "@/examples/table-states-demo";
+
+## Loading and errors
+
+<TableStatesDemo />
+
+These controls simulate the states of a query. The rendered feedback comes from the package. An initial load uses skeleton rows; a refresh keeps existing data visible. A failed next page also keeps loaded rows available.
+
+<ComponentSource name="table-states-demo" />
+
+## Choose where processing happens
+
+| Dataset                                         | Configuration                                                                      |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------- |
+| All rows are already loaded                     | Use the defaults. Pagination is off; virtual scrolling renders the visible rows.   |
+| Server returns sorted or filtered rows          | Set the matching `processing` mode to `"external"`.                                |
+| Server returns pages                            | Control pagination and pass `rowCount`; enable `showPagination` for page controls. |
+| Server can return another cursor or offset page | Append rows and pass `loadMore`; keep pagination off.                              |
+
+Virtualization does not fetch data. Your query owns requests, cancellation, caching, and page boundaries.
+
+## Controlled query state
+
+Use `useDataTable` when queries or custom controls need the table state. It accepts controlled TanStack state and change callbacks, so URL hooks and existing stores can remain in the application.
+
+```tsx
+const table = useDataTable({
+  rows: query.data?.rows ?? [],
+  columns,
+  getRowId: (row) => row.id,
+  processing: { filtering: "external", sorting: "external", pagination: "external" },
+  state: { sorting, pagination },
+  onSortingChange: setSorting,
+  onPaginationChange: setPagination,
+  rowCount: query.data?.total ?? 0,
+});
+
+<DataTable
+  table={table}
+  filters={filters}
+  showPagination
+  status={query.isLoading ? "loading" : query.isError ? "error" : "ready"}
+  refreshing={query.isFetching && !query.isLoading}
+  retry={() => query.refetch()}
+  toolbar={<ProjectActions />}
+/>;
+```
+
+Create `filters` with `useFilters`, `useUrlFilters`, or `useControlledFilters`. Pass the same controller to `DataTable`. The table places its filter bar on the left and puts `toolbar` actions and column settings beside it.
+
+## Bind an existing search field
+
+Bind the main search to an existing URL state field through `useControlledFilters`. Merge each patch into the current state so unrelated URL keys remain intact:
+
+```tsx
+import { bindFilters, filter, useControlledFilters } from "@mendylanda/ui/filters";
+
+type ProjectUrlState = {
+  status: "active" | "archived" | null;
+  query: string;
+  page: number;
+  tab?: string;
+};
+
+const project = bindFilters<ProjectUrlState>();
+const definitions = {
+  status: project.field(
+    "status",
+    filter.select({
+      label: "Status",
+      searchable: false,
+      options: [
+        { value: "active", label: "Active" },
+        { value: "archived", label: "Archived" },
+      ],
+    }),
+    { update: (status) => ({ status, page: 1 }) },
+  ),
+};
+
+const filters = useControlledFilters({
+  definitions,
+  value: urlState,
+  onPatch: (patch) => setUrlState((current) => ({ ...current, ...patch })),
+  search: {
+    read: (current) => current.query,
+    write: (query) => ({ query, page: 1 }),
+  },
+});
+```
+
+The `search` mapping connects the filter bar's main input to `query`; it does not add a second filter entry. `onPatch` receives only the changed keys. The merge above preserves state such as `tab` and any other URL fields owned by the application.
+
+The controller remains the source of truth for the application query. The table does not infer a row predicate, change a request, or fetch data from a filter definition. Supply rows that match the controller values for external processing, or map those values into controlled TanStack filter state for client processing. Filtering, sorting, and pagination have independent `client` or `external` processing options. Pagination defaults to `off`.
+
+Use `filterBar={{ showSearch: false }}` when a query supports defined filters without free-text search. Other `FilterBar` presentation props work in the same object. Set `filterBar={false}` when the application renders the controls elsewhere. The controller still powers result resets and empty-state recovery.
+
+## Empty-result recovery
+
+An empty first page with active filters offers Clear filters and calls `filters.clear()` once. This keeps a controlled query patch atomic. If only locked or disabled filters are active, the table explains that no rows match without showing a clear button. An empty later page offers Go to first page. With no active filters, `emptyState` or the standard dataset-empty message appears.
+
+An explicit `emptyState` overrides the default empty-state UI, including recovery actions. Omit it to use automatic recovery.
+
+## Infinite loading
+
+For infinite queries, pass `loadMore={{ available, loading, load, error }}`. The viewport requests another page near the end. A failed next page keeps the existing rows usable and offers Retry.
+
+Sorting, column filters, the global filter, pagination, controller entries, and controller search reset scroll and cell selection automatically. Appending rows keeps both. Most controlled tables do not need `queryKey`; use it only for result inputs that neither the table nor the filter controller can observe. Keep it stable when appending a page.
+
+```tsx
+<DataTable
+  table={table}
+  filters={filters}
+  loadMore={{
+    available: query.hasNextPage,
+    loading: query.isFetchingNextPage,
+    load: () => query.fetchNextPage(),
+    error: query.isFetchNextPageError ? "Could not load more projects." : undefined,
+  }}
+/>
+```
+
+This fragment assumes your query exposes these pagination fields. Flatten its pages into `rows`. Keep record IDs unique across pages and preserve the order returned by the server. The load callback must not start duplicate requests; use the query's in-flight guard. When a next page fails, update `loadMore.error` so the table can show its retry control.

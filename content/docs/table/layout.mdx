@@ -1,0 +1,57 @@
+---
+title: Layout and sizing
+description: Fit a small table, fill a page, or compose a custom layout.
+---
+
+## Fit content or fill the page
+
+`layout="content"` is the default. The table fits its rows, headers, and empty content and stops growing at 65dvh. Short tables have no vertical scrollbar unless their content exceeds that cap. An explicit `height` sets a fixed table viewport in this content layout.
+
+Use `layout="fill"` for a table that should occupy the rest of the viewport:
+
+```tsx
+<DataTable table={table} filters={filters} layout="fill" toolbar={<ProjectActions />} />
+```
+
+Fill layout measures from the top of the component to the bottom of the viewport. It accounts for ancestor bottom padding and borders, and remeasures when the viewport resizes or content above the table changes size. `DataTable` also reserves space for its filter toolbar, column settings, pagination, and `footer`, so the grid uses the remaining height without page overflow. In fill layout, `layout` controls the height and takes precedence over `height`.
+
+## Column widths
+
+Data columns share spare width, so the last header does not stretch independently of its cells. Configure each column through `defineColumns`:
+
+| Option    | Default            | Purpose                                                                 |
+| --------- | ------------------ | ----------------------------------------------------------------------- |
+| `size`    | 180                | Starting width in pixels.                                               |
+| `minSize` | 48                 | Minimum width.                                                          |
+| `maxSize` | 1200               | Maximum width, including automatic growth.                              |
+| `grow`    | 1 for data columns | Share of spare width. `2` gets twice the share; `false` keeps its size. |
+| `pin`     | Unpinned           | `"start"` or `"end"` for sticky columns.                                |
+
+Display and selection columns do not grow unless configured. A manually resized column keeps its width; double-click its resize handle or reset column settings to restore automatic growth. These defaults can be changed through `defaultColumn` on the table controller.
+
+On a narrow viewport, sticky positioning temporarily switches off if pinned columns would leave less than 120px for the center. The saved pinning preference remains intact.
+
+## Compose a full-page table
+
+```tsx
+<div className="flex items-start justify-between gap-2">
+  <TableFilters filters={filters} />
+  <ProjectActions />
+</div>
+<TableView
+  table={table}
+  filters={filters}
+  layout="fill"
+  footer={<TablePagination table={table} />}
+/>
+```
+
+This composition assumes an existing table and filter controller, plus your action component. Import the table parts from `@mendylanda/ui/table`.
+
+Content above `TableView` is reflected in its top position. Pass controls below the grid through `footer` so fill layout reserves their height. Keep the table in normal page flow; an ancestor with a fixed height or its own overflow still controls that container.
+
+## Expanded and wrapping rows
+
+Use `rowHeight="auto"` when cells wrap. Return content from `renderRowDetail(row)` to expand a record, and `null` to collapse it. Details use the table viewport width so nested content can scroll independently.
+
+Automatic row heights retain all columns for consistent measurement. See the [performance guide](/docs/table/performance) before enabling them on very wide tables.

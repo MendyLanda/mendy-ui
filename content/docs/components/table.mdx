@@ -1,183 +1,74 @@
 ---
 title: Table
-description: Typed columns, virtual scrolling, selection, and persistent preferences.
+description: A virtualized data table with typed columns, selection, and column controls.
 ---
 
 import { TableDemo } from "@/examples/table-demo";
 
-The table is included in the stable package:
-
-```bash
-npm install @mendylanda/ui
-```
-
-Import the package stylesheet once, as described in [installation](/docs/installation). Tables use the same theme as Filters.
-
 <TableDemo />
 
-## Start with columns and rows
+Sort a column, drag a resize handle, or select cells and copy them. Use the column settings to hide, reorder, and pin columns. The 10,000-row option uses the same component and API.
+
+<ComponentSource name="table-demo" />
+
+<span id="start-with-columns-and-rows" />
+
+## Start with rows and columns
+
+After [installation](/docs/installation), this is a complete table:
 
 ```tsx
+"use client";
 import { DataTable, defineColumns, format } from "@mendylanda/ui/table";
 
 type Project = { id: string; name: string; budget: number };
+const rows: Project[] = [
+  { id: "website", name: "Website", budget: 2400 },
+  { id: "mobile", name: "Mobile app", budget: 5600 },
+];
 const columns = defineColumns<Project>((column) => [
   column.accessor("name", { label: "Project", pin: "start" }),
-  column.accessor("budget", { label: "Budget", format: format.currency("USD") }),
+  column.accessor("budget", { label: "Budget", format: format.currency("USD", "en-US") }),
 ]);
 
-<DataTable rows={projects} columns={columns} getRowId={(row) => row.id} />;
+export function ProjectsTable() {
+  return <DataTable rows={rows} columns={columns} getRowId={(row) => row.id} label="Projects" />;
+}
 ```
 
-Accessors support nested fields such as `owner.name`. Formatters keep display, clipboard, and export text consistent. Use `render: ({ row, value }) => ...` for custom content and `copy` or `export` to override its text. Computed columns take a stable ID and an accessor function. Display columns contain actions and do not participate in sorting or copying.
+Use an ID that identifies the record across sorting, filtering, and page loads. An array index is not a stable record identity.
 
-## Defaults
+<span id="defaults" />
 
-Rows and columns are virtualized, headers stick to the top, and columns can be resized, hidden, reordered, and pinned. Data columns share spare viewport width by default. Set `grow: false` for compact columns, `grow: 2` for twice the share, and `maxSize` to cap expansion. Display and selection columns stay at their configured width unless you opt them in. Manually resized columns retain their chosen width; double-click a resize handle or reset column settings to restore automatic growth. Column settings show visibility checkboxes and pin controls in one panel. Drag a handle to reorder, or focus it and press Space, use Up/Down, and press Space again to drop. Escape cancels the move. Pin controls cycle between left, right, and unpinned. Reset restores the column defaults. Resize handles also accept Left and Right; double-click resets the width.
+## What comes by default
 
-Click and drag to select cells. Shift extends a selection; arrow keys move between cells. Copy uses displayed column order and preserves blank cells in disjoint selections. Buttons, links, disclosure controls, inputs, and native text selections retain their own interaction.
+| Behavior        | Default                                                                              |
+| --------------- | ------------------------------------------------------------------------------------ |
+| Rendering       | Virtual rows and columns, sticky header, 44px rows.                                  |
+| Columns         | Resizing, settings, visibility, reordering, pinning, and spare-width sharing.        |
+| Data processing | Client sorting and filtering; pagination off.                                        |
+| Cell selection  | Drag and keyboard selection, with spreadsheet-style copying.                         |
+| Row selection   | Opt in with `enableRowSelection`; checkboxes appear inside the first visible column. |
+| Height          | Fit content, capped at 65dvh. Use `layout="fill"` for a full-page table.             |
+| Appearance      | Your application's semantic colors, font, and radius.                                |
 
-`onRowClick` handles a single click and becomes the Enter action when `onRowActivate` is absent. Supply both callbacks when a single click selects a row while double-click or Enter opens it. Selected rows receive the table highlight automatically. `isRowHighlighted` can add another application-owned highlight. Enable `enableRowSelection` to show checkboxes inside the first visible column. They appear on row hover, keyboard focus, or selection, and stay visible on touch screens. Space toggles a focused checkbox. The header checkbox selects the loaded rows, so loading another page does not silently select its records.
+Filters, pagination controls, row actions, and saved preferences are configured when needed. They are not required to render a table.
 
-Use `rowSelectionControls={false}` for custom controls. `selectionColumn()` remains available when a dedicated checkbox column suits the application; it replaces the inline controls. Without row selection enabled, the table reserves no checkbox space.
+<span id="existing-state-and-queries" />
+<span id="preferences-and-saved-views" />
+<span id="all-matching-results" />
+<span id="composition-and-export" />
+<span id="large-tables" />
 
-`layout="content"` is the default. The table fits its rows, headers, and empty content and stops growing at 65dvh. Short tables have no vertical scrollbar unless their content exceeds that cap. An explicit `height` sets a fixed table viewport in this content layout.
+## Connect your application
 
-Use `layout="fill"` for a table that should occupy the rest of the viewport:
+Use `useDataTable` when the query or other controls need access to state. Pass the resulting instance to `<DataTable table={table} />`. For a custom arrangement, compose `TableView`, `TableFilters`, `TableColumnSettings`, and other controls around that instance.
 
-```tsx
-<DataTable
-  table={table}
-  filters={filters}
-  layout="fill"
-  showPagination
-  toolbar={<ProjectActions />}
-/>
-```
+- [Columns and rendering](/docs/table/columns): typed accessors, computed values, custom cells, and formatters.
+- [Layout and sizing](/docs/table/layout): embedded tables, full-page tables, growing columns, and expanded rows.
+- [Data and queries](/docs/table/data): loading, errors, filters, server sorting, and incremental loading.
+- [Selection and clipboard](/docs/table/selection): cells, rows, all matching results, and export.
+- [Preferences and saved views](/docs/table/preferences): persistence and application-owned views.
+- [Performance](/docs/table/performance): what virtualization covers and where application work remains.
 
-Fill layout measures from the top of the component to the bottom of the viewport. It accounts for ancestor bottom padding and borders, and remeasures when the viewport resizes or content above the table changes size. `DataTable` also reserves space for its filter toolbar, column settings, pagination, and `footer`, so the grid uses the remaining height without page overflow. In fill layout, `layout` controls the height and takes precedence over `height`.
-
-Rows stay at 44px by default. Use `rowHeight="auto"` for badges, wrapping text, or editable controls that need measured height. `rowClassName` applies a class from the row record.
-
-`renderRowDetail` adds measured content below a record. Return `null` for a collapsed record. Detail content uses the table viewport width, so a nested wide grid can scroll without widening the parent page.
-
-## Existing state and queries
-
-Use `useDataTable` when queries or custom controls need the table state. It accepts controlled TanStack state and change callbacks, so URL hooks and existing stores can remain in the application.
-
-```tsx
-const table = useDataTable({
-  rows: query.data?.rows ?? [],
-  columns,
-  getRowId: (row) => row.id,
-  processing: { filtering: "external", sorting: "external", pagination: "external" },
-  state: { sorting, pagination },
-  onSortingChange: setSorting,
-  onPaginationChange: setPagination,
-  rowCount: query.data?.total ?? 0,
-});
-
-<DataTable
-  table={table}
-  filters={filters}
-  showPagination
-  status={query.isLoading ? "loading" : query.isError ? "error" : "ready"}
-  refreshing={query.isFetching && !query.isLoading}
-  retry={() => query.refetch()}
-  toolbar={<ProjectActions />}
-/>;
-```
-
-Create `filters` with `useFilters`, `useUrlFilters`, or `useControlledFilters`. Pass the same controller to `DataTable`. The table places its filter bar on the left and puts `toolbar` actions and column settings beside it.
-
-Bind the main search to an existing URL state field through `useControlledFilters`. Merge each patch into the current state so unrelated URL keys remain intact:
-
-```tsx
-import { bindFilters, filter, useControlledFilters } from "@mendylanda/ui/filters";
-
-type ProjectUrlState = {
-  status: "active" | "archived" | null;
-  query: string;
-  page: number;
-  tab?: string;
-};
-
-const project = bindFilters<ProjectUrlState>();
-const definitions = {
-  status: project.field(
-    "status",
-    filter.select({
-      label: "Status",
-      searchable: false,
-      options: [
-        { value: "active", label: "Active" },
-        { value: "archived", label: "Archived" },
-      ],
-    }),
-    { update: (status) => ({ status, page: 1 }) },
-  ),
-};
-
-const filters = useControlledFilters({
-  definitions,
-  value: urlState,
-  onPatch: (patch) => setUrlState((current) => ({ ...current, ...patch })),
-  search: {
-    read: (current) => current.query,
-    write: (query) => ({ query, page: 1 }),
-  },
-});
-```
-
-The `search` mapping connects the filter bar's main input to `query`; it does not add a second filter entry. `onPatch` receives only the changed keys. The merge above preserves state such as `tab` and any other URL fields owned by the application.
-
-The controller remains the source of truth for the application query. The table does not infer a row predicate, change a request, or fetch data from a filter definition. Supply rows that match the controller values for external processing, or map those values into controlled TanStack filter state for client processing. Filtering, sorting, and pagination have independent `client` or `external` processing options. Pagination defaults to `off`.
-
-Use `filterBar={{ showSearch: false }}` when a query supports defined filters without free-text search. Other `FilterBar` presentation props work in the same object. Set `filterBar={false}` when the application renders the controls elsewhere. The controller still powers result resets and empty-state recovery.
-
-An empty first page with active filters offers Clear filters and calls `filters.clear()` once. This keeps a controlled query patch atomic. If only locked or disabled filters are active, the table explains that no rows match without showing a clear button. An empty later page offers Go to first page. With no active filters, `emptyState` or the standard dataset-empty message appears.
-
-An explicit `emptyState` overrides the default empty-state UI, including recovery actions. Omit it to use automatic recovery.
-
-For infinite queries, pass `loadMore={{ available, loading, load, error }}`. The viewport requests another page near the end. A failed next page keeps the existing rows usable and offers Retry.
-
-Sorting, column filters, the global filter, pagination, controller entries, and controller search reset scroll and cell selection automatically. Appending rows keeps both. Most controlled tables do not need `queryKey`; use it only for result inputs that neither the table nor the filter controller can observe. Keep it stable when appending a page.
-
-## Preferences and saved views
-
-`preferences={{ key: 'projects', scope: workspaceId + ':' + userId }}` stores column preferences in the browser. Unknown columns are discarded and widths are clamped when restoring preferences. Supply a `storage` adapter with `read` and `write` for remote storage, and `onError` for failures.
-
-`captureTablePreferences` and `applyTablePreferences` work with existing saved-view systems. `TableSavedViews` supplies controls while your application stores views. A `SavedTableView<Filters>` contains an ID, name, filters, sorting, and preferences. Apply filters and sorting using your existing state callbacks.
-
-## All matching results
-
-`useResultSelection({ scope: { key, value }, rowIds, totalCount })` manages loaded-row selection and selecting every matching result. Its descriptor is either `{ mode: 'ids', ids }` or `{ mode: 'matching', scope, excludedIds }`. Wire its `rowSelection` and `onRowSelectionChange` into `useDataTable` and call `selectAllMatching` from your action controls. Changing the scope key resets selection. The application translates the descriptor into an authorized backend operation.
-
-## Composition and export
-
-Use `TableView`, `TableFilters`, `TableColumnSettings`, `TablePagination`, and `TableActionBar` separately around the same table instance to customize placement. Give `TableFilters` and `TableView` the same controller. `TableView` uses it for reset and recovery behavior without rendering filter controls. The full `DataTable` assembles these defaults for you. `tableCsv(table)` exports loaded rows in visible column order; it does not fetch all matching results. Supply a server export action when that is the intended scope.
-
-```tsx
-<div className="flex items-start justify-between gap-2">
-  <TableFilters filters={filters} showSearch={false} />
-  <ProjectActions />
-</div>
-<TableView
-  table={table}
-  filters={filters}
-  layout="fill"
-  footer={<TablePagination table={table} />}
-/>
-```
-
-Content above `TableView` is already reflected in the component's top position. Pass controls that render below the grid through `footer` so fill layout reserves their height.
-
-On narrow screens, columns keep their saved order but temporarily stop sticking if the pinned columns would leave less than 120px for the middle of the table. Widening the viewport restores sticky positioning without changing saved preferences.
-
-## Large tables
-
-The viewport mounts visible rows and columns with overscan. Pinned columns and the focused column stay mounted. Resizing the viewport reuses cell content while updating its geometry. Copy visits only selected cells, preserving displayed column order and custom copy values. Scrolling a selection out of view does not disable keyboard copying.
-
-These optimizations are defaults. Inline column definitions and callbacks remain supported, and changed renderers receive fresh values. Recreating an array with the same row objects does not rebuild the row model. Update records immutably when their values change.
-
-Virtualization limits rendering, not data processing. Client sorting and filtering still process loaded rows, and copying or exporting a large selection must produce all its values. Use external processing and incremental loading when the dataset should stay on the server. Expensive custom cell components can still benefit from their own memoization.
+The [API reference](/docs/table/api) lists the props and exported functions.

@@ -1,0 +1,127 @@
+---
+title: Table API
+description: Component props, controller options, and exported helpers.
+---
+
+All exports on this page come from `@mendylanda/ui/table`. Start with the [overview](/docs/components/table) for a runnable example.
+
+## DataTable
+
+Use either `rows`, `columns`, and `getRowId`, or an existing `table` instance from `useDataTable`. `DataTableProps<Row>` expresses this choice.
+
+| Prop                   | Default                  | Purpose                                                                             |
+| ---------------------- | ------------------------ | ----------------------------------------------------------------------------------- |
+| `rows`                 | Required without `table` | Readonly array of records.                                                          |
+| `columns`              | Required without `table` | `TableColumn<Row>[]`.                                                               |
+| `getRowId(row, index)` | Required without `table` | Stable record identity.                                                             |
+| `table`                | Optional                 | Existing `DataTableInstance<Row>`; owns state and processing.                       |
+| `toolbar`              | None                     | Application actions beside the filters or above the grid.                           |
+| `footer`               | None                     | Content below the grid, reserved by fill layout.                                    |
+| `showColumnSettings`   | `true`                   | Built-in visibility, order, pinning, and sizing controls.                           |
+| `showPagination`       | `false` with an instance | Show pagination controls. The rows/columns form enables them for client pagination. |
+| `filters`              | None                     | Shared filter controller for the toolbar, resets, and empty-result recovery.        |
+| `filterBar`            | Default bar              | Presentation options passed to `TableFilters`; `false` hides the bar.               |
+
+The rows/columns form also accepts the controller options below. Both forms accept the viewport props in the next section.
+
+## TableView and viewport props
+
+`TableView` renders the grid around a required `table` instance, without the assembled toolbar or column settings. These props also work on `DataTable`.
+
+| Prop                    | Default                     | Purpose                                                                  |
+| ----------------------- | --------------------------- | ------------------------------------------------------------------------ |
+| `label`                 | `"Data table"`              | Accessible name for the grid. Use a dataset-specific name.               |
+| `layout`                | `"content"`                 | `"content"` fits rows; `"fill"` uses remaining viewport height.          |
+| `height`                | `"auto"`                    | Number or CSS height in content layout. Fill layout takes precedence.    |
+| `rowHeight`             | `44`                        | Fixed pixels or `"auto"` for measured rows.                              |
+| `status`                | `"ready"`                   | `"loading"`, `"ready"`, or `"error"`.                                    |
+| `refreshing`            | `false`                     | Report a background refresh while keeping existing rows.                 |
+| `error`                 | None                        | Error content for a failed query.                                        |
+| `retry`                 | None                        | Callback for initial error recovery.                                     |
+| `loadMore`              | None                        | `{ available, loading, load, error? }` for incremental loading.          |
+| `emptyState`            | Automatic                   | Custom empty content; replaces automatic recovery actions too.           |
+| `loadingState`          | Skeleton rows               | Custom initial loading content.                                          |
+| `queryKey`              | Derived from observed state | Additional result identity; keep stable when appending pages.            |
+| `filters`               | None                        | Controller for scroll/selection resets and empty-result recovery.        |
+| `onRowClick(row)`       | None                        | Single-click callback, also Enter's fallback action.                     |
+| `onRowActivate(row)`    | None                        | Double-click and Enter callback.                                         |
+| `isRowHighlighted(row)` | None                        | Application-owned row highlight.                                         |
+| `rowSelectionControls`  | `true`                      | Inline controls when row selection is enabled.                           |
+| `renderRowDetail(row)`  | None                        | Expanded content; return `null` for collapsed rows.                      |
+| `renderHeader(header)`  | Standard header             | Custom header content. Preserve sorting/accessibility when replacing it. |
+| `onCopyError(error)`    | None                        | Report a clipboard failure.                                              |
+| `scrollRef`             | None                        | Ref for the grid scroll element.                                         |
+| `className`             | None                        | Grid container classes.                                                  |
+| `contentClassName`      | None                        | Classes for application-owned cell content.                              |
+| `rowClassName(row)`     | None                        | Per-record row classes.                                                  |
+| `footer`                | None                        | Content below the grid; included in fill-height calculation.             |
+
+## useDataTable
+
+```tsx
+const table = useDataTable({ rows, columns, getRowId: (row) => row.id });
+```
+
+`UseDataTableOptions<Row>` extends the engine's table options, replacing its data and processing configuration with the fields below. Controlled state and change callbacks are forwarded to the engine.
+
+| Option                                                          | Default                 | Purpose                                                                      |
+| --------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------- |
+| `processing.filtering`                                          | `"client"`              | `"external"` when supplied rows are already filtered.                        |
+| `processing.sorting`                                            | `"client"`              | `"external"` when the server owns order.                                     |
+| `processing.pagination`                                         | `"off"`                 | `"client"` or `"external"` for page-based tables.                            |
+| `state`                                                         | Internal state          | Controlled sorting, pagination, row selection, and column state.             |
+| `initialState`                                                  | Column defaults         | Initial state for uncontrolled values.                                       |
+| `onSortingChange`, `onPaginationChange`, `onRowSelectionChange` | Internal updates        | Pair callbacks with the corresponding controlled state.                      |
+| `rowCount`                                                      | Loaded data             | Total records for external pagination.                                       |
+| `enableCellSelection`                                           | `true`                  | Cell selection and keyboard copying.                                         |
+| `enableRowSelection`                                            | Inferred                | Enabled by a row-selection callback or a selection column; otherwise opt in. |
+| `enableColumnPinning`                                           | `true`                  | Allow sticky columns.                                                        |
+| `columnResizeMode`                                              | `"onChange"`            | Update sizing as a handle moves.                                             |
+| `defaultColumn`                                                 | 180px; min 48; max 1200 | Shared engine column defaults.                                               |
+| `preferences`                                                   | None                    | `{ key, scope, storage?, onError? }`.                                        |
+
+See [data and queries](/docs/table/data) for controlled query integration. State callbacks can receive updater functions; use state setters that support both a value and an updater.
+
+## Column builders and formatters
+
+| Export                                   | Signature / purpose                                                           |
+| ---------------------------------------- | ----------------------------------------------------------------------------- |
+| `defineColumns<Row>(build)`              | Returns `TableColumn<Row>[]`; provides `accessor`, `computed`, and `display`. |
+| `column.accessor(path, options)`         | Typed property path with required `label`.                                    |
+| `column.computed(id, accessor, options)` | Computed value with a stable ID and required `label`.                         |
+| `column.display(id, options)`            | Non-data content with `label` and `render(row)`.                              |
+| `format.currency(currency, locale?)`     | Number display/text formatter, aligned to the end.                            |
+| `format.number(options?, locale?)`       | Number display/text formatter, aligned to the end.                            |
+| `format.date(options?, locale?)`         | Date display/text formatter.                                                  |
+| `ValueFormat<Value>`                     | `{ display, text, align? }` for custom formatting.                            |
+
+[Columns and rendering](/docs/table/columns) documents sizing, custom callbacks, null values, and existing column definitions.
+
+## Composed controls
+
+| Component                | Required props                 | Other props / behavior                                                 |
+| ------------------------ | ------------------------------ | ---------------------------------------------------------------------- |
+| `TableFilters`           | `filters`                      | Filter bar presentation props; use the same controller on `TableView`. |
+| `TableColumnSettings`    | `table`                        | Visibility, reordering, pinning, and reset controls.                   |
+| `TablePagination`        | `table`                        | `loading` disables controls during requests.                           |
+| `TableActionBar`         | `count`, `onClear`, `children` | Renders only when count is nonzero.                                    |
+| `selectionColumn<Row>()` | None                           | Dedicated checkbox column when inline controls are unsuitable.         |
+
+These components share the same table or filter controller; creating a second controller would create separate state.
+
+## Preferences and saved views
+
+| Export                                | Purpose                                                              |
+| ------------------------------------- | -------------------------------------------------------------------- |
+| `captureTablePreferences(table)`      | Capture versioned order, pinning, sizing, and visibility.            |
+| `applyTablePreferences(table, input)` | Reconcile and apply stored preferences.                              |
+| `TableSavedViews`                     | Controls with `views`, `onApply`, `onSave`, and optional `onDelete`. |
+| `SavedTableView<Filters>`             | View ID, name, filters, sorting, and preferences.                    |
+| `PreferenceStorage`                   | Storage adapter with `read(key)` and `write(key, value)`.            |
+| `TablePreferences`                    | Versioned column preference value.                                   |
+
+## Selection and export
+
+`useResultSelection({ scope: { key, value }, rowIds, totalCount })` manages explicit record IDs or all matching results. Connect its `rowSelection` and `onRowSelectionChange` to `useDataTable`. See [selection](/docs/table/selection) for scope semantics.
+
+`selectedCellsText(table)` returns selected cell text in a tab-separated layout. `tableCsv(table, { selectedOnly? })` returns CSV for loaded records. Neither function fetches remote results or performs a backend operation.

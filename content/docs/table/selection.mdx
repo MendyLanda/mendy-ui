@@ -1,0 +1,44 @@
+---
+title: Selection and clipboard
+description: Select cells, select records, and export the intended data.
+---
+
+## Cell and row selection
+
+Click and drag to select cells. Shift extends a selection; arrow keys move between cells. Copy uses displayed column order and preserves blank cells in disjoint selections. Buttons, links, disclosure controls, inputs, and native text selections retain their own interaction.
+
+`onRowClick` handles a single click and becomes the Enter action when `onRowActivate` is absent. Supply both callbacks when a single click selects a row while double-click or Enter opens it. Selected rows receive the table highlight automatically. `isRowHighlighted` can add another application-owned highlight. Enable `enableRowSelection` to show checkboxes inside the first visible column. They appear on row hover, keyboard focus, or selection, and stay visible on touch screens. Space toggles a focused checkbox. The header checkbox selects the loaded rows, so loading another page does not silently select its records.
+
+Use `rowSelectionControls={false}` for custom controls. `selectionColumn()` remains available when a dedicated checkbox column suits the application; it replaces the inline controls. Without row selection enabled, the table reserves no checkbox space.
+
+## All matching results
+
+`useResultSelection({ scope: { key, value }, rowIds, totalCount })` manages loaded-row selection and selecting every matching result. Its descriptor is either `{ mode: 'ids', ids }` or `{ mode: 'matching', scope, excludedIds }`. Wire its `rowSelection` and `onRowSelectionChange` into `useDataTable` and call `selectAllMatching` from your action controls. Changing the scope key resets selection. The application translates the descriptor into an authorized backend operation.
+
+The header checkbox selects loaded rows only. Offer “Select all matching” as a separate application action when the backend supports it. The matching descriptor represents the current query and exclusions; it is not a list of records fetched by the browser.
+
+## Clipboard values
+
+`format` supplies both the visible value and its text representation. A custom `render` does not change clipboard text automatically. Set `copy: (value, row) => string` when a badge, link, or other custom cell needs different text.
+
+Keyboard copy includes selected cells that have scrolled out of the virtual viewport. A green highlight confirms success and takes precedence over row highlighting. Provide `onCopyError(error)` if your application needs to report clipboard permission failures.
+
+## Export
+
+`tableCsv(table)` returns a CSV string for loaded rows, using the visible columns. `tableCsv(table, { selectedOnly: true })` limits it to selected rows. It does not download the file or fetch every matching server record.
+
+```tsx
+const csv = tableCsv(table);
+const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+const link = document.createElement("a");
+link.href = url;
+link.download = "projects.csv";
+link.click();
+setTimeout(() => URL.revokeObjectURL(url), 1000);
+```
+
+Run this fragment in your export button handler. For a server-wide export, send the current query or selection descriptor to your own endpoint instead.
+
+Use `export: false` to omit a data column, or `export: (value, row) => string` for custom export text. Display columns are excluded by default.
+
+See [keyboard and accessibility](/docs/accessibility#table) for navigation controls.

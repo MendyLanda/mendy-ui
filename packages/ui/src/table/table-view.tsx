@@ -14,7 +14,7 @@ import { useColumnWindow } from "./use-column-window.js";
 import { useViewportWidth } from "./use-viewport-width.js";
 import { tableLayout } from "./table-layout.js";
 import { TableLoadingRows } from "./table-loading.js";
-import { TableInitialState } from "./table-feedback.js";
+import { TableInitialState, TableFeedbackRow, TableLoadMore } from "./table-feedback.js";
 import { useTableInteraction } from "./use-table-interaction.js";
 import { useTableResults } from "./use-table-results.js";
 import { useInlineRowSelection } from "./use-inline-row-selection.js";
@@ -103,6 +103,10 @@ export function TableView<T extends object>({
     [scrollRef],
   );
   const rows = table.getRowModel().rows;
+  const hasInitialFeedback = rows.length === 0;
+  const hasRefreshError = rows.length > 0 && status === "error";
+  const feedbackRowCount =
+    Number(hasInitialFeedback) + Number(hasRefreshError) + Number(Boolean(loadMore?.available));
   const getScrollElement = useCallback(() => container.current, []);
   const estimateSize = useCallback(() => rowHeight, [rowHeight]);
   const getItemKey = useCallback((index: number) => rows[index]?.id ?? index, [rows]);
@@ -205,7 +209,7 @@ export function TableView<T extends object>({
         role="grid"
         tabIndex={-1}
         aria-label={label}
-        aria-rowcount={renderRowDetail ? -1 : rows.length + 1}
+        aria-rowcount={renderRowDetail ? -1 : rows.length + 1 + feedbackRowCount}
         aria-colcount={layout.columns.length}
         aria-busy={status === "loading" || refreshing}
         style={{
@@ -248,6 +252,7 @@ export function TableView<T extends object>({
           ))}
         </div>
         <TableInitialState
+          columnCount={layout.columns.length}
           status={status}
           hasRows={rows.length > 0}
           loadingState={
@@ -310,52 +315,36 @@ export function TableView<T extends object>({
             />
           ))}
         </div>
-        {rows.length > 0 && status === "error" && (
-          <div role="alert" className="sticky bottom-0 bg-background p-3">
-            {error ?? "Could not refresh rows."}
-            {retry && (
-              <Button onClick={retry} variant="outline" size="sm">
-                Retry
-              </Button>
-            )}
-          </div>
+        {hasRefreshError && (
+          <TableFeedbackRow
+            columnCount={layout.columns.length}
+            rowIndex={rows.length + 2}
+            className="sticky bottom-0"
+          >
+            <div role="alert" className="bg-background p-3">
+              {error ?? "Could not refresh rows."}
+              {retry && (
+                <Button onClick={retry} variant="outline" size="sm">
+                  Retry
+                </Button>
+              )}
+            </div>
+          </TableFeedbackRow>
         )}
         {loadMore?.available && (
-          <div className="sticky left-0 flex items-center justify-center gap-2 py-5 text-sm text-muted-foreground">
-            {loadMore.loading ? (
-              <div role="status" className="flex items-center gap-2">
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="size-5 shrink-0 animate-spin motion-reduce:animate-none"
-                >
-                  <path d="M12 3v3m6.366-.366-2.12 2.12M21 12h-3m.366 6.366-2.12-2.12M12 21v-3m-6.366.366 2.12-2.12M3 12h3m-.366-6.366 2.12 2.12" />
-                </svg>
-                <span>Loading more…</span>
-              </div>
-            ) : (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
+          <TableLoadMore
+            loadMore={loadMore}
+            columnCount={layout.columns.length}
+            rowIndex={rows.length + 2 + Number(hasInitialFeedback || hasRefreshError)}
+            onLoad={() => {
+              requested.current = null;
+              void Promise.resolve()
+                .then(() => loadMore.load())
+                .catch(() => {
                   requested.current = null;
-                  void Promise.resolve()
-                    .then(() => loadMore.load())
-                    .catch(() => {
-                      requested.current = null;
-                    });
-                }}
-              >
-                {loadMore.error ? "Retry loading more" : "Load more"}
-              </Button>
-            )}
-            {loadMore.error && <span role="alert">{loadMore.error}</span>}
-          </div>
+                });
+            }}
+          />
         )}
       </div>
     </TableFrame>

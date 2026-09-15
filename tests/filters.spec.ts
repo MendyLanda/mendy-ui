@@ -10,7 +10,10 @@ async function dismissEditor(page: Page) {
 
 async function openFilter(page: Page, name: string) {
   await page.getByRole("button", { name: "Open filters" }).click();
-  await page.getByRole("button", { name, exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Filters", exact: true })
+    .getByRole("button", { name, exact: true })
+    .click();
 }
 
 async function addStatus(page: Page, value = "Todo") {
@@ -262,14 +265,12 @@ test("no accessibility violations in both themes and submenu editors", async ({ 
     await expect(page.locator("html")).toHaveClass(dark ? /dark/ : /light/);
     for (const name of [null, "Status", "Assignee", "Title"]) {
       if (name) await openFilter(page, name);
-      await page.evaluate(() =>
-        Promise.allSettled(
-          document
-            .getAnimations()
-            .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
-            .map((animation) => animation.finished),
-        ),
-      );
+      // Audit settled colors; animation behavior has its own interaction test.
+      await page.evaluate(() => {
+        for (const animation of document.getAnimations()) {
+          if (Number.isFinite(animation.effect?.getComputedTiming().endTime)) animation.finish();
+        }
+      });
       const result = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
         .analyze();
@@ -287,7 +288,7 @@ test("toolbar search combines with filters and clears without resetting selectio
   await search.fill("keyboard");
   await expect(count(page, 1)).toBeVisible();
   await addStatus(page, "Done");
-  await expect(page.getByText("No matching issues", { exact: true })).toBeVisible();
+  await expect(page.getByText("No results match your filters.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Clear search", exact: true }).click();
   await expect(search).toBeFocused();
   await expect(
@@ -343,7 +344,9 @@ test("arrow keys explore submenus without applying and clearing a chip returns f
   await expect(menu).toBeEnabled();
   await menu.focus();
   await page.keyboard.press("Enter");
-  const status = page.getByRole("button", { name: "Status", exact: true });
+  const status = page
+    .getByRole("dialog", { name: "Filters", exact: true })
+    .getByRole("button", { name: "Status", exact: true });
   await expect(status).toBeFocused();
   await page.keyboard.press("ArrowRight");
   await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeFocused();
@@ -364,7 +367,10 @@ test("touch selection opens options before adding a chip", async ({ page, isMobi
   test.skip(!isMobile, "Touch interaction on the mobile device");
   await page.goto("/");
   await page.getByRole("button", { name: "Open filters" }).tap();
-  await page.getByRole("button", { name: "Status", exact: true }).tap();
+  await page
+    .getByRole("dialog", { name: "Filters", exact: true })
+    .getByRole("button", { name: "Status", exact: true })
+    .tap();
   await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
   await page.getByRole("menuitemradio", { name: "Todo", exact: true }).tap();
   await expect(page.getByRole("menuitemradio", { name: "Todo", exact: true })).toBeChecked();
@@ -381,7 +387,11 @@ test("text submenu fits narrow and intermediate viewport widths", async ({ page 
       Promise.allSettled(
         document
           .getAnimations()
-          .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
+          .filter(
+            (animation) =>
+              animation.playState === "running" &&
+              Number.isFinite(animation.effect?.getComputedTiming().endTime),
+          )
           .map((animation) => animation.finished),
       ),
     );

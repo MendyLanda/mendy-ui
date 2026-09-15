@@ -1,6 +1,6 @@
 ---
-title: Customization
-description: Adjust styles, replace controls, and compose filters without copying the implementation.
+title: Styling and theming
+description: Shared theme tokens, component styling, and control replacements.
 ---
 
 ## Theme and styles
@@ -10,6 +10,14 @@ Import `@mendylanda/ui/styles.css` once. The package reads your shadcn semantic 
 Internal class names and animation names are private to the package. Use the named styling points or `data-slot` attributes instead of targeting internal utility classes.
 
 Package CSS is in cascade layers with utilities in `components`, so your Tailwind utilities or unlayered CSS can override it. Your build only needs to generate classes used by your application, not scan the package.
+
+## Table styling
+
+Table uses the same semantic colors and radius as Filters. Pass `className` to style the grid container, `rowClassName(row)` for application row classes, and `isRowHighlighted(row)` for the built-in highlight. Use column `render` callbacks for badges, links, and controls. `contentClassName` is an adapter for application-owned cell content, not package controls.
+
+Prefer `rowHeight`, column `size`/`grow`, and `layout` for geometry instead of overriding the grid's positioning CSS. Changing its layout styles can interfere with sticky columns and virtualization. See [layout and sizing](/docs/table/layout).
+
+## Filter styling
 
 Supply named classes on one bar:
 

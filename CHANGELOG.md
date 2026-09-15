@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.4.0](https://github.com/MendyLanda/mendy-ui/compare/v0.3.1...v0.4.0) (2026-09-15)
+
+
+### Features
+
+* **i18n:** add English and Hebrew locales for tables and filters ([4108694](https://github.com/MendyLanda/mendy-ui/commit/4108694e944d935beb59c3b3b8b115208d457b24))
+* **table:** improve embedded layouts and toolbar composition ([5c9d732](https://github.com/MendyLanda/mendy-ui/commit/5c9d7326a659ddf314ec14c905266fc404ee130a))
+
+
+### Fixes
+
+* **i18n:** preserve locale on standalone table controls ([0ef9785](https://github.com/MendyLanda/mendy-ui/commit/0ef9785a4046cf8030396c3278c4231b866fcef4))
+
+
+### Automation
+
+* **release:** automate dev publishing and stable release PRs ([61beaa7](https://github.com/MendyLanda/mendy-ui/commit/61beaa7661069a0307a0d7ad0b48f742e5fbe9c6))
+* **release:** cancel superseded release branch checks ([6b71962](https://github.com/MendyLanda/mendy-ui/commit/6b71962091a7df3c817266cbf25889cf243bcbec))
+* **release:** preserve generated changelog formatting ([022737c](https://github.com/MendyLanda/mendy-ui/commit/022737ce8590a275ff924dc9cd06ad939fdb9089))
+* **release:** report PR status directly from dispatched checks ([581b055](https://github.com/MendyLanda/mendy-ui/commit/581b055ea0a9ffef4ccf37d292ed5d74fbe8961c))
+* **release:** separate release status reporting from PR creation ([2934a25](https://github.com/MendyLanda/mendy-ui/commit/2934a2548699badaaea5fe045667fc077676f863))
+* **release:** show dispatched checks on release pull requests ([a45b0ab](https://github.com/MendyLanda/mendy-ui/commit/a45b0abbcc571b1a6adbaaffc196f248b6880558))
+
 ## 0.3.1
 
 - Give table loading, empty, error, and incremental-loading feedback valid grid row and cell semantics, with matching accessible row counts.

@@ -98,12 +98,19 @@ export function useEditorOffset({
       measured.current.height = Math.max(measured.current.height, currentHeight);
       const height = measured.current.height;
       const viewport = window.visualViewport;
-      const viewportBottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight);
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
       // Keep short editors inside the list's vertical span. Lower rows therefore
       // open upward even on a tall viewport, instead of dangling below the list.
       const latestTop = Math.max(rootTop, Math.min(listBottom, viewportBottom - 16) - height);
       const preferredTop = row.getBoundingClientRect().top - 5;
-      const offset = Math.max(0, Math.min(preferredTop, latestTop) - rootTop);
+      // The editor does not size the floating list. A taller editor may extend
+      // above it, keeping the hovered row stationary when the menu opens upward.
+      const offset =
+        Math.max(
+          viewportTop + 16,
+          Math.min(preferredTop, latestTop, viewportBottom - 16 - height),
+        ) - rootTop;
       const listBounds = list?.getBoundingClientRect();
       const listStyle = list ? getComputedStyle(list) : undefined;
       const radiusLimit = listBounds ? Math.min(listBounds.width, listBounds.height) / 2 : 0;

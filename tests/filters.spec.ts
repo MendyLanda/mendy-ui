@@ -409,3 +409,28 @@ test("text submenu fits narrow and intermediate viewport widths", async ({ page 
     await expect(count(page, 1)).toBeVisible();
   }
 });
+
+test("opening a taller editor above the search keeps the clicked row stationary", async ({
+  page,
+}) => {
+  test.skip(await page.evaluate(() => matchMedia("(pointer: coarse)").matches));
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open filters", exact: true }).click();
+  const row = page
+    .getByRole("dialog", { name: "Filters", exact: true })
+    .getByRole("button", { name: "Assignee", exact: true });
+  const before = await row.boundingBox();
+  await row.hover();
+  const editor = page.locator('[data-slot="filter-menu-editor"]');
+  await expect(editor).toBeVisible();
+  await expect
+    .poll(async () => {
+      const box = await editor.boundingBox();
+      return Boolean(box && box.y >= 16 && box.y + box.height <= 704);
+    })
+    .toBe(true);
+  expect((await row.boundingBox())!.y).toBeCloseTo(before!.y, 0);
+  await row.click();
+  await expect(page.getByRole("searchbox", { name: "Search assignees" })).toBeFocused();
+});

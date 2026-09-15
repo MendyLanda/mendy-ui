@@ -57,6 +57,7 @@ export function FilterCollection<T extends CollectionItem>({
   const pending = useRef<string | null>(null);
   const ownsFocus = useRef(false);
   const previousIndex = useRef(0);
+  const pointer = useRef<{ x: number; y: number } | null>(null);
   const { code } = useMendyLocale();
   const [focused, setFocused] = useState(initialKey ?? items.find((item) => !item.disabled)?.key);
   const typeahead = useRef({ text: "", at: 0 });
@@ -194,6 +195,14 @@ export function FilterCollection<T extends CollectionItem>({
       data-filter-collection=""
       data-virtual={virtual}
       className={cn("min-h-0 overflow-y-auto overscroll-contain p-1", className)}
+      onPointerMoveCapture={(event) => {
+        if (event.pointerType !== "mouse") return;
+        const previous = pointer.current;
+        pointer.current = { x: event.clientX, y: event.clientY };
+        // WebKit re-hit-tests a stationary mouse after virtual scrolling. Do not
+        // let Radix move keyboard focus to the row now underneath that mouse.
+        if (previous?.x === event.clientX && previous.y === event.clientY) event.preventDefault();
+      }}
       onBlurCapture={(event) => {
         if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node))
           ownsFocus.current = false;

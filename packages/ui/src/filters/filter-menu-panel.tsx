@@ -202,7 +202,7 @@ export function FilterMenuPanel({
           sideBySide
             ? "grid grid-rows-[minmax(0,1fr)] grid-cols-[min(var(--filter-list-width),calc(100%_-_min(var(--mendy-filter-editor-width,19rem),50%)))_minmax(0,1fr)]"
             : "flex flex-col",
-          detached && cn("drop-shadow-md", selected && "items-start"),
+          detached && cn("relative drop-shadow-md", selected && "items-start"),
         )}
       >
         {showList && (
@@ -242,7 +242,7 @@ export function FilterMenuPanel({
             className={cn(
               "flex min-h-0 min-w-0 max-h-[calc(var(--filter-menu-height)-2px)] flex-col",
               detached &&
-                "pointer-events-auto -ms-px overflow-hidden rounded-md border bg-popover text-popover-foreground",
+                "absolute col-start-2 inset-x-0 top-0 pointer-events-auto -ms-px overflow-hidden rounded-md border bg-popover text-popover-foreground",
               detached && editorPlacement.joinTop && "rounded-ss-none",
               detached && editorPlacement.joinBottom && "rounded-es-none",
             )}

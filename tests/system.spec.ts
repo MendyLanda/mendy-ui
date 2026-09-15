@@ -92,7 +92,7 @@ test("the issue table filters recognized IDs entered in search", async ({ page }
     "1 of 8 issues",
   );
   // nuqs applies state immediately and batches browser-history writes.
-  await expect.poll(() => new URL(page.url()).searchParams.get("issueId")).toBe('["UI-039"]');
+  await expect.poll(() => new URL(page.url()).searchParams.get("issueId")).toBe('~ui:["UI-039"]');
   await page.reload();
   await expect(page.getByRole("status").filter({ hasText: "of 8 issues" })).toContainText(
     "1 of 8 issues",
@@ -240,7 +240,7 @@ test("URL takes precedence over remembered filters and clear removes remembered 
   await page.goto("/docs/advanced");
   await page.getByRole("button", { name: "Apply Owner filter" }).click();
   await dismissEditor(page);
-  await expect.poll(() => new URL(page.url()).searchParams.get("owner")).toBe('["mendy"]');
+  await expect.poll(() => new URL(page.url()).searchParams.get("owner")).toBe('~ui:["mendy"]');
   await page.goto("/docs/advanced");
   await expect(page.getByRole("button", { name: "Edit Owner filter" })).toContainText(
     "Mendy Landa",
@@ -425,7 +425,7 @@ test("browser history restores ordinary and overflow states", async ({ page }) =
   await page.goto("/docs/advanced");
   await page.getByRole("button", { name: "Apply Owner filter" }).click();
   await dismissEditor(page);
-  await expect.poll(() => new URL(page.url()).searchParams.get("owner")).toBe('["mendy"]');
+  await expect.poll(() => new URL(page.url()).searchParams.get("owner")).toBe('~ui:["mendy"]');
   const ids = Array.from({ length: 100 }, (_, i) => `ISSUE-${12300 + i}`);
   await paste(page, ids.join("\n"));
   await expect.poll(() => new URL(page.url()).searchParams.has("_advanced")).toBe(true);

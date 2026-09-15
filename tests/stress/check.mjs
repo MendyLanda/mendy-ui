@@ -195,6 +195,54 @@ for (const width of [1280, 320])
       await context.close();
     },
   );
+await check(
+  "Stationary pointer events after virtual scrolling preserve keyboard focus",
+  async () => {
+    const { context, page } = await fixture("options=10000");
+    try {
+      const search = page.getByRole("searchbox", { name: "Search people" });
+      await search.fill("Person 09999");
+      const last = page.getByRole("menuitemcheckbox", { name: "Person 09999" });
+      await page.evaluate(() => {
+        document.addEventListener(
+          "pointermove",
+          (event) => {
+            window.__stressMousePoint = { x: event.clientX, y: event.clientY };
+          },
+          { capture: true },
+        );
+      });
+      await last.click();
+      const point = await page.evaluate(() => window.__stressMousePoint);
+      await search.fill("");
+      await search.press("ArrowDown");
+      await page.keyboard.press("End");
+      await expect(last).toBeFocused();
+      await expect(last).toBeInViewport();
+      // WebKit can emit pointermove when scrolling replaces the row under an unmoved mouse.
+      const hoveredLabel = await page.evaluate(({ x, y }) => {
+        const target = document.elementFromPoint(x, y);
+        target.dispatchEvent(
+          new PointerEvent("pointermove", {
+            bubbles: true,
+            cancelable: true,
+            pointerType: "mouse",
+            clientX: x,
+            clientY: y,
+          }),
+        );
+        return target.closest("[role=menuitemcheckbox]")?.getAttribute("aria-label");
+      }, point);
+      assert(hoveredLabel && hoveredLabel !== "Person 09999");
+      await expect(last).toBeFocused();
+      // Actual mouse movement must still focus the hovered choice.
+      await page.mouse.move(point.x + 8, point.y);
+      await expect(page.getByRole("menuitemcheckbox", { name: hoveredLabel })).toBeFocused();
+    } finally {
+      await context.close();
+    }
+  },
+);
 for (const width of [1280, 320])
   await check(
     `Unbroken labels at ${width}px: scrollable editor, contained options, accessible removal`,
@@ -206,10 +254,21 @@ for (const width of [1280, 320])
           .first()
           .evaluate((e) => e.scrollWidth <= e.clientWidth + 1),
       );
-      const g = await page
-        .getByRole("dialog", { name: "Filters", exact: true })
-        .evaluate((e) => ({ h: e.clientHeight, s: e.scrollHeight }));
-      assert(g.s <= g.h + 1);
+      const g = await page.getByRole("dialog", { name: "Filters", exact: true }).evaluate((e) => ({
+        h: e.clientHeight,
+        s: e.scrollHeight,
+        overflow: getComputedStyle(e).overflowY,
+        panelsFit: [
+          ...e.querySelectorAll('[data-slot="filter-menu-list"], [data-slot="filter-menu-editor"]'),
+        ].every((panel) => {
+          const bounds = panel.getBoundingClientRect();
+          return bounds.top >= 0 && bounds.bottom <= window.innerHeight;
+        }),
+      }));
+      // Detached editors can extend past the list's height without making the
+      // transparent positioner scroll. The visible panels must still fit.
+      assert(g.overflow === "visible" || g.s <= g.h + 1);
+      assert(g.panelsFit);
       await page.getByRole("menuitemcheckbox", { name: "Person 00003" }).click();
       await page.keyboard.press("Escape");
       if (width < 640) await page.keyboard.press("Escape");

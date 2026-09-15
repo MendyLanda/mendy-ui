@@ -70,3 +70,19 @@ test("nullable external query errors mean success, not a translated failure", as
   }
   assert.equal(renderToString(createElement(Probe)), "ok");
 });
+
+test("standalone selection controls get the provider language and direction without a wrapper", async () => {
+  const { createElement } = await import("react");
+  const { renderToString } = await import("react-dom/server");
+  const { MendyUIProvider } = await import("../../packages/ui/src/customization");
+  const { TableActionBar } = await import("../../packages/ui/src/table/table-controls");
+  const html = renderToString(
+    createElement(MendyUIProvider, {
+      locale: he,
+      children: createElement(TableActionBar, { count: 2, onClear() {}, children: "" }),
+    }),
+  );
+  assert.match(html, /dir="rtl"/);
+  assert.match(html, /lang="he-IL"/);
+  assert.ok(html.includes(he.messages.clearSelection));
+});

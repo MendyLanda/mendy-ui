@@ -27,10 +27,12 @@ export function TablePagination<T extends object>({
   table: DataTableInstance<T>;
   loading?: boolean;
 }) {
-  const { t } = useMendyLocale();
+  const { t, direction, code, configured } = useMendyLocale();
   return (
     <nav
       data-mendy-ui=""
+      dir={configured ? direction : undefined}
+      lang={code}
       aria-label={t("pagination")}
       className="flex flex-wrap items-center justify-end gap-3 py-2 text-sm"
     >
@@ -117,11 +119,13 @@ export function TableActionBar({
   children: ReactNode;
   onClear: () => void;
 }) {
-  const { t } = useMendyLocale();
+  const { t, direction, code, configured } = useMendyLocale();
   if (!count) return null;
   return (
     <div
       data-mendy-ui=""
+      dir={configured ? direction : undefined}
+      lang={code}
       role="region"
       aria-label={t("selectedActions")}
       className="sticky bottom-2 z-30 mx-auto flex w-fit max-w-full flex-wrap items-center gap-3 rounded-md border bg-background px-3 py-2 shadow-md"
@@ -146,7 +150,7 @@ export function TableSavedViews<F>({
   onDelete?: (view: SavedTableView<F>) => Promise<unknown>;
 }) {
   const [name, setName] = useState("");
-  const { t } = useMendyLocale();
+  const { t, direction, code, configured } = useMendyLocale();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function run(action: () => Promise<unknown>) {
@@ -162,7 +166,12 @@ export function TableSavedViews<F>({
     }
   }
   return (
-    <div data-mendy-ui="" className="flex flex-wrap items-center gap-2">
+    <div
+      data-mendy-ui=""
+      dir={configured ? direction : undefined}
+      lang={code}
+      className="flex flex-wrap items-center gap-2"
+    >
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button size="sm" variant="outline">

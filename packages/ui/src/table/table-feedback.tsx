@@ -110,7 +110,7 @@ export function TableLoadMore({
 }) {
   const { t } = useMendyLocale();
   return (
-    <TableFeedbackRow columnCount={columnCount} rowIndex={rowIndex} className="sticky left-0">
+    <TableFeedbackRow columnCount={columnCount} rowIndex={rowIndex} className="sticky start-0">
       <div className="flex items-center justify-center gap-2 py-5 text-sm text-muted-foreground">
         {loadMore.loading ? (
           <div role="status" className="flex items-center gap-2">

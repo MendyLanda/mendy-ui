@@ -105,8 +105,10 @@ export async function chipChecks(browser, check) {
         }
         phase = "keyboard handoff";
         await page.getByRole("button", { name: "Edit Owner filter", exact: true }).click();
-        await page.getByRole("button", { name: "Edit Custom filter", exact: true }).focus();
-        await page.keyboard.press("Enter");
+        await expect(
+          page.getByRole("searchbox", { name: "Search owner", exact: true }),
+        ).toBeFocused();
+        await page.getByRole("button", { name: "Edit Custom filter", exact: true }).press("Enter");
         await expect(page.getByRole("textbox", { name: "Custom search" })).toBeFocused();
         await page.getByRole("button", { name: "ready", exact: true }).click();
         await expect(page.locator('[data-slot="filter-editor-content"]')).toHaveCount(0);

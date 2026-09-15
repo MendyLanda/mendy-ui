@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/MendyLanda/mendy-ui/compare/v0.4.1...v0.4.2) (2026-09-15)
+
+
+### Fixes
+
+* **filters:** stabilize focus and editor positioning ([0f00a8e](https://github.com/MendyLanda/mendy-ui/commit/0f00a8efff6b77bb0b78300c773f9563e9d3c8e2))
+
 ## [0.4.1](https://github.com/MendyLanda/mendy-ui/compare/v0.4.0...v0.4.1) (2026-09-15)
 
 

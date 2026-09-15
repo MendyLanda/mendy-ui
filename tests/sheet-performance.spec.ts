@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("sheet content stays idle during viewport resize with a deep stack", async ({
   page,
 }, testInfo) => {
-  await page.goto("http://127.0.0.1:8797/?instant&stress");
+  await page.goto("http://127.0.0.1:8797/?stress");
   await page.waitForFunction(() => Boolean(window.sheetStress));
   for (let i = 0; i < 24; i++) {
     await page.evaluate((id) => window.sheetStress.open(id), `stress-${i}`);
@@ -20,6 +20,16 @@ test("sheet content stays idle during viewport resize with a deep stack", async 
     contentType: "application/json",
   });
   expect(after).toEqual(before);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  const width = await page
+    .locator('[role="dialog"]:not([aria-hidden=true])')
+    .evaluate((node) => node.getBoundingClientRect().width);
+  expect(width).toBe(page.viewportSize()!.width);
   await expect(page.locator('[role="dialog"]:not([aria-hidden=true])')).toHaveCount(1);
 });
 

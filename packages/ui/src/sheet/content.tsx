@@ -107,7 +107,7 @@ function presentation(
       "pointer-events-auto fixed inset-y-0 flex min-w-0 flex-col p-0 outline-none md:p-4",
       layout?.pinned && "md:p-0",
       hasAnimation &&
-        "transition-[inset-inline-start,inset-inline-end,width] duration-300 motion-reduce:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:duration-300 data-[state=closed]:duration-200 data-[state=open]:motion-reduce:animate-none data-[state=closed]:motion-reduce:animate-none",
+        "transition-[inset-inline-start,inset-inline-end] duration-300 motion-reduce:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:duration-300 data-[state=closed]:duration-200 data-[state=open]:motion-reduce:animate-none data-[state=closed]:motion-reduce:animate-none",
       hasAnimation &&
         (side === "end") === (direction === "ltr") &&
         "data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right",

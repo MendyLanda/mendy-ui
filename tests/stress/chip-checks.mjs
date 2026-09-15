@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
 
 export async function chipChecks(browser, check) {
   async function fixture(width = 1280, query = "") {
@@ -74,6 +75,8 @@ export async function chipChecks(browser, check) {
     "Chip editors hand off without outgoing focus restoration, and Escape still returns focus",
     async () => {
       const { context, page } = await fixture();
+      await context.tracing.start({ snapshots: true, screenshots: true });
+      let phase = "settle fixture";
       try {
         await page.getByRole("button", { name: "ready", exact: true }).click();
         await expect(
@@ -86,6 +89,7 @@ export async function chipChecks(browser, check) {
           await expect(chip).toHaveCSS("opacity", "1");
         }
         for (let i = 0; i < 10; i++) {
+          phase = `pointer handoff ${i + 1}`;
           await page.getByRole("button", { name: "Edit Status filter", exact: true }).click();
           await page.getByRole("button", { name: "Edit Custom filter", exact: true }).click();
           await expect(page.locator('[data-slot="filter-editor-content"]')).toHaveCount(1);
@@ -99,6 +103,7 @@ export async function chipChecks(browser, check) {
           ).toBeFocused();
           await expect(page.locator('[data-slot="filter-editor-content"]')).toHaveCount(0);
         }
+        phase = "keyboard handoff";
         await page.getByRole("button", { name: "Edit Owner filter", exact: true }).click();
         await page.getByRole("button", { name: "Edit Custom filter", exact: true }).focus();
         await page.keyboard.press("Enter");
@@ -106,6 +111,13 @@ export async function chipChecks(browser, check) {
         await page.getByRole("button", { name: "ready", exact: true }).click();
         await expect(page.locator('[data-slot="filter-editor-content"]')).toHaveCount(0);
         await expect(page.getByRole("button", { name: "ready", exact: true })).toBeFocused();
+      } catch (error) {
+        const output = process.env.STRESS_OUTPUT ?? "artifacts/ui-polish/design-stress";
+        await mkdir(output, { recursive: true });
+        await context.tracing.stop({
+          path: `${output}/chip-handoff-${process.env.STRESS_BROWSER ?? "chromium"}.zip`,
+        });
+        throw new Error(`${phase}: ${error}`);
       } finally {
         await context.close();
       }

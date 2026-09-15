@@ -7,6 +7,7 @@ permissions:
   contents: write
   pull-requests: write
   actions: write
+  statuses: write
 concurrency:
   group: release-please
   queue: max
@@ -26,6 +27,12 @@ jobs:
         with:
           script: |
             const pr = JSON.parse(process.env.RELEASE_PR);
+            const { data: branch } = await github.rest.repos.getBranch({ ...context.repo, branch: pr.headBranchName });
+            await github.rest.repos.createCommitStatus({
+              ...context.repo, sha: branch.commit.sha, state: 'pending', context: 'Release checks',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/workflows/ci.yml`,
+              description: 'Checking the proposed release',
+            });
             await github.rest.actions.createWorkflowDispatch({
               ...context.repo, workflow_id: 'ci.yml', ref: pr.headBranchName,
             });

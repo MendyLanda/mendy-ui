@@ -2,6 +2,10 @@
 
 import type { ComponentProps, ComponentType, ReactNode } from "react";
 import { createContext, useContext, useMemo } from "react";
+import { DirectionProvider } from "@radix-ui/react-direction";
+import type { MendyLocale, MendyMessages } from "./locale.js";
+import { createLocale } from "./locale.js";
+import { LocaleContext, useMendyLocale } from "./locale-context.js";
 import { Button as DefaultButton } from "./primitives/button.js";
 import { Input as DefaultInput } from "./primitives/input.js";
 import { Textarea as DefaultTextarea } from "./primitives/textarea.js";
@@ -32,6 +36,10 @@ export type FilterPart =
   | "clear";
 export type FilterClassNames = Partial<Record<FilterPart, string>>;
 export interface MendyUIOptions {
+  locale?: MendyLocale;
+  /** Override individual messages, inheriting the surrounding locale. */
+  messages?: Partial<MendyMessages>;
+  dir?: "ltr" | "rtl";
   /** Desktop editor placement. Phones always use one panel with Back. */
   menuLayout?: "connected" | "anchored";
   /** Animate chip editor popups. Off by default; chip entrance motion is independent. */
@@ -51,8 +59,30 @@ export function MendyUIProvider({
   portalContainer,
   menuLayout,
   editorAnimation,
+  locale,
+  messages,
+  dir,
 }: MendyUIOptions & { children: ReactNode }) {
   const parent = useContext(Context);
+  const parentLocale = useMendyLocale();
+  const localized = useMemo(
+    () =>
+      !locale && !messages && !dir
+        ? parentLocale
+        : {
+            ...createLocale({
+              code: locale?.code ?? parentLocale.code,
+              weekStartsOn: locale ? locale.weekStartsOn : parentLocale.weekStartsOn,
+              firstWeekContainsDate: locale
+                ? locale.firstWeekContainsDate
+                : parentLocale.firstWeekContainsDate,
+              direction: dir ?? locale?.direction ?? parentLocale.direction,
+              messages: { ...(locale?.messages ?? parentLocale.messages), ...messages },
+            }),
+            configured: Boolean(locale || messages || dir || parentLocale.configured),
+          },
+    [locale, messages, dir, parentLocale],
+  );
   const value = useMemo(
     () => ({
       menuLayout: menuLayout ?? parent.menuLayout,
@@ -63,7 +93,13 @@ export function MendyUIProvider({
     }),
     [parent, components, classNames, portalContainer, menuLayout, editorAnimation],
   );
-  return <Context.Provider value={value}>{children}</Context.Provider>;
+  return (
+    <LocaleContext.Provider value={localized}>
+      <DirectionProvider dir={localized.direction}>
+        <Context.Provider value={value}>{children}</Context.Provider>
+      </DirectionProvider>
+    </LocaleContext.Provider>
+  );
 }
 export function useMendyUI() {
   return useContext(Context);

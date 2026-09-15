@@ -29,7 +29,7 @@ export function useColumnWindow<T extends object>(
   useLayoutEffect(() => {
     const element = container.current;
     if (!element) return;
-    const measure = () => setScrollLeft(element.scrollLeft);
+    const measure = () => setScrollLeft(Math.abs(element.scrollLeft));
     measure();
     element.addEventListener("scroll", measure, { passive: true });
     return () => element.removeEventListener("scroll", measure);

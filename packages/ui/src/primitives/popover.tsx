@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 import type { ComponentProps } from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { useMendyUI } from "../customization.js";
@@ -11,11 +12,14 @@ export function PopoverContent({
   sideOffset = 8,
   ...props
 }: ComponentProps<typeof PopoverPrimitive.Content>) {
+  const locale = useMendyLocale();
   return (
     <PopoverPrimitive.Portal container={useMendyUI().portalContainer}>
       <PopoverPrimitive.Content
         data-mendy-ui=""
         data-slot="popover-content"
+        dir={locale.direction}
+        lang={locale.code}
         align={align}
         sideOffset={sideOffset}
         className={cn(

@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 
 import type { DateRange as CalendarRange } from "react-day-picker";
 import type { DateRange, RuntimeField } from "./filter-definition.js";
@@ -36,6 +37,7 @@ export function FilterDateEditor({
   apply(value: unknown, shouldClose?: boolean): void;
   error?: string;
 }) {
+  const { t, direction, code, configured } = useMendyLocale();
   const [range, setRange] = useValueDraft(
     value as DateRange | null,
     (current): CalendarRange | undefined =>
@@ -45,6 +47,8 @@ export function FilterDateEditor({
   return (
     <div
       data-mendy-ui=""
+      dir={configured ? direction : undefined}
+      lang={code}
       onKeyDown={(event) => {
         // Calendar arrows navigate days. Escape still dismisses the surrounding editor.
         if (event.key !== "Escape") event.stopPropagation();
@@ -70,7 +74,7 @@ export function FilterDateEditor({
         disabled={disabled}
       />
       <div data-mendy-ui="" className="space-y-2 border-t p-3">
-        <p className="text-xs text-muted-foreground">Pick a day, or two dates for a range.</p>
+        <p className="text-xs text-muted-foreground">{t("dateHint")}</p>
         {error && (
           <p role="alert" className="text-sm text-destructive">
             {error}
@@ -89,7 +93,7 @@ export function FilterDateEditor({
                 apply(field.clearValue);
               }}
             >
-              Clear date
+              {t("clearDate")}
             </Button>
           </div>
         )}

@@ -6,6 +6,7 @@ import type { DataTableFeatures } from "./features.js";
 import type { PreferenceStorage, TablePreferences } from "./state.js";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTable } from "@tanstack/react-table";
+import { useMendyLocale } from "../locale-context.js";
 import { tableFeaturesDefault } from "./features.js";
 import { useStableArray } from "./use-stable-array.js";
 import { reconcilePreferences } from "./state.js";
@@ -65,6 +66,7 @@ export function useDataTable<T extends object>({
   preferences,
   ...options
 }: UseDataTableOptions<T>): DataTableInstance<T> {
+  const { direction } = useMendyLocale();
   const rows = useStableArray(inputRows);
   const columns = useStableArray(inputColumns);
   const defaults = useMemo(
@@ -77,6 +79,7 @@ export function useDataTable<T extends object>({
     data: rows,
     columns,
     defaultColumn: { size: 180, minSize: 48, maxSize: 1200, ...options.defaultColumn },
+    columnResizeDirection: options.columnResizeDirection ?? direction,
     columnResizeMode: options.columnResizeMode ?? "onChange",
     enableCellSelection: options.enableCellSelection ?? true,
     enableRowSelection:

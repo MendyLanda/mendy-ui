@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 import type { KeyboardEvent, RefObject } from "react";
 import type { CellSelectionDirection } from "@tanstack/react-table";
 import type { DataTableInstance } from "./use-data-table.js";
@@ -23,6 +24,7 @@ export function useTableInteraction<T extends object>({
   scrollToIndex: (index: number) => void;
 }) {
   const rows = table.getRowModel().rows;
+  const { t, direction: readingDirection } = useMendyLocale();
   const columns = [
     ...table.getStartVisibleLeafColumns(),
     ...table.getCenterVisibleLeafColumns(),
@@ -90,13 +92,13 @@ export function useTableInteraction<T extends object>({
       if (!text) return;
       await navigator.clipboard.writeText(text);
       if (!mounted.current) return;
-      setAnnouncement("Selected cells copied");
+      setAnnouncement(t("copied"));
       setCopied(true);
       clearTimeout(copyTimer.current);
       copyTimer.current = setTimeout(() => setCopied(false), 300);
     } catch (reason) {
       if (mounted.current) {
-        setAnnouncement("Could not copy selected cells");
+        setAnnouncement(t("copyError"));
         onCopyError?.(reason);
       }
     }
@@ -119,10 +121,12 @@ export function useTableInteraction<T extends object>({
         const endWidth = !pinningActive
           ? 0
           : table.getEndVisibleLeafColumns().reduce((sum, col) => sum + col.getSize(), 0);
-        if (box.left < viewport.left + startWidth)
-          container.current!.scrollLeft += box.left - viewport.left - startWidth;
-        else if (box.right > viewport.right - endWidth)
-          container.current!.scrollLeft += box.right - viewport.right + endWidth;
+        const leftWidth = readingDirection === "rtl" ? endWidth : startWidth;
+        const rightWidth = readingDirection === "rtl" ? startWidth : endWidth;
+        if (box.left < viewport.left + leftWidth)
+          container.current!.scrollLeft += box.left - viewport.left - leftWidth;
+        else if (box.right > viewport.right - rightWidth)
+          container.current!.scrollLeft += box.right - viewport.right + rightWidth;
       }
     });
   }
@@ -155,8 +159,8 @@ export function useTableInteraction<T extends object>({
     const directions: Record<string, CellSelectionDirection> = {
       ArrowUp: "up",
       ArrowDown: "down",
-      ArrowLeft: "left",
-      ArrowRight: "right",
+      ArrowLeft: readingDirection === "rtl" ? "right" : "left",
+      ArrowRight: readingDirection === "rtl" ? "left" : "right",
     };
     const direction = directions[event.key];
     if (direction) {

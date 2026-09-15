@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 import type { ReactNode } from "react";
 import type { DataTableInstance } from "./use-data-table.js";
 import type { TableColumn } from "./columns.js";
@@ -26,26 +27,31 @@ export function TablePagination<T extends object>({
   table: DataTableInstance<T>;
   loading?: boolean;
 }) {
+  const { t } = useMendyLocale();
   return (
     <nav
       data-mendy-ui=""
-      aria-label="Table pagination"
+      aria-label={t("pagination")}
       className="flex flex-wrap items-center justify-end gap-3 py-2 text-sm"
     >
       <span>
-        Page {table.state.pagination.pageIndex + 1}
-        {table.getPageCount() >= 0 ? ` of ${Math.max(1, table.getPageCount())}` : ""}
+        {table.getPageCount() >= 0
+          ? t("pageOf", {
+              page: table.state.pagination.pageIndex + 1,
+              count: Math.max(1, table.getPageCount()),
+            })
+          : t("page", { page: table.state.pagination.pageIndex + 1 })}
       </span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm">
-            {table.state.pagination.pageSize} rows
+            {t("rowsPerPage", { count: table.state.pagination.pageSize })}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           {[10, 20, 50, 100].map((size) => (
             <DropdownMenuItem key={size} onSelect={() => table.setPageSize(size)}>
-              {size} rows
+              {t("rowsPerPage", { count: size })}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -54,19 +60,19 @@ export function TablePagination<T extends object>({
         variant="outline"
         size="icon-sm"
         disabled={loading || !table.getCanPreviousPage()}
-        aria-label="Previous page"
+        aria-label={t("previousPage")}
         onClick={() => table.previousPage()}
       >
-        <ChevronLeft className="size-4" />
+        <ChevronLeft className="size-4 rtl:rotate-180" />
       </Button>
       <Button
         variant="outline"
         size="icon-sm"
         disabled={loading || !table.getCanNextPage()}
-        aria-label="Next page"
+        aria-label={t("nextPage")}
         onClick={() => table.nextPage()}
       >
-        <ChevronRight className="size-4" />
+        <ChevronRight className="size-4 rtl:rotate-180" />
       </Button>
     </nav>
   );
@@ -85,9 +91,7 @@ export function selectionColumn<T extends object>(): TableColumn<T> {
     pin: "start",
     exportOptions: false,
     header: ({ table }) => (
-      <Checkbox
-        data-mendy-ui=""
-        aria-label="Select loaded rows"
+      <SelectionCheckbox
         checked={
           table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")
         }
@@ -95,9 +99,8 @@ export function selectionColumn<T extends object>(): TableColumn<T> {
       />
     ),
     cell: ({ row }) => (
-      <Checkbox
-        data-mendy-ui=""
-        aria-label={`Select row ${row.id}`}
+      <SelectionCheckbox
+        rowId={row.id}
         checked={row.getIsSelected()}
         disabled={!row.getCanSelect()}
         onCheckedChange={(value) => row.toggleSelected(value === true)}
@@ -114,18 +117,19 @@ export function TableActionBar({
   children: ReactNode;
   onClear: () => void;
 }) {
+  const { t } = useMendyLocale();
   if (!count) return null;
   return (
     <div
       data-mendy-ui=""
       role="region"
-      aria-label="Selected row actions"
+      aria-label={t("selectedActions")}
       className="sticky bottom-2 z-30 mx-auto flex w-fit max-w-full flex-wrap items-center gap-3 rounded-md border bg-background px-3 py-2 shadow-md"
     >
-      <span className="text-sm">{count} selected</span>
+      <span className="text-sm">{t("selectedCount", { count })}</span>
       {children}
       <Button variant="ghost" size="sm" onClick={onClear}>
-        Clear selection
+        {t("clearSelection")}
       </Button>
     </div>
   );
@@ -142,6 +146,7 @@ export function TableSavedViews<F>({
   onDelete?: (view: SavedTableView<F>) => Promise<unknown>;
 }) {
   const [name, setName] = useState("");
+  const { t } = useMendyLocale();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function run(action: () => Promise<unknown>) {
@@ -151,7 +156,7 @@ export function TableSavedViews<F>({
       await action();
       setName("");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not save changes.");
+      setError(reason instanceof Error ? reason.message : t("saveError"));
     } finally {
       setPending(false);
     }
@@ -161,7 +166,7 @@ export function TableSavedViews<F>({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button size="sm" variant="outline">
-            Saved views
+            {t("savedViews")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
@@ -170,20 +175,20 @@ export function TableSavedViews<F>({
               <DropdownMenuSub key={view.id}>
                 <DropdownMenuSubTrigger>{view.name}</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  <DropdownMenuItem onSelect={() => onApply(view)}>Apply</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => onApply(view)}>{t("apply")}</DropdownMenuItem>
                   {onDelete && (
                     <DropdownMenuItem
                       disabled={pending}
                       onSelect={() => void run(() => onDelete(view))}
                     >
-                      Delete
+                      {t("delete")}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             ))
           ) : (
-            <DropdownMenuItem disabled>No saved views</DropdownMenuItem>
+            <DropdownMenuItem disabled>{t("noSavedViews")}</DropdownMenuItem>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
@@ -195,13 +200,13 @@ export function TableSavedViews<F>({
         }}
       >
         <Input
-          aria-label="New view name"
+          aria-label={t("newViewName")}
           value={name}
           onChange={(event) => setName(event.target.value)}
           className="h-8 w-40"
         />
         <Button type="submit" size="sm" disabled={pending || !name.trim()}>
-          Save view
+          {t("saveView")}
         </Button>
       </form>
       {error && (
@@ -210,5 +215,18 @@ export function TableSavedViews<F>({
         </span>
       )}
     </div>
+  );
+}
+
+function SelectionCheckbox({
+  rowId,
+  ...props
+}: React.ComponentProps<typeof Checkbox> & { rowId?: string }) {
+  const { t } = useMendyLocale();
+  return (
+    <Checkbox
+      {...props}
+      aria-label={rowId === undefined ? t("selectLoaded") : t("selectRow", { id: rowId })}
+    />
   );
 }

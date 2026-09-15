@@ -10,6 +10,7 @@ export function tableLayout<T extends object>(
   table: DataTableInstance<T>,
   viewportWidth: number | null,
   rowHeight: number,
+  direction: "ltr" | "rtl" = "ltr",
 ) {
   const columns = [
     ...table.getStartVisibleLeafColumns(),
@@ -41,12 +42,12 @@ export function tableLayout<T extends object>(
   const positions = new Map<string, { side: "left" | "right"; offset: number }>();
   let offset = 0;
   for (const column of table.getStartVisibleLeafColumns()) {
-    positions.set(column.id, { side: "left", offset });
+    positions.set(column.id, { side: direction === "rtl" ? "right" : "left", offset });
     offset += size(column);
   }
   offset = 0;
   for (const column of [...table.getEndVisibleLeafColumns()].reverse()) {
-    positions.set(column.id, { side: "right", offset });
+    positions.set(column.id, { side: direction === "rtl" ? "left" : "right", offset });
     offset += size(column);
   }
   const styles = new Map<string, CSSProperties>();
@@ -67,10 +68,10 @@ export function tableLayout<T extends object>(
             [pin.side]: pin.offset,
             zIndex: 2,
             ...(column.id === table.getStartVisibleLeafColumns().at(-1)?.id
-              ? { borderRightWidth: 4 }
+              ? { [direction === "rtl" ? "borderLeftWidth" : "borderRightWidth"]: 4 }
               : {}),
             ...(column.id === table.getEndVisibleLeafColumns()[0]?.id
-              ? { borderLeftWidth: 4 }
+              ? { [direction === "rtl" ? "borderRightWidth" : "borderLeftWidth"]: 4 }
               : {}),
           }
         : {}),

@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 
 import type { Choice, OptionPage, RuntimeField } from "./filter-definition.js";
 import { useValueDraft } from "./use-value-draft.js";
@@ -68,8 +69,8 @@ function acquire(
     },
   };
 }
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Options could not be loaded.";
+function errorMessage(error: unknown): string | null {
+  return error instanceof Error ? error.message : null;
 }
 export function selectedIds(value: unknown): string[] {
   return Array.isArray(value)
@@ -90,6 +91,7 @@ export function useFilterOptions(
   enabled: boolean,
 ) {
   const sharedCache = useContext(FilterOptionCache);
+  const { t, code } = useMendyLocale();
   const privateCache = useRef<OptionCache>(new Map());
   const cache = sharedCache ?? privateCache.current;
   const source = field.source;
@@ -114,14 +116,14 @@ export function useFilterOptions(
     items: Choice[];
     cursor?: string | null;
     loading: boolean;
-    error?: string;
+    error?: string | null;
   }>({ key: "", items: [], loading: false });
   const [resolved, setResolved] = useState<{
     key: string;
     choices: readonly Choice[];
     identity: string;
     done: boolean;
-    error?: string;
+    error?: string | null;
   }>({ key: "", identity: "", choices: [], done: false });
   const resolveKey = JSON.stringify([scopeKey, idsKey, retryKey]);
   const currentRequest = useRef(requestKey);
@@ -213,6 +215,8 @@ export function useFilterOptions(
     remote,
     query,
     retainedSelection.current.identity === identity ? retainedSelection.current.choices : [],
+    t,
+    code,
   );
   useLayoutEffect(() => {
     // Keep only actual labels for the current selection, never synthesized ID fallbacks.
@@ -228,7 +232,12 @@ export function useFilterOptions(
     selected,
     loading: remote ? currentPage.loading : (source?.loading ?? false),
     resolving: missingLabels && (remote ? !matchingResolved : Boolean(source?.loading)),
-    error: currentPage.error ?? (matchingResolved ? resolved.error : undefined) ?? source?.error,
+    error:
+      [currentPage.error, matchingResolved ? resolved.error : undefined]
+        .map((error) => (error === null ? t("optionsError") : error))
+        .find((error) => error !== undefined) ??
+      source?.error ??
+      undefined,
     retry() {
       source?.retry?.();
       retry((key) => key + 1);
@@ -275,12 +284,14 @@ function optionPresentation(
   source: RuntimeField["source"],
   items: readonly Choice[],
   ids: string[],
-  resolved: { choices: readonly Choice[]; done: boolean; error?: string },
+  resolved: { choices: readonly Choice[]; done: boolean; error?: string | null },
   matchingResolved: boolean,
   retainedLabels: boolean,
   remote: boolean,
   query: string,
   previousSelection: readonly Choice[],
+  t: ReturnType<typeof useMendyLocale>["t"],
+  code: string,
 ) {
   const known = new Map<string, Choice>();
   for (const item of [
@@ -295,15 +306,17 @@ function optionPresentation(
       known.get(id) ?? {
         value: id,
         label:
-          remote && matchingResolved && resolved.done && !resolved.error
-            ? `Unavailable (${id})`
+          remote && matchingResolved && resolved.done && resolved.error === undefined
+            ? t("unavailable", { id })
             : id,
       },
   );
   const shown =
     remote || source?.onQueryChange
       ? items
-      : items.filter((item) => item.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+      : items.filter((item) =>
+          item.label.toLocaleLowerCase(code).includes(query.toLocaleLowerCase(code)),
+        );
   return {
     selected,
     shown,

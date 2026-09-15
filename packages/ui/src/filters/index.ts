@@ -9,3 +9,7 @@ export * from "./filter-text-editor.js";
 export * from "./filter-select-editor.js";
 export * from "../customization.js";
 export * from "./use-filter-search.js";
+
+export { defineLocale } from "../locale.js";
+export type { MendyLocale, MendyMessages } from "../locale.js";
+export { useMendyLocale } from "../locale-context.js";

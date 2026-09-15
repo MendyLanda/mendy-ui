@@ -1,3 +1,5 @@
+import type { MendyMessages } from "../locale.js";
+import { englishMessages } from "../locales/en.js";
 import type { ReactNode } from "react";
 
 export interface FilterCodec<V> {
@@ -72,7 +74,7 @@ export interface FieldConfig<V> {
   clearValue?: V;
   isActive?: (value: V) => boolean;
   normalize?: (value: V) => V;
-  validate?: (value: V) => string | undefined;
+  validate?: (value: V, messages?: MendyMessages) => string | undefined;
   codec?: FilterCodec<V>;
   suggestion?: { value?: V; label?: string; loading?: boolean; disabled?: boolean };
   /** Hide a redundant chip label, or use a shorter visible label. Accessible names stay intact. */
@@ -128,7 +130,7 @@ export interface RuntimeField {
   clearValue: unknown;
   isActive(value: unknown): boolean;
   normalize(value: unknown): unknown;
-  validate(value: unknown): string | undefined;
+  validate(value: unknown, messages?: MendyMessages): string | undefined;
   codec: FilterCodec<unknown>;
   suggestion?: { value?: unknown; label?: string; loading?: boolean; disabled?: boolean };
   /** Hide a redundant chip label, or use a shorter visible label. Accessible names stay intact. */
@@ -205,7 +207,7 @@ function makeField<V>(
     clearValue: config.clearValue === undefined ? fallback : config.clearValue,
     normalize,
     isActive: (value) => (config.isActive ? config.isActive(value as V) : valueIsActive(value)),
-    validate: (value) => config.validate?.(value as V),
+    validate: (value, messages) => config.validate?.(value as V, messages),
     codec: {
       parse: (raw) => {
         const value = (config.codec ?? codec).parse(raw);
@@ -382,9 +384,9 @@ export const filter = {
       "numberRange",
       {
         normalize: (value) => (value?.some((bound) => bound !== null) ? value : null),
-        validate: (value) =>
+        validate: (value, messages = englishMessages) =>
           value && value[0] !== null && value[1] !== null && value[0] > value[1]
-            ? "Minimum must not exceed maximum."
+            ? messages.numberRangeError
             : undefined,
         ...config,
       },
@@ -406,10 +408,8 @@ export const filter = {
       {
         normalize: (value) => (value?.from || value?.to ? value : null),
         isActive: (value) => Boolean(value?.from || value?.to),
-        validate: (value) =>
-          value?.from && value.to && value.from > value.to
-            ? "Start date must not follow end date."
-            : undefined,
+        validate: (value, messages = englishMessages) =>
+          value?.from && value.to && value.from > value.to ? messages.dateRangeError : undefined,
         ...config,
       },
       null,

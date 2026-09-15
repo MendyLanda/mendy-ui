@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 
 import type { ComponentProps, ReactNode } from "react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
@@ -66,6 +67,7 @@ export function FilterChipList({ children }: { children: ReactNode }) {
 export type FilterChipProps = ComponentProps<"div"> & { entranceDelay?: number };
 
 export function FilterChip({ className, entranceDelay, ...props }: FilterChipProps) {
+  const locale = useMendyLocale();
   const inList = useContext(ChipListContext);
   const reducedMotion = useReducedMotion();
   const content = (
@@ -83,6 +85,8 @@ export function FilterChip({ className, entranceDelay, ...props }: FilterChipPro
       <div
         data-mendy-ui=""
         data-slot="filter-chip"
+        dir={locale.configured ? locale.direction : undefined}
+        lang={locale.code}
         className={cn(
           "inline-flex h-9 max-w-full overflow-hidden rounded-md items-center bg-secondary text-sm text-muted-foreground",
           className,
@@ -194,21 +198,22 @@ export function AppliedFilter({
   disabled,
   open,
   onOpenChange,
-  editLabel = `Edit ${label} filter`,
-  removeLabel = `Remove ${label} filter`,
+  editLabel,
+  removeLabel,
   contentProps,
   triggerProps,
   removeProps,
   children,
   ...props
 }: AppliedFilterProps) {
+  const { t } = useMendyLocale();
   return (
     <FilterEditor open={open} onOpenChange={onOpenChange}>
       <FilterChip {...props}>
         {editor ? (
           <FilterEditorTrigger
             disabled={disabled}
-            aria-label={editLabel}
+            aria-label={editLabel ?? t("editFilter", { label })}
             {...triggerProps}
             onClick={(event) => {
               event.stopPropagation();
@@ -224,7 +229,7 @@ export function AppliedFilter({
           <FilterRemove
             {...removeProps}
             disabled={disabled}
-            aria-label={removeLabel}
+            aria-label={removeLabel ?? t("removeFilter", { label })}
             onClick={(event) => {
               event.stopPropagation();
               onRemove();
@@ -232,7 +237,7 @@ export function AppliedFilter({
           />
         )}
         {editor && (
-          <FilterEditorContent aria-label={`${label} filter`} {...contentProps}>
+          <FilterEditorContent aria-label={t("filterLabel", { label })} {...contentProps}>
             {editor}
           </FilterEditorContent>
         )}

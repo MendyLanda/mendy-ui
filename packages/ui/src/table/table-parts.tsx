@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 import type { CSSProperties, ReactNode, MouseEvent, TouchEvent } from "react";
 import type { Cell, Column, Header, Row } from "@tanstack/react-table";
 import type { DataTableFeatures } from "./features.js";
@@ -28,6 +29,7 @@ export function TableHeaderCell<T extends object>({
   contentClassName?: string;
   selectLoaded?: { checked: boolean | "indeterminate"; disabled: boolean };
 }) {
+  const { t } = useMendyLocale();
   const column = header.column;
   const definition = column.columnDef as TableColumn<T>;
   const title =
@@ -45,7 +47,7 @@ export function TableHeaderCell<T extends object>({
     >
       {selectLoaded && index === 0 && (
         <Checkbox
-          aria-label="Select loaded rows"
+          aria-label={t("selectLoaded")}
           disabled={selectLoaded.disabled}
           checked={selectLoaded.checked}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(value === true)}
@@ -118,6 +120,7 @@ function TableBodyRowImpl<T extends object>({
   isRowHighlighted?: (row: T) => boolean;
   inlineSelection: boolean;
 }) {
+  const { t, direction } = useMendyLocale();
   // The engine's getAllCells API eagerly allocates every column. Build only the
   // viewport cells with its public constructor, and release them with this row.
   const cache = useMemo(
@@ -142,7 +145,7 @@ function TableBodyRowImpl<T extends object>({
       data-highlighted={row.getIsSelected() || isRowHighlighted?.(row.original)}
       data-index={rowIndex}
       className={cn(
-        "group left-0 flex min-w-full bg-background hover:bg-accent data-[highlighted=true]:bg-accent",
+        "group start-0 flex min-w-full bg-background hover:bg-accent data-[highlighted=true]:bg-accent",
         rowClassName?.(row.original),
       )}
       style={{
@@ -230,18 +233,22 @@ function TableBodyRowImpl<T extends object>({
                   style={{
                     top: edge?.top ? 0 : -1,
                     bottom: edge?.bottom ? -1 : -2,
-                    left: -Number(cellStyle(cell.column).borderLeftWidth ?? 0),
-                    right: -Number(cellStyle(cell.column).borderRightWidth ?? 1),
+                    left: -Number(
+                      cellStyle(cell.column).borderLeftWidth ?? (direction === "rtl" ? 1 : 0),
+                    ),
+                    right: -Number(
+                      cellStyle(cell.column).borderRightWidth ?? (direction === "rtl" ? 0 : 1),
+                    ),
                     borderTopWidth: edge?.top ? 2 : 0,
                     borderBottomWidth: edge?.bottom ? 2 : 0,
-                    borderLeftWidth: edge?.left ? 2 : 0,
-                    borderRightWidth: edge?.right ? 2 : 0,
+                    borderLeftWidth: (direction === "rtl" ? edge?.right : edge?.left) ? 2 : 0,
+                    borderRightWidth: (direction === "rtl" ? edge?.left : edge?.right) ? 2 : 0,
                   }}
                 />
               )}
               {inlineSelection && index === 0 && (
                 <Checkbox
-                  aria-label={`Select row ${rowIndex + 1}`}
+                  aria-label={t("selectRow", { id: rowIndex + 1 })}
                   checked={row.getIsSelected()}
                   disabled={!row.getCanSelect()}
                   onCheckedChange={(value) => row.toggleSelected(value === true)}
@@ -277,7 +284,7 @@ function TableBodyRowImpl<T extends object>({
       ref={measureElement}
       data-index={rowIndex}
       role="rowgroup"
-      className="absolute left-0 min-w-full"
+      className="absolute start-0 min-w-full"
       style={{ top: start }}
     >
       {rowElement}
@@ -310,6 +317,7 @@ function TableResizeHandle<T extends object>({
   title: string;
   width: number;
 }) {
+  const { t, direction } = useMendyLocale();
   const column = header.column;
   const beginResize = (event: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
     if ("touches" in event && event.touches.length > 1) return;
@@ -331,7 +339,7 @@ function TableResizeHandle<T extends object>({
     <div
       role="separator"
       tabIndex={0}
-      aria-label={`Resize ${title}`}
+      aria-label={t("resizeColumn", { label: title })}
       aria-orientation="vertical"
       aria-valuenow={Math.round(width)}
       aria-valuemin={column.columnDef.minSize ?? 48}
@@ -349,13 +357,13 @@ function TableResizeHandle<T extends object>({
               column.columnDef.maxSize ?? 1200,
               Math.max(
                 column.columnDef.minSize ?? 48,
-                width + (event.key === "ArrowLeft" ? -10 : 10),
+                width + (event.key === "ArrowLeft" ? -10 : 10) * (direction === "rtl" ? -1 : 1),
               ),
             ),
           }));
         }
       }}
-      className="absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none select-none hover:bg-primary/20 focus-visible:bg-primary/20 focus-visible:outline-none"
+      className="absolute inset-y-0 end-0 z-10 w-2 cursor-col-resize touch-none select-none hover:bg-primary/20 focus-visible:bg-primary/20 focus-visible:outline-none"
     />
   );
 }

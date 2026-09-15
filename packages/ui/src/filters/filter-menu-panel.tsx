@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 
 import type { PointerEvent, ReactNode, RefObject } from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -73,6 +74,7 @@ export function FilterMenuPanel({
   trigger,
 }: FilterMenuPanelProps) {
   const { classNames, menuLayout } = useMendyUI();
+  const { t } = useMendyLocale();
   const desktop = useSyncExternalStore(subscribeViewport, isDesktop, serverDesktop);
   const selected = selectedSection(sections, selectedId);
   const content = useRef<HTMLDivElement>(null);
@@ -143,7 +145,7 @@ export function FilterMenuPanel({
       data-mendy-ui=""
       data-slot="filter-menu-panel"
       role="dialog"
-      aria-label="Filters"
+      aria-label={t("filters")}
       aria-labelledby={undefined}
       aria-orientation={undefined}
       align={desktop ? "start" : "end"}
@@ -282,6 +284,7 @@ function EditorHeading({
   onCleared(): void;
 }) {
   const { classNames } = useMendyUI();
+  const { t } = useMendyLocale();
   return (
     <div
       className={cn(
@@ -298,7 +301,7 @@ function EditorHeading({
             className="-ms-2 gap-1.5 px-2 text-xs font-normal"
           >
             <ArrowLeft aria-hidden="true" className="size-3.5 rtl:rotate-180" />
-            Filters
+            {t("filters")}
           </Button>
           <span aria-hidden="true" className="text-muted-foreground">
             /
@@ -314,10 +317,10 @@ function EditorHeading({
             section.clear?.();
             requestAnimationFrame(onCleared);
           }}
-          aria-label={`Clear ${section.label} filter`}
+          aria-label={t("clearFilter", { label: section.label })}
           className="-me-1.5 h-6 px-1.5 text-xs font-normal text-muted-foreground"
         >
-          Clear
+          {t("clear")}
         </Button>
       )}
     </div>
@@ -384,11 +387,12 @@ function FilterMenuList({
 }: FilterMenuListProps) {
   const { classNames } = useMendyUI();
   const [query, setQuery] = useValueDraft("types", () => "", "__menu:query");
+  const { t, code } = useMendyLocale();
   const collection = useRef<CollectionHandle>(null);
   const matches: (FilterMenuSection & { key: string })[] = [];
-  const term = query.toLocaleLowerCase();
+  const term = query.toLocaleLowerCase(code);
   for (const section of sections) {
-    if (section.label.toLocaleLowerCase().includes(term))
+    if (section.label.toLocaleLowerCase(code).includes(term))
       matches.push({ ...section, key: section.id });
   }
   return (
@@ -405,8 +409,8 @@ function FilterMenuList({
         <div className="shrink-0 border-b p-2">
           <Input
             type="search"
-            aria-label="Find a filter"
-            placeholder="Find a filter…"
+            aria-label={t("findFilter")}
+            placeholder={t("findFilterPlaceholder")}
             value={query}
             className="sm:pointer-fine:h-8"
             onChange={(event) => setQuery(event.target.value)}
@@ -422,13 +426,13 @@ function FilterMenuList({
       )}
       {matches.length === 0 && (
         <p className="p-3 text-sm text-muted-foreground">
-          {sections.length ? "No matching filters." : "No filters available."}
+          {t(sections.length ? "noMatchingFilters" : "noFilters")}
         </p>
       )}
       <FilterCollection
         items={matches}
         role="group"
-        label="Filter types"
+        label={t("filterTypes")}
         collectionRef={collection}
         initialKey={initialKey}
         renderBefore={(section, index) =>
@@ -454,9 +458,9 @@ function FilterMenuList({
             aria-label={section.label}
             aria-description={
               matches.length > 100
-                ? `${section.active ? "Filter applied. " : ""}${index + 1} of ${matches.length}`
+                ? `${section.active ? t("filterApplied") + ". " : ""}${t("position", { index: index + 1, count: matches.length })}`
                 : section.active
-                  ? "Filter applied"
+                  ? t("filterApplied")
                   : undefined
             }
             aria-expanded={selectedId === section.id}

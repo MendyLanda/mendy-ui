@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 
 import type { FilterDefinitions, FilterValues } from "./filter-definition.js";
 import type { FilterChange } from "./use-filters.js";
@@ -57,6 +58,7 @@ export function useUrlFilters<const D extends FilterDefinitions>(
   definitions: D,
   options: UrlFilterOptions,
 ) {
+  const { t } = useMendyLocale();
   const searchKey = options.searchKey ?? "q";
   const markerKey = options.markerKey ?? "_filters";
   validateDefinitions(definitions, searchKey, markerKey);
@@ -101,7 +103,7 @@ export function useUrlFilters<const D extends FilterDefinitions>(
       );
       return true;
     } catch {
-      report("Filters could not be saved in this browser. Keep this page open to retain them.");
+      report(t("persistError"));
       return false;
     }
   }
@@ -144,13 +146,11 @@ export function useUrlFilters<const D extends FilterDefinitions>(
         try {
           sessionStorage.removeItem(storageKey);
         } catch {
-          report("Remembered filters could not be cleared in this browser.");
+          report(t("clearPersistError"));
         }
       } else writeSnapshot(storageKey, owned.toString());
     }
-    void setRaw(next).catch(() =>
-      report("The URL could not be updated. Filters may not survive a reload."),
-    );
+    void setRaw(next).catch(() => report(t("urlError")));
   }
 
   useEffect(() => {
@@ -190,7 +190,7 @@ export function useUrlFilters<const D extends FilterDefinitions>(
     ...controller,
     ready,
     shareable: !marker,
-    persistenceMessage: persistenceNotice(ready, marker, storedQuery, overflow?.marker, message),
+    persistenceMessage: persistenceNotice(ready, marker, storedQuery, overflow?.marker, message, t),
     set<K extends keyof FilterValues<D> & string>(key: K, value: FilterValues<D>[K]) {
       return controller.commit(key, value);
     },
@@ -213,12 +213,12 @@ function persistenceNotice(
   storedQuery: string | null,
   memoryMarker: string | undefined,
   message: string | undefined,
+  t: ReturnType<typeof useMendyLocale>["t"],
 ) {
   if (ready && marker && storedQuery === null && memoryMarker !== marker)
-    return "This link refers to filters saved in another browser session. The full selection is unavailable.";
+    return t("missingSession");
   if (message) return message;
-  if (marker)
-    return "This selection is saved in this browser session. The URL does not contain the full filters.";
+  if (marker) return t("sessionOnly");
 }
 
 function appliedParams(

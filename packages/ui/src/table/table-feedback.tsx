@@ -1,3 +1,4 @@
+import { useMendyLocale } from "../locale-context.js";
 import type { ReactNode } from "react";
 import type { TableDataState } from "./table-view.js";
 import { Button } from "../primitives/button.js";
@@ -44,6 +45,7 @@ export function TableInitialState({
   clearFilters?: () => void;
   firstPage?: () => void;
 }) {
+  const { t } = useMendyLocale();
   if (hasRows) return null;
   if (status === "loading")
     return (
@@ -55,10 +57,10 @@ export function TableInitialState({
     return (
       <TableFeedbackRow columnCount={columnCount} rowIndex={2}>
         <div role="alert" className="p-6 text-center">
-          {error ?? "Could not load rows."}
+          {error ?? t("loadRowsError")}
           {retry && (
             <Button variant="outline" size="sm" onClick={retry}>
-              Retry
+              {t("retry")}
             </Button>
           )}
         </div>
@@ -73,22 +75,22 @@ export function TableInitialState({
         {emptyState ??
           (pageIndex > 0 ? (
             <>
-              <span>No results on this page.</span>
+              <span>{t("noPageResults")}</span>
               <Button variant="outline" size="sm" onClick={firstPage}>
-                Go to first page
+                {t("firstPage")}
               </Button>
             </>
           ) : hasFilters ? (
             <>
-              <span>No results match your filters.</span>
+              <span>{t("noFilterResults")}</span>
               {clearFilters && (
                 <Button variant="outline" size="sm" onClick={clearFilters}>
-                  Clear filters
+                  {t("clearFilters")}
                 </Button>
               )}
             </>
           ) : (
-            "No rows yet."
+            t("noRows")
           ))}
       </div>
     </TableFeedbackRow>
@@ -106,6 +108,7 @@ export function TableLoadMore({
   rowIndex: number;
   onLoad: () => void;
 }) {
+  const { t } = useMendyLocale();
   return (
     <TableFeedbackRow columnCount={columnCount} rowIndex={rowIndex} className="sticky left-0">
       <div className="flex items-center justify-center gap-2 py-5 text-sm text-muted-foreground">
@@ -123,11 +126,11 @@ export function TableLoadMore({
             >
               <path d="M12 3v3m6.366-.366-2.12 2.12M21 12h-3m.366 6.366-2.12-2.12M12 21v-3m-6.366.366 2.12-2.12M3 12h3m-.366-6.366 2.12 2.12" />
             </svg>
-            <span>Loading more…</span>
+            <span>{t("loadingMore")}</span>
           </div>
         ) : (
           <Button size="sm" variant="ghost" onClick={onLoad}>
-            {loadMore.error ? "Retry loading more" : "Load more"}
+            {loadMore.error ? t("retryMore") : t("loadMore")}
           </Button>
         )}
         {loadMore.error && <span role="alert">{loadMore.error}</span>}

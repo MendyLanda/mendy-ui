@@ -6,7 +6,8 @@ test("the default menu opens immediately and preserves hover, click, and Back be
 }) => {
   await page.goto("/");
   const trigger = page.getByRole("button", { name: "Open filters", exact: true });
-  await trigger.click();
+  if (isMobile) await trigger.tap();
+  else await trigger.click();
   const menu = page.getByRole("dialog", { name: "Filters", exact: true });
   await expect(menu).toHaveCSS("animation-name", "none");
   await expect(

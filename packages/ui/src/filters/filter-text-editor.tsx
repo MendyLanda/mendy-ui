@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -22,12 +23,13 @@ export function FilterTextEditor({
   defaultValue,
   onApply,
   validate,
-  applyLabel = "Apply",
+  applyLabel,
   commitMode = "enter",
   placeholder,
 }: FilterTextEditorProps) {
   const id = useId();
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { t, direction, code, configured } = useMendyLocale();
   const [draft, setDraft] = useState(defaultValue);
   const error = validate?.(draft);
 
@@ -40,6 +42,8 @@ export function FilterTextEditor({
   return (
     <div
       data-mendy-ui=""
+      dir={configured ? direction : undefined}
+      lang={code}
       className="w-72 max-w-full space-y-2 p-3"
       onKeyDown={(event) => {
         if (event.key === "Tab") event.stopPropagation();
@@ -77,10 +81,10 @@ export function FilterTextEditor({
       )}
       {commitMode === "apply" ? (
         <Button type="button" size="sm" disabled={Boolean(error)} onClick={() => onApply(draft)}>
-          {applyLabel}
+          {applyLabel ?? t("apply")}
         </Button>
       ) : (
-        <p className="text-xs text-muted-foreground">Enter to save. Shift+Enter for a new line.</p>
+        <p className="text-xs text-muted-foreground">{t("saveHint")}</p>
       )}
     </div>
   );

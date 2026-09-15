@@ -76,7 +76,7 @@ export function handleMenuTab(
   const index = stops.indexOf(target);
   const next = index < 0 ? undefined : stops[index + (event.shiftKey ? -1 : 1)];
   if (
-    target.closest('[aria-label="Filter types"]') &&
+    target.closest('[data-slot="filter-menu-list"]') &&
     !event.shiftKey &&
     hasSelection &&
     (!next || editor?.contains(next))

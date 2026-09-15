@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useMendyLocale } from "../locale-context.js";
 import { cn } from "../utils.js";
 import { useFillLayout } from "./use-fill-layout.js";
 
@@ -20,6 +21,7 @@ export function TableFrame({
   footer?: ReactNode;
   children: ReactNode;
 }) {
+  const { direction, code, configured } = useMendyLocale();
   const fill = layout === "fill";
   const ref = useFillLayout(fill);
   return (
@@ -27,6 +29,8 @@ export function TableFrame({
       ref={ref}
       data-mendy-ui=""
       data-slot={slot}
+      dir={configured ? direction : undefined}
+      lang={code}
       data-layout={layout}
       className={cn("min-w-0", fill ? "flex min-h-0 flex-col gap-2" : "space-y-2")}
       style={!fill && stretch ? { height: "100%" } : undefined}

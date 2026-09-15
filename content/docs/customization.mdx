@@ -149,3 +149,7 @@ The same setting keeps menus inside a containing dialog when required. React pro
 `FilterField` renders one chip or suggestion by ID. `FilterFieldEditor` renders the corresponding editor in your layout, including dynamic options and custom editor callbacks. An embedded editor stays mounted in its container; closing a popover does not remove it. Your layout controls its visibility.
 
 For a completely different UI, use `useFilters`, `useControlledFilters`, or `useFilterController` without `FilterBar`. Pure definitions, bindings, codecs, paste classification, and state helpers are also exported from `@mendylanda/ui/filters/core`. Importing that path does not load UI controls or the URL adapter.
+
+## Language and direction
+
+`MendyUIProvider` also accepts `locale`, `messages`, and `dir` for Table and Filters. See [Localization](/docs/localization) for English, Hebrew, and private dictionaries.

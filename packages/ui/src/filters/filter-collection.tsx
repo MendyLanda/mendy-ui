@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 
 import type { CSSProperties, ReactNode, Ref } from "react";
 import {
@@ -56,6 +57,7 @@ export function FilterCollection<T extends CollectionItem>({
   const pending = useRef<string | null>(null);
   const ownsFocus = useRef(false);
   const previousIndex = useRef(0);
+  const { code } = useMendyLocale();
   const [focused, setFocused] = useState(initialKey ?? items.find((item) => !item.disabled)?.key);
   const typeahead = useRef({ text: "", at: 0 });
   const virtual = items.length > 100;
@@ -246,7 +248,7 @@ export function FilterCollection<T extends CollectionItem>({
             const term = [...text].every((char) => char === text[0]) ? text[0]! : text;
             const order = [...enabled.slice(index + 1), ...enabled.slice(0, index + 1)];
             next = order.find((item) =>
-              item.label.toLocaleLowerCase().startsWith(term.toLocaleLowerCase()),
+              item.label.toLocaleLowerCase(code).startsWith(term.toLocaleLowerCase(code)),
             );
           }
         }

@@ -33,6 +33,7 @@ export const docsGroups = [
   {
     title: "Shared",
     pages: [
+      { url: "/docs/localization", title: "Localization" },
       { url: "/docs/customization", title: "Styling & theming" },
       { url: "/docs/accessibility", title: "Keyboard & accessibility" },
     ],

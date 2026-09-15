@@ -179,7 +179,12 @@ for (const framework of ["vite", "next", "tailwind3"]) {
     write(
       dir,
       "app/page.tsx",
-      'import { Suspense } from "react"; import App from "../app"; import { UrlExample } from "./url-example"; export default function Page() { return <><App/><Suspense><UrlExample/></Suspense></>; }',
+      'import { Suspense } from "react"; import App from "../app"; import { MendyUIProvider } from "@mendylanda/ui"; import { he } from "@mendylanda/ui/locales/he"; import { LocaleProbe } from "./locale-probe"; import { UrlExample } from "./url-example"; export default function Page() { return <><App/><Suspense><UrlExample/></Suspense><MendyUIProvider locale={he}><LocaleProbe/></MendyUIProvider></>; }',
+    );
+    write(
+      dir,
+      "app/locale-probe.tsx",
+      '"use client"; import {useMendyLocale, MendyUIProvider} from "@mendylanda/ui"; function Probe(){ const {t, direction}=useMendyLocale(); return <p data-locale-probe dir={direction}>{t("search")}/{t("clearAll")}</p>;} export function LocaleProbe(){return <MendyUIProvider messages={{search:"חיפוש מותאם"}}><Probe/></MendyUIProvider>;}',
     );
     for (const file of readdirSync(join(root, "tests/types")))
       write(dir, `types/${file}`, readFileSync(join(root, "tests/types", file), "utf8"));
@@ -333,6 +338,8 @@ for (const framework of ["vite", "next", "tailwind3"]) {
       await page.getByRole("button", { name: "Clear all", exact: true }).first().click();
       await expect(inline.locator('[data-selected-single="true"]')).toHaveCount(0);
       if (framework === "next") {
+        await expect(page.locator("[data-locale-probe]")).toHaveText("חיפוש מותאם/ניקוי הכול");
+        await expect(page.locator("[data-locale-probe]")).toHaveAttribute("dir", "rtl");
         await page
           .getByRole("region", { name: "URL filters" })
           .getByRole("button", { name: "Open filters" })

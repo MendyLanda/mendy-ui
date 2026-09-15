@@ -1,3 +1,4 @@
+import { useMendyLocale } from "../locale-context.js";
 import type { CSSProperties } from "react";
 import { Fragment } from "react";
 import type { Column } from "@tanstack/react-table";
@@ -19,8 +20,9 @@ export function TableLoadingRows<T extends object>({
   rowHeight: number;
   cellStyle: (column: Column<DataTableFeatures, T>) => CSSProperties;
 }) {
+  const { t } = useMendyLocale();
   return (
-    <div role="status" aria-label="Loading rows" className="min-w-full" style={{ width }}>
+    <div role="status" aria-label={t("loadingRows")} className="min-w-full" style={{ width }}>
       {Array.from({ length: count }, (_, index) => (
         <div
           key={index}

@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 
 import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -39,11 +40,12 @@ function SearchableOptions({
   options,
   searchable = true,
   searchPlaceholder,
-  emptyMessage = "No options found.",
+  emptyMessage,
   autoFocus = true,
   children,
 }: SharedProps & { children: (options: readonly FilterOption[]) => ReactNode }) {
   const [query, setQuery] = useState("");
+  const { t, direction, code, configured } = useMendyLocale();
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!searchable || !autoFocus) return;
@@ -53,7 +55,7 @@ function SearchableOptions({
   const filtered = !searchable
     ? options
     : options.filter((option) =>
-        option.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
+        option.label.toLocaleLowerCase(code).includes(query.toLocaleLowerCase(code)),
       );
 
   return (
@@ -61,6 +63,8 @@ function SearchableOptions({
       className="w-full"
       data-mendy-ui=""
       data-slot="filter-options"
+      dir={configured ? direction : undefined}
+      lang={code}
       onKeyDown={(event) => {
         if (event.key === "Tab") event.stopPropagation();
       }}
@@ -81,7 +85,7 @@ function SearchableOptions({
         </div>
       ) : (
         <p role="status" className="p-3 text-sm text-muted-foreground">
-          {emptyMessage}
+          {emptyMessage ?? t("noOptions")}
         </p>
       )}
     </div>

@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 
 import type {
   BoundDefinitions,
@@ -46,6 +47,7 @@ interface ControllerOptions<S> {
   onChange?: (value: S, meta: FilterChange) => void;
 }
 export function useFilterController<S>(options: ControllerOptions<S>): FilterController<S> {
+  const { t, messages } = useMendyLocale();
   const [menuOpen, setMenuOpen] = useState(false);
   const [openField, setOpenField] = useState<string | null>(null);
   const [editField, edit] = useState<string | null>(null);
@@ -63,14 +65,16 @@ export function useFilterController<S>(options: ControllerOptions<S>): FilterCon
       try {
         const next = entry.field.normalize(value);
         const message =
-          source === "clear" || source === "remove" ? undefined : entry.field.validate(next);
+          source === "clear" || source === "remove"
+            ? undefined
+            : entry.field.validate(next, messages);
         if (message) {
           setError(message);
           return message;
         }
         normalized[id] = next;
       } catch {
-        const message = "This filter value is invalid.";
+        const message = t("invalidFilter");
         setError(message);
         return message;
       }

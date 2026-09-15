@@ -1,0 +1,119 @@
+---
+title: Localization
+description: English, Hebrew, right-to-left layouts, and private translations for Table and Filters.
+---
+
+import { LocaleDemo } from "@/examples/locale-demo";
+
+English works without configuration. Set a locale once to translate the built-in text in **both Table and Filters**. Hebrew includes right-to-left menus, pinned columns, keyboard navigation, calendar labels, and accessible announcements.
+
+<LocaleDemo />
+
+## Choose a locale
+
+```tsx
+import { MendyUIProvider } from "@mendylanda/ui";
+import { he } from "@mendylanda/ui/locales/he";
+
+export function App() {
+  return (
+    <MendyUIProvider locale={he}>
+      <YourTablesAndFilters />
+    </MendyUIProvider>
+  );
+}
+```
+
+The built-in dictionaries are `en` (`en-US`, left-to-right) and `he` (`he-IL`, right-to-left). Import only what you use. Dictionaries are serializable objects and can cross a React Server Component boundary. The provider is a client component.
+
+Place the provider **above** components that call `useFilters`, `useUrlFilters`, or `useDataTable`, so their validation and state feedback use the same locale as the UI. You can switch `locale` without remounting the components or clearing selections.
+
+The provider sets direction on component roots and portaled content. Set your document's `lang` and `dir` separately if the rest of the page uses that language:
+
+```tsx
+<html lang="he" dir="rtl">
+```
+
+## Adjust the wording
+
+Override only the messages you want. Other messages inherit the surrounding locale, and nested providers inherit their parent's settings.
+
+```tsx
+<MendyUIProvider locale={he} messages={{ searchOrFilter: "חיפוש ברשימה" }}>
+  <YourTablesAndFilters />
+</MendyUIProvider>
+```
+
+An explicit component prop, such as `searchPlaceholder`, `emptyMessage`, or a custom empty state, still wins over the dictionary.
+
+## Add a private locale
+
+No registry, service, or additional i18n framework is needed. `defineLocale` fills missing messages from English. Unknown keys are TypeScript errors.
+
+```tsx
+import { defineLocale, MendyUIProvider } from "@mendylanda/ui";
+
+const fr = defineLocale({
+  code: "fr-FR",
+  direction: "ltr",
+  weekStartsOn: 1,
+  firstWeekContainsDate: 4,
+  messages: {
+    search: "Rechercher",
+    searchOrFilter: "Rechercher ou filtrer",
+    clearAll: "Tout effacer",
+    columnSettings: "Paramètres des colonnes",
+    searchField: "Rechercher {label}",
+    selectedCount: "Sélection : {count}",
+  },
+});
+
+<MendyUIProvider locale={fr}>
+  <YourTablesAndFilters />
+</MendyUIProvider>;
+```
+
+Messages are plain strings with named placeholders such as `{label}` and `{count}`. Keep the same placeholder names when translating. Numeric parameters use `Intl.NumberFormat` for the locale. These templates don't interpret HTML or ICU expressions; use wording that works across counts, or supply a custom control when you need richer grammatical rules.
+
+For a complete translation, type your dictionary as `MendyMessages` instead of `Partial<MendyMessages>`. TypeScript then requires every message. Contributions follow the same pattern as `locales/he.ts`: a dictionary, a BCP 47 code, and a direction. Tests check that translations include the same placeholders as English.
+
+## Application text and formatting
+
+The library translates its controls, hints, fallback errors, and announcements. Your column headers, filter names, option labels, custom errors, saved-view names, and row content belong to your application. Keep their IDs stable when translating their labels.
+
+`useMendyLocale` exposes `code`, `direction`, `messages`, the typed translation function `t`, and memoized `number` and `date` formatters for custom controls:
+
+```tsx
+const { t, code } = useMendyLocale();
+
+// Custom controls can share the library's wording.
+<button>{t("clearAll")}</button>;
+
+// Define columns with the current locale. Display, copy, and export stay consistent.
+const columns = useMemo(
+  () =>
+    defineColumns<Row>((column) => [
+      column.accessor("amount", {
+        label: amountLabel,
+        format: format.currency("ILS", code),
+      }),
+    ]),
+  [code, amountLabel],
+);
+```
+
+Column formatting factories are pure functions: pass the locale explicitly when using `format.number`, `format.currency`, or `format.date`. The provider does not reinterpret your data or change sorting rules supplied by your application.
+
+The built-in date editor displays localized **Gregorian** dates. Its stored values remain `YYYY-MM-DD`, with no time-zone conversion. `weekStartsOn` and `firstWeekContainsDate` configure week conventions; calendars can override them, `formatters`, and `labels` directly. Hebrew language support does not switch to the Hebrew calendar.
+
+## Direction overrides
+
+`locale` selects the default reading direction. Use `dir` to override it for a particular area:
+
+```tsx
+<MendyUIProvider locale={he} dir="ltr">
+  <YourTablesAndFilters />
+</MendyUIProvider>
+```
+
+`pin: "start"` means the right edge in RTL; `pin: "end"` means the left edge. Arrow keys follow the visual direction. Copy and export keep the logical column order. The provider does not add a wrapper element or modify `document.documentElement`.

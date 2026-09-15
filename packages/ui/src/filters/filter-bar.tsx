@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 
 import type { CollectionHandle } from "./filter-collection.js";
 import { FilterCollection } from "./filter-collection.js";
@@ -122,6 +123,7 @@ function FilterRootContent({
   children,
 }: FilterRootProps) {
   const { classNames } = useMendyUI();
+  const locale = useMendyLocale();
   // Server HTML must not accept edits that React cannot handle yet. Client-only
   // renders are ready immediately; hydration enables the existing controls.
   const hydrated = useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated);
@@ -159,6 +161,8 @@ function FilterRootContent({
       <Context.Provider value={context}>
         <div
           data-mendy-ui=""
+          dir={locale.configured ? locale.direction : undefined}
+          lang={locale.code}
           aria-busy={!hydrated || undefined}
           className={cn("flex flex-wrap items-center gap-2", classNames?.root, className)}
         >
@@ -185,14 +189,9 @@ export function FilterBar({
     </FilterRoot>
   );
 }
-export function FilterSearch({
-  label = "Search",
-  placeholder = "Search or filter",
-}: {
-  label?: string;
-  placeholder?: string;
-}) {
+export function FilterSearch({ label, placeholder }: { label?: string; placeholder?: string }) {
   const { filters, trigger, disabled, setAmbiguous, direction } = useRoot();
+  const { t } = useMendyLocale();
   const { classNames } = useMendyUI();
   const anchor = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -229,8 +228,8 @@ export function FilterSearch({
           type="text"
           role="searchbox"
           disabled={disabled}
-          aria-label={label}
-          placeholder={placeholder}
+          aria-label={label ?? t("search")}
+          placeholder={placeholder ?? t("searchOrFilter")}
           value={filters.search}
           autoComplete="off"
           autoCapitalize="none"
@@ -287,7 +286,7 @@ export function FilterSearch({
             size="icon"
             type="button"
             disabled={disabled}
-            aria-label="Clear search"
+            aria-label={t("clearSearch")}
             className={cn(
               "absolute top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm opacity-50 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
               hasMenu ? "end-9" : "end-1",
@@ -311,7 +310,7 @@ export function FilterSearch({
               }}
               type="button"
               disabled={disabled}
-              aria-label="Open filters"
+              aria-label={t("openFilters")}
               aria-haspopup="dialog"
               className={cn(
                 "absolute end-1 top-1/2 size-7 -translate-y-1/2 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:opacity-100",
@@ -330,7 +329,7 @@ export function FilterSearch({
 }
 /** A standalone menu button for layouts without a search field. */
 export function FilterMenu({
-  children = "Add filter",
+  children,
   asChild = false,
   anchor,
 }: {
@@ -340,6 +339,7 @@ export function FilterMenu({
   anchor?: React.RefObject<HTMLDivElement | null>;
 }) {
   const { filters, trigger, disabled, direction } = useRoot();
+  const { t } = useMendyLocale();
   const { classNames } = useMendyUI();
   const hasMenu = availableMenuEntries(filters).length > 0;
   useEffect(() => {
@@ -364,7 +364,7 @@ export function FilterMenu({
           disabled={disabled}
           aria-haspopup="dialog"
         >
-          {children}
+          {children ?? t("addFilter")}
         </Button>
       </DropdownMenuTrigger>
       {filters.menuOpen && <FilterMenuContent anchor={anchor} />}
@@ -382,6 +382,7 @@ const fieldIcons = {
 };
 function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement | null> }) {
   const { filters, groups, disabled, trigger } = useRoot();
+  const { t, code } = useMendyLocale();
   const [clearEpoch, setClearEpoch] = useState(0);
   const [drafts] = useState<DraftCache>(() => new Map());
   const grouped = new Set(groups.flatMap((group) => group.fields));
@@ -422,8 +423,8 @@ function FilterMenuContent({ anchor }: { anchor?: React.RefObject<HTMLDivElement
       editorLabel:
         single?.editorLabel ??
         (single?.kind === "text" || single?.kind === "tokens"
-          ? `Set ${section.label.toLowerCase()} filter`
-          : `Choose ${section.label.toLowerCase()}`),
+          ? t("setFilter", { label: section.label.toLocaleLowerCase(code) })
+          : t("choose", { label: section.label.toLocaleLowerCase(code) })),
       disabled: disabled || section.entries.every((entry) => entry.field.disabled),
       active,
       clear:
@@ -506,15 +507,29 @@ export function FilterList({ showClear = true }: { showClear?: boolean }) {
     </FilterChipList>
   );
 }
-function summarize(field: RuntimeField, value: unknown, choices: Choice[]): string {
+function summarize(
+  field: RuntimeField,
+  value: unknown,
+  choices: Choice[],
+  locale: ReturnType<typeof useMendyLocale>,
+): string {
+  const { t, number, date } = locale;
   if (field.kind === "numberRange" && Array.isArray(value))
-    return `${value[0] ?? "Any"} – ${value[1] ?? "Any"}`;
+    return `${value[0] == null ? t("any") : number(value[0])} – ${value[1] == null ? t("any") : number(value[1])}`;
   if (Array.isArray(value)) {
     const labels = new Map(choices.map((choice) => [choice.value, choice.label]));
-    return value.map((item) => labels.get(item) ?? String(item ?? "Any")).join(", ");
+    return value.map((item) => labels.get(item) ?? String(item ?? t("any"))).join(", ");
   }
+  if (
+    field.kind === "dateRange" &&
+    value &&
+    typeof value === "object" &&
+    "from" in value &&
+    "to" in value
+  )
+    return `${value.from ? date(new Date(`${value.from}T12:00:00`)) : t("any")} – ${value.to ? date(new Date(`${value.to}T12:00:00`)) : t("any")}`;
   if (value && typeof value === "object" && "from" in value && "to" in value)
-    return `${value.from ?? "Any"} – ${value.to ?? "Any"}`;
+    return `${value.from ?? t("any")} – ${value.to ?? t("any")}`;
   return choices.find((choice) => choice.value === value)?.label ?? String(value ?? "");
 }
 export function FilterField({ id }: { id: string }) {
@@ -540,6 +555,7 @@ export function FilterFieldEditor({ id, autoFocus = true }: { id: string; autoFo
   ) : null;
 }
 function FieldChip({ entry }: { entry: FilterEntry }) {
+  const { t } = useMendyLocale();
   const { classNames } = useMendyUI();
   const { filters, summary, suggestions, disabled, trigger } = useRoot();
   const { id, field, value } = entry;
@@ -571,7 +587,7 @@ function FieldChip({ entry }: { entry: FilterEntry }) {
         "aria-busy": options.resolving || undefined,
         className: classNames?.chipTrigger,
       }}
-      editLabel={`${active ? "Edit" : "Apply"} ${field.label} filter`}
+      editLabel={t(active ? "editFilter" : "applyFilter", { label: field.label })}
       open={filters.editField === id}
       onOpenChange={chipEditor.onOpenChange}
       onRemove={
@@ -656,13 +672,19 @@ function summaryText(
   shownValue: unknown,
   choices: Choice[],
   policy: SummaryPolicy,
+  locale: ReturnType<typeof useMendyLocale>,
 ) {
-  const full = summarize(field, shownValue, choices);
+  const full = summarize(field, shownValue, choices, locale);
   let text = full;
   if (policy.mode === "count" && field.kind !== "numberRange" && Array.isArray(shownValue)) {
     const limit = Math.max(0, policy.limit ?? 3);
     if (shownValue.length > limit)
-      text = `${summarize(field, shownValue.slice(0, limit), choices)}${limit ? " and " : ""}${shownValue.length - limit} more`;
+      text = limit
+        ? locale.t("andMore", {
+            values: summarize(field, shownValue.slice(0, limit), choices, locale),
+            count: shownValue.length - limit,
+          })
+        : locale.t("more", { count: shownValue.length });
   }
   return text;
 }
@@ -715,13 +737,15 @@ function ChipSummary({
   summary: SummaryPolicy;
 }) {
   const policy = field.summary ?? summary;
+  const locale = useMendyLocale();
+  const { t } = locale;
   const shownValue = active ? value : field.suggestion?.value;
-  const full = summarize(field, shownValue, options.selected);
-  const text = summaryText(field, shownValue, options.selected, policy);
+  const full = summarize(field, shownValue, options.selected, locale);
+  const text = summaryText(field, shownValue, options.selected, policy, locale);
   return (
     <>
       <span id={descriptionId} className="sr-only">
-        {options.resolving ? "Loading selected values" : full}
+        {options.resolving ? t("loadingSelected") : full}
       </span>
       <ChipLabel field={field} active={active} hasValue={Boolean(full)} />
       {options.resolving ? (
@@ -750,7 +774,8 @@ function ChipSummary({
     </>
   );
 }
-export function FilterClear({ children = "Clear all" }: { children?: ReactNode }) {
+export function FilterClear({ children }: { children?: ReactNode }) {
+  const { t } = useMendyLocale();
   const { classNames } = useMendyUI();
   const { filters, disabled, trigger, setAmbiguous } = useRoot();
   if (!filters.active.length && !filters.search) return null;
@@ -770,11 +795,12 @@ export function FilterClear({ children = "Clear all" }: { children?: ReactNode }
         requestAnimationFrame(() => trigger.current?.focus());
       }}
     >
-      {children}
+      {children ?? t("clearAll")}
     </Button>
   );
 }
 export function FilterFeedback() {
+  const { t } = useMendyLocale();
   const { filters, ambiguous, setAmbiguous } = useRoot();
   return (
     <>
@@ -794,7 +820,7 @@ export function FilterFeedback() {
           key={item.token}
           className="flex w-full flex-wrap items-center gap-2 rounded-md border p-2 text-sm"
         >
-          <span>Use {item.token} as:</span>
+          <span>{t("useToken", { token: item.token })}</span>
           {item.candidates.map((candidate) => (
             <Button
               key={candidate.id}
@@ -819,7 +845,7 @@ export function FilterFeedback() {
             variant="ghost"
             onClick={() => setAmbiguous(ambiguous.filter((other) => other !== item))}
           >
-            Keep in search
+            {t("keepInSearch")}
           </Button>
         </div>
       ))}
@@ -1001,10 +1027,12 @@ function ChoiceEditor({
   location: "menu" | "chip" | "inline";
 }) {
   const searchable = field.searchable !== false;
+  const { t, code } = useMendyLocale();
   const collection = useRef<CollectionHandle>(null);
   const selected = Array.isArray(value) ? value : value === null ? [] : [value];
   const selectedSet = new Set(selected);
-  const searchLabel = field.searchLabel ?? `Search ${field.label.toLowerCase()}`;
+  const searchLabel =
+    field.searchLabel ?? t("searchField", { label: field.label.toLocaleLowerCase(code) });
   if (location === "menu" && field.menuLayout === "inline" && field.kind === "single")
     return (
       <div data-mendy-ui="" className="min-w-0">
@@ -1213,6 +1241,7 @@ function OptionFeedback({
   options: ReturnType<typeof useFilterOptions>;
   error?: string;
 }) {
+  const { t } = useMendyLocale();
   return (
     <>
       {error && (
@@ -1222,12 +1251,12 @@ function OptionFeedback({
       )}
       {options.loading && (
         <p role="status" className="px-3 py-2 text-sm text-muted-foreground">
-          Loading options…
+          {t("loadingOptions")}
         </p>
       )}
       {!options.loading && !options.error && options.items.length === 0 && (
         <p role="status" className="p-3 text-sm text-muted-foreground">
-          No options found.
+          {t("noOptions")}
         </p>
       )}
       {options.error && (
@@ -1236,7 +1265,7 @@ function OptionFeedback({
             {options.error}
           </p>
           <Button size="sm" variant="outline" onClick={options.retry}>
-            Retry
+            {t("retry")}
           </Button>
         </div>
       )}
@@ -1247,7 +1276,7 @@ function OptionFeedback({
           disabled={options.loading}
           onClick={options.loadMore}
         >
-          Load more
+          {t("loadMore")}
         </Button>
       )}
     </>
@@ -1275,6 +1304,7 @@ function ValueEditor({
   id: string;
 }) {
   const [attempted, setAttempted] = useState(false);
+  const { t, messages } = useMendyLocale();
   const candidate =
     field.kind === "tokens"
       ? text.split(/[\r\n\t,]+/).flatMap((item) => (item.trim() ? [item.trim()] : []))
@@ -1283,9 +1313,9 @@ function ValueEditor({
         : draft;
   let validation: string | undefined;
   try {
-    validation = field.validate(field.normalize(candidate));
+    validation = field.validate(field.normalize(candidate), messages);
   } catch {
-    validation = "Enter a valid value.";
+    validation = t("invalidValue");
   }
   const message =
     (text.length > 0 || attempted || field.kind === "numberRange" ? validation : undefined) ??
@@ -1308,7 +1338,7 @@ function ValueEditor({
             const rangeValue = (draft as (number | null)[] | null)?.[index];
             return (
               <Label key={key} className="block space-y-1 text-xs">
-                {index === 0 ? "Minimum" : "Maximum"}
+                {t(index === 0 ? "minimum" : "maximum")}
                 <Input
                   ref={
                     index === 0
@@ -1389,6 +1419,7 @@ function ValueEditorFeedback({
   id: string;
   hasHint: boolean;
 }) {
+  const { t } = useMendyLocale();
   if (message)
     return (
       <p role="alert" id={`${id}-error`} className="text-xs text-destructive">
@@ -1398,7 +1429,7 @@ function ValueEditorFeedback({
   if (!hasHint) return null;
   return (
     <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-      Enter to save. Shift+Enter for a new line.
+      {t("saveHint")}
     </p>
   );
 }

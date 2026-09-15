@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 
 import type { ReactNode, Ref } from "react";
 import type { Header } from "@tanstack/react-table";
@@ -63,7 +64,7 @@ export interface TableViewProps<T extends object> extends TableDataState {
 }
 export function TableView<T extends object>({
   table,
-  label = "Data table",
+  label,
   height = "auto",
   layout: layoutMode = "content",
   footer,
@@ -89,6 +90,7 @@ export function TableView<T extends object>({
   rowSelectionControls = true,
   onCopyError,
 }: TableViewProps<T>) {
+  const { t, direction, code } = useMendyLocale();
   const fill = layoutMode === "fill";
   const { resultKey, hasFilters, clearFilters } = useTableResults(table, queryKey, filters);
   const autoRowHeight = rowHeightOption === "auto" || Boolean(renderRowDetail);
@@ -123,8 +125,8 @@ export function TableView<T extends object>({
   const endColumns = table.getEndVisibleLeafColumns();
   const sizing = table.state.columnSizing;
   const layout = useMemo(
-    () => tableLayout(table, viewportWidth, rowHeight),
-    [table, startColumns, centerColumns, endColumns, sizing, viewportWidth, rowHeight],
+    () => tableLayout(table, viewportWidth, rowHeight, direction),
+    [table, startColumns, centerColumns, endColumns, sizing, viewportWidth, rowHeight, direction],
   );
   const { totalWidth, pinningActive } = layout;
   const { inlineSelection, selectLoaded } = useInlineRowSelection(
@@ -208,7 +210,9 @@ export function TableView<T extends object>({
         ref={setContainer}
         role="grid"
         tabIndex={-1}
-        aria-label={label}
+        aria-label={label ?? t("dataTable")}
+        dir={direction}
+        lang={code}
         aria-rowcount={renderRowDetail ? -1 : rows.length + 1 + feedbackRowCount}
         aria-colcount={layout.columns.length}
         aria-busy={status === "loading" || refreshing}
@@ -322,10 +326,10 @@ export function TableView<T extends object>({
             className="sticky bottom-0"
           >
             <div role="alert" className="bg-background p-3">
-              {error ?? "Could not refresh rows."}
+              {error ?? t("refreshError")}
               {retry && (
                 <Button onClick={retry} variant="outline" size="sm">
-                  Retry
+                  {t("retry")}
                 </Button>
               )}
             </div>

@@ -1,4 +1,5 @@
 "use client";
+import { useMendyLocale } from "../locale-context.js";
 import type { ReactNode } from "react";
 import type { Column } from "@tanstack/react-table";
 import type { DraggableProvided, DropResult } from "@hello-pangea/dnd";
@@ -23,6 +24,7 @@ export function TableColumnSettings<T extends object>({
   children?: ReactNode;
 }) {
   const id = useId();
+  const { t, direction } = useMendyLocale();
   const { portalContainer } = useMendyUI();
   const columns = table.getAllLeafColumns();
   const byId = new Map(columns.map((column) => [column.id, column]));
@@ -34,9 +36,9 @@ export function TableColumnSettings<T extends object>({
   const start = columns.filter((column) => column.getIsPinned() === "start").length;
   const end = columns.filter((column) => column.getIsPinned() === "end").length;
   const summary = [
-    hidden && `${hidden} hidden`,
-    start && `${start} pinned left`,
-    end && `${end} pinned right`,
+    hidden && t("hiddenColumns", { count: hidden }),
+    start && t(direction === "rtl" ? "pinnedRight" : "pinnedLeft", { count: start }),
+    end && t(direction === "rtl" ? "pinnedLeft" : "pinnedRight", { count: end }),
   ]
     .filter(Boolean)
     .join(", ");
@@ -53,28 +55,42 @@ export function TableColumnSettings<T extends object>({
         <Button
           variant="outline"
           size="icon-sm"
-          aria-label="Column settings"
-          title="Column settings"
+          aria-label={t("columnSettings")}
+          title={t("columnSettings")}
         >
           <SlidersHorizontal className="size-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        aria-label="Column settings"
+        aria-label={t("columnSettings")}
         className="flex w-[300px] flex-col p-0"
         onCloseAutoFocus={(event) => {
           if (document.activeElement?.closest('[role="grid"]')) event.preventDefault();
         }}
       >
         <div className="shrink-0 border-b px-4 py-3">
-          <h4 className="text-sm font-medium">Column settings</h4>
-          <p className="text-xs text-muted-foreground">
-            Drag to reorder, toggle visibility, and pin columns.
-          </p>
+          <h4 className="text-sm font-medium">{t("columnSettings")}</h4>
+          <p className="text-xs text-muted-foreground">{t("columnSettingsHint")}</p>
         </div>
         {children}
-        <DragDropContext onDragEnd={reorder}>
+        <DragDropContext
+          dragHandleUsageInstructions={t("dragInstructions")}
+          onDragStart={(start, { announce }) =>
+            announce(t("dragStart", { index: start.source.index + 1 }))
+          }
+          onDragUpdate={(update, { announce }) =>
+            announce(t("dragMove", { index: (update.destination ?? update.source).index + 1 }))
+          }
+          onDragEnd={(result, { announce }) => {
+            reorder(result);
+            announce(
+              result.reason === "CANCEL" || !result.destination
+                ? t("dragCancel")
+                : t("dragEnd", { index: result.destination.index + 1 }),
+            );
+          }}
+        >
           <Droppable
             droppableId={id}
             getContainerForClone={() => portalContainer ?? document.body}
@@ -115,17 +131,17 @@ export function TableColumnSettings<T extends object>({
         </DragDropContext>
         <div className="flex shrink-0 items-center justify-between gap-2 border-t px-4 py-2">
           <p className="text-xs text-muted-foreground" aria-live="polite">
-            {summary || "No changes"}
+            {summary || t("noChanges")}
           </p>
           <Button
             variant="ghost"
             size="sm"
             className="h-7 px-2 text-xs"
-            aria-label="Reset columns"
+            aria-label={t("resetColumns")}
             onClick={() => applyTablePreferences(table, { version: 1, ...table.initialState })}
           >
             <RotateCcw className="size-3" />
-            Reset
+            {t("reset")}
           </Button>
         </div>
       </PopoverContent>
@@ -142,22 +158,23 @@ function ColumnSettingsRow<T extends object>({
   dragging: boolean;
 }) {
   const definition = column.columnDef as TableColumn<T>;
+  const { t, direction, code } = useMendyLocale();
   const label =
-    definition.label ?? (typeof definition.header === "string" ? definition.header : column.id);
+    (column.id === "_selection" && definition.label === "Select rows"
+      ? t("selectRows")
+      : definition.label) ??
+    (typeof definition.header === "string" ? definition.header : column.id);
   const pin = column.getIsPinned();
-  const next = pin === "start" ? "end" : pin === "end" ? false : "start";
-  const pinLabel =
-    next === "start"
-      ? `Pin ${label} to left`
-      : next === "end"
-        ? `Pin ${label} to right`
-        : `Unpin ${label}`;
+  const { next, message } = pinAction(pin, direction);
+  const pinLabel = t(message, { label });
   return (
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
       data-mendy-ui=""
       data-column-setting={column.id}
+      dir={direction}
+      lang={code}
       data-dragging={dragging}
       style={provided.draggableProps.style}
       className={cn(
@@ -168,8 +185,8 @@ function ColumnSettingsRow<T extends object>({
       <button
         type="button"
         {...provided.dragHandleProps}
-        aria-label={`Reorder ${label}`}
-        title="Drag to reorder. Press Space to move with arrow keys."
+        aria-label={t("reorder", { label })}
+        title={t("dragHint")}
         className="flex size-5 shrink-0 cursor-grab items-center justify-center rounded-sm text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
       >
         <GripVertical className="size-3.5" />
@@ -179,7 +196,7 @@ function ColumnSettingsRow<T extends object>({
           checked={column.getIsVisible()}
           disabled={!column.getCanHide()}
           onCheckedChange={(value) => column.toggleVisibility(value === true)}
-          aria-label={`Show ${label}`}
+          aria-label={t("showColumn", { label })}
         />
         <span className="truncate" title={label}>
           {label}
@@ -205,4 +222,11 @@ function ColumnSettingsRow<T extends object>({
       </Button>
     </div>
   );
+}
+
+function pinAction(pin: false | "start" | "end", direction: "ltr" | "rtl") {
+  if (pin === "end") return { next: false, message: "unpin" } as const;
+  if (pin === "start")
+    return { next: "end", message: direction === "rtl" ? "pinLeft" : "pinRight" } as const;
+  return { next: "start", message: direction === "rtl" ? "pinRight" : "pinLeft" } as const;
 }

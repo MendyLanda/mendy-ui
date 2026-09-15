@@ -128,3 +128,18 @@ Opening the menu shows the category list without choosing a filter. Focusing a c
 `FilterBar` and composed `FilterList` show Clear all after the chips when a removable filter is active. It clears filters and search. Search-only bars use the input’s clear control and hide the filter menu when no menu fields are available. Set `showClear={false}` to opt out. Choice search is enabled by default; use `searchable: false` for short lists. Menu selections keep the menu open, and selecting the current single choice again clears it. Chip editor popups open instantly; `editorAnimation` opts into their animation.
 
 See [defaults and app configuration](https://ui.mendylanda.com/docs/defaults) for the full behavior and [system reference](https://ui.mendylanda.com/docs/system) for query adapters, selected-label loading, grouped fields, and custom editors.
+
+## Localization
+
+English is the default for Table and Filters. Set Hebrew once for built-in text, calendar labels, accessible announcements, and RTL behavior:
+
+```tsx
+import { MendyUIProvider } from "@mendylanda/ui";
+import { he } from "@mendylanda/ui/locales/he";
+
+<MendyUIProvider locale={he}>
+  <YourTablesAndFilters />
+</MendyUIProvider>;
+```
+
+Use `messages` for individual wording overrides, or `defineLocale` to create a private dictionary with English fallbacks. Complete contributed dictionaries use the `MendyMessages` type. Application labels and values remain application-owned; locale changes preserve IDs and saved state. See [Localization](https://ui.mendylanda.com/docs/localization) for the live English/Hebrew example, Next.js usage, and formatting.

@@ -86,7 +86,7 @@ export function FilterMenuPanel({
   const detached = desktop && menuLayout !== "connected";
   const setContent = useAnchoredPointerEvents(content, detached);
   const editorPanel = useRef<HTMLDivElement>(null);
-  const editorOffset = useEditorOffset({
+  const editorPlacement = useEditorOffset({
     detached,
     editorPanel,
     content,
@@ -238,11 +238,13 @@ export function FilterMenuPanel({
             ref={editorPanel}
             data-slot="filter-menu-editor"
             onPointerEnter={pointer.cancel}
-            style={detached ? { marginTop: editorOffset } : undefined}
+            style={detached ? { marginTop: editorPlacement.offset } : undefined}
             className={cn(
               "flex min-h-0 min-w-0 max-h-[calc(var(--filter-menu-height)-2px)] flex-col",
               detached &&
-                "pointer-events-auto -ms-px overflow-hidden rounded-md rounded-s-none border bg-popover text-popover-foreground",
+                "pointer-events-auto -ms-px overflow-hidden rounded-md border bg-popover text-popover-foreground",
+              detached && editorPlacement.joinTop && "rounded-ss-none",
+              detached && editorPlacement.joinBottom && "rounded-es-none",
             )}
           >
             <EditorHeading

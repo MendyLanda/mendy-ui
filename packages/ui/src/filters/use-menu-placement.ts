@@ -75,7 +75,7 @@ export function useEditorOffset({
   rows: RefObject<Map<string, HTMLButtonElement>>;
   selectedId?: string;
 }) {
-  const [editorOffset, setEditorOffset] = useState(0);
+  const [placement, setPlacement] = useState({ offset: 0, joinTop: false, joinBottom: false });
   const measured = useRef({ id: selectedId, height: 0 });
   useLayoutEffect(() => {
     if (!detached) return;
@@ -85,7 +85,7 @@ export function useEditorOffset({
     const update = () => {
       const row = rows.current.get(selectedId ?? "");
       if (!row) {
-        setEditorOffset(0);
+        setPlacement({ offset: 0, joinTop: false, joinBottom: false });
         return;
       }
       const rootTop = root.getBoundingClientRect().top;
@@ -103,7 +103,28 @@ export function useEditorOffset({
       // open upward even on a tall viewport, instead of dangling below the list.
       const latestTop = Math.max(rootTop, Math.min(listBottom, viewportBottom - 16) - height);
       const preferredTop = row.getBoundingClientRect().top - 5;
-      setEditorOffset(Math.max(0, Math.min(preferredTop, latestTop) - rootTop));
+      const offset = Math.max(0, Math.min(preferredTop, latestTop) - rootTop);
+      const listBounds = list?.getBoundingClientRect();
+      const listStyle = list ? getComputedStyle(list) : undefined;
+      const radiusLimit = listBounds ? Math.min(listBounds.width, listBounds.height) / 2 : 0;
+      const topRadius = Math.min(parseFloat(listStyle?.borderStartEndRadius ?? "0"), radiusLimit);
+      const bottomRadius = Math.min(parseFloat(listStyle?.borderEndEndRadius ?? "0"), radiusLimit);
+      const straightTop = (listBounds?.top ?? rootTop) + topRadius;
+      const straightBottom = listBottom - bottomRadius;
+      // The editor's inline-start corners are square only against the straight
+      // part of the list's inline-end edge. Use actual height here: search can
+      // shrink the editor while its anchored offset deliberately stays put.
+      const top = rootTop + offset;
+      const bottom = top + currentHeight;
+      const joinTop = top >= straightTop && top < straightBottom;
+      const joinBottom = bottom > straightTop && bottom <= straightBottom;
+      setPlacement((previous) =>
+        previous.offset === offset &&
+        previous.joinTop === joinTop &&
+        previous.joinBottom === joinBottom
+          ? previous
+          : { offset, joinTop, joinBottom },
+      );
     };
     update();
     const observer = new ResizeObserver(update);
@@ -118,7 +139,7 @@ export function useEditorOffset({
     };
   }, [detached, selectedId, editorPanel, content, rows]);
 
-  return editorOffset;
+  return placement;
 }
 
 /** Only the visible panels receive pointer events; the positioner's empty area does not. */

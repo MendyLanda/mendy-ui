@@ -32,6 +32,23 @@ export function TableConsumerFixture() {
   const params = new URLSearchParams(location.search);
   const [long, setLong] = useState(false);
   const definitions = defineFilters({
+    ...(params.has("corners")
+      ? Object.fromEntries(
+          Array.from({ length: 9 }, (_, index) => [
+            `choice${index}`,
+            filter.select({
+              label: `Choice ${index + 1}`,
+              searchable: index === 0,
+              options: Array.from({ length: index === 0 ? 20 : 2 }, (_, i) => ({
+                value: String(i),
+                label: `Option ${i + 1}`,
+              })),
+              getValue: (v) => v.value,
+              getLabel: (v) => v.label,
+            }),
+          ]),
+        )
+      : {}),
     status: filter.select({
       label: long ? "כותרת ארוכה ".repeat(80) : "מצב הפרויקט",
       searchable: false,

@@ -14,6 +14,10 @@ const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 if (manifest.name !== "@mendylanda/ui") throw new Error("Unexpected package.");
 const stableVersion = manifest.version;
 const count = Number(execFileSync("git", ["rev-list", "--count", sha], { encoding: "utf8" }));
+const previousManifest = JSON.parse(
+  execFileSync("git", ["show", `${sha}^:packages/ui/package.json`], { encoding: "utf8" }),
+);
+let releaseCommit = previousManifest.version !== stableVersion;
 
 async function registry(path) {
   const response = await fetch(
@@ -84,11 +88,23 @@ const releaseResponse = await fetch(
 if (!releaseResponse.ok && releaseResponse.status !== 404) {
   throw new Error(`GitHub release lookup returned ${releaseResponse.status}`);
 }
+let stable = false;
 if (releaseResponse.ok) {
   const release = await releaseResponse.json();
   const tagSha = execFileSync("git", ["rev-parse", `v${stableVersion}^{commit}`], {
     encoding: "utf8",
   }).trim();
-  if (!release.draft && !release.prerelease && tagSha === sha) await publish(stableVersion, true);
+  if (tagSha === sha) {
+    releaseCommit = true;
+    stable = !release.draft && !release.prerelease;
+  }
 }
-await publish(developmentVersion(stableVersion, count, sha), false);
+// Release Please and CI run independently. A version bump whose release is not
+// ready must never accidentally publish a development snapshot instead.
+if (releaseCommit && !stable) {
+  throw new Error(
+    `Release commit ${sha} is waiting for a published v${stableVersion} release at that exact commit. Retry after Prepare release succeeds.`,
+  );
+}
+if (stable) await publish(stableVersion, true);
+else await publish(developmentVersion(stableVersion, count, sha), false);

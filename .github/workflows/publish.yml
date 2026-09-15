@@ -72,7 +72,7 @@ jobs:
         run: |
           mkdir release-package
           tar -xzf checked-package/*.tgz -C release-package
-      - name: Publish eligible stable release and development snapshot
+      - name: Publish stable release or development snapshot
         run: node scripts/release/publish.mjs
         env:
           RELEASE_SHA: ${{ needs.source.outputs.sha }}

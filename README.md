@@ -55,7 +55,7 @@ Run `pnpm package:pack` to create an installable archive in `artifacts/`. Read [
 
 ## Website deployment
 
-GitHub Actions checks the package, packed consumers, and site. Successful main builds deploy to Cloudflare Workers Static Assets using the existing repository secrets. Every successful main push also publishes a development package under `@dev`. Stable releases publish when you merge the automatically maintained release PR. See [RELEASING.md](RELEASING.md) for commit conventions, changelogs, and one-time npm setup.
+GitHub Actions checks the package, packed consumers, and site. Successful main builds deploy to Cloudflare Workers Static Assets using the existing repository secrets. Ordinary successful main pushes publish a development package under `@dev`. Merging the automatically maintained release PR publishes only the stable version; subsequent commits resume dev publishing. See [RELEASING.md](RELEASING.md) for commit conventions, changelogs, and one-time npm setup.
 
 The docs follow main. Use `npm install @mendylanda/ui@dev` to try unreleased changes, or the default `@latest` channel for stable releases.
 

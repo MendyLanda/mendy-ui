@@ -35,6 +35,7 @@ function runPublisher(fixture: Record<string, unknown> = {}) {
         fs.appendFileSync('commands.jsonl', JSON.stringify([command, args]) + '\\n');
         if (command === 'git' && args[0] === 'rev-list') return '17';
         if (command === 'git' && args[0] === 'rev-parse') return fixture.tagSha ?? '${sha}';
+        if (command === 'git' && args[0] === 'show') return JSON.stringify({version: fixture.parentVersion ?? '0.3.1'});
         if (command === 'npm' && args[0] === 'pack') return '[{"filename":"package.tgz"}]';
         if (command === 'npm' && args[0] === 'publish') return '';
         throw new Error('Unexpected subprocess');
@@ -91,24 +92,55 @@ test("ordinary main build uploads only dev and preserves package exports", () =>
   assert.deepEqual(run.manifest.exports, { ".": "./dist/index.js" });
 });
 
-test("stable publication requires a published release tag at the checked commit", () => {
-  const stable = runPublisher({ release: { draft: false, prerelease: false } });
+test("release commits publish only stable, with no development snapshot", () => {
+  const stable = runPublisher({
+    parentVersion: "0.3.0",
+    release: { draft: false, prerelease: false },
+  });
   assert.equal(stable.status, 0, stable.stderr);
   assert.deepEqual(
     stable.uploads.map(([, args]) => args.at(-1)),
-    ["latest", "dev"],
+    ["latest"],
   );
+  assert.equal(stable.manifest.version, "0.3.1");
+});
+
+test("release commits cannot fall back to dev before the published release is ready", () => {
   for (const fixture of [
+    {},
     { release: { draft: true } },
     { release: { prerelease: true } },
     { release: {}, tagSha: "b".repeat(40) },
   ]) {
-    const run = runPublisher(fixture);
+    const run = runPublisher({ parentVersion: "0.3.0", ...fixture });
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /waiting for a published v0\.3\.1 release at that exact commit/);
+    assert.equal(run.uploads.length, 0);
+  }
+});
+
+test("ordinary commits after a stable release resume dev publication", () => {
+  const run = runPublisher({
+    release: { draft: false, prerelease: false },
+    tagSha: "b".repeat(40),
+  });
+  assert.equal(run.status, 0, run.stderr);
+  assert.deepEqual(
+    run.uploads.map(([, args]) => args.at(-1)),
+    ["dev"],
+  );
+});
+
+test("stable retries do not create dev snapshots or roll latest backward", () => {
+  for (const latest of ["0.3.1", "0.4.0"]) {
+    const run = runPublisher({
+      parentVersion: "0.3.0",
+      release: { draft: false, prerelease: false },
+      existing: { "0.3.1": { gitHead: sha } },
+      tags: { latest },
+    });
     assert.equal(run.status, 0, run.stderr);
-    assert.deepEqual(
-      run.uploads.map(([, args]) => args.at(-1)),
-      ["dev"],
-    );
+    assert.equal(run.uploads.length, 0);
   }
 });
 

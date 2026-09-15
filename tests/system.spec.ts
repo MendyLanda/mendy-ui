@@ -151,6 +151,7 @@ for (const dark of [false, true])
     });
 
 test("predefined filters apply on the first click and open on the second", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/?tab=retained");
   await expect(page.locator('[data-slot="filter-chip"]')).toHaveCount(0);
   await page.getByRole("button", { name: "Apply Status filter" }).click();
@@ -554,13 +555,20 @@ test("suggestions keep their positions when applied and return when removed", as
   await assignee.evaluate(async (el) => {
     await Promise.all(el.parentElement!.getAnimations().map((a) => a.finished.catch(() => {})));
   });
-  const before = await assignee.boundingBox();
+  await page.evaluate(() => document.fonts.ready);
+  // Compare within the bar: browsers may scroll the page when activating a control.
+  const offsetFromSearch = async () => {
+    const chip = await assignee.boundingBox();
+    const search = await page.getByRole("searchbox", { name: "Search issues" }).boundingBox();
+    return chip!.y - search!.y;
+  };
+  const before = await offsetFromSearch();
   await status.click();
   await expect(
     page.getByRole("button", { name: "Apply Assignee filter", includeHidden: true }),
   ).toBeVisible();
   await dismissEditor(page);
-  expect((await assignee.boundingBox())?.y).toBe(before?.y);
+  expect(await offsetFromSearch()).toBe(before);
   await assignee.click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Edit Assignee filter" }).click();

@@ -9,11 +9,17 @@ async function dismissEditor(page: Page) {
 }
 
 async function openFilter(page: Page, name: string) {
-  await page.getByRole("button", { name: "Open filters" }).click();
-  await page
+  const trigger = page.getByRole("button", { name: "Open filters" });
+  const item = page
     .getByRole("dialog", { name: "Filters", exact: true })
-    .getByRole("button", { name, exact: true })
-    .click();
+    .getByRole("button", { name, exact: true });
+  if (await page.evaluate(() => matchMedia("(pointer: coarse)").matches)) {
+    await trigger.tap();
+    await item.tap();
+  } else {
+    await trigger.click();
+    await item.click();
+  }
 }
 
 async function addStatus(page: Page, value = "Todo") {

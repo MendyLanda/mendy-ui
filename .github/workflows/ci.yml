@@ -10,7 +10,7 @@ concurrency:
   group: mendy-ui-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  check:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,29 +21,139 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint && pnpm format && pnpm build && pnpm typecheck
-      - run: pnpm exec playwright install --with-deps chromium firefox webkit
       - name: Unit tests
         run: pnpm test:unit
-      - name: Browser interaction and accessibility
-        run: pnpm test
-      - name: Large-collection stress checks
-        run: STRESS_BROWSERS=chromium,firefox,webkit pnpm test:stress
-      - name: Fresh package consumers
-        run: pnpm verify:consumers
       - run: pnpm package:pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: checked-build
+          path: |
+            out/
+            packages/ui/dist/
+          retention-days: 3
       - uses: actions/upload-artifact@v4
         with:
           name: mendy-ui-package
           path: artifacts/*.tgz
+
+  browser:
+    name: Browser (${{ matrix.project }})
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: desktop
+            browser: chromium
+          - project: mobile
+            browser: chromium
+          - project: firefox
+            browser: firefox
+          - project: webkit
+            browser: webkit
+          - project: webkit-mobile
+            browser: webkit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: checked-build
+      - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Browser interaction and accessibility
+        run: pnpm test --project=${{ matrix.project }} --workers=2
       - uses: actions/upload-artifact@v4
         if: always() && !cancelled()
         with:
-          name: playwright-report
+          name: playwright-${{ matrix.project }}
           path: playwright-report/
           if-no-files-found: ignore
-      - name: Deploy
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        run: pnpm exec wrangler deploy
+
+  stress:
+    name: Stress (${{ matrix.browser }})
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: checked-build
+      - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Large-collection stress checks
+        run: node tests/stress/run.mjs
+        env:
+          STRESS_BROWSERS: ${{ matrix.browser }}
+          STRESS_OUTPUT: artifacts/stress
+      - uses: actions/upload-artifact@v4
+        if: always() && !cancelled()
+        with:
+          name: stress-${{ matrix.browser }}
+          path: artifacts/stress/
+          if-no-files-found: ignore
+
+  consumers:
+    name: Fresh package consumers
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: checked-build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm verify:consumers
+
+  check:
+    name: check
+    if: always()
+    needs: [build, browser, stress, consumers]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all checks to pass
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -e 'all(.[]; .result == "success")'
+
+  deploy:
+    name: Deploy
+    needs: [check, build]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: checked-build
+      - run: pnpm exec wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

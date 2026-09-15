@@ -76,6 +76,15 @@ export async function chipChecks(browser, check) {
       const { context, page } = await fixture();
       try {
         await page.getByRole("button", { name: "ready", exact: true }).click();
+        await expect(
+          page.getByRole("button", { name: "Edit Custom filter", exact: true }),
+        ).toContainText("Ada Lovelace");
+        // Establish the fixture before testing rapid handoffs. Entrance motion can
+        // otherwise move a different chip under the pointer between down and up.
+        for (const chip of await page.locator('[data-slot="filter-chip-entrance"]').all()) {
+          await expect(chip).toHaveCSS("transform", "none");
+          await expect(chip).toHaveCSS("opacity", "1");
+        }
         for (let i = 0; i < 10; i++) {
           await page.getByRole("button", { name: "Edit Status filter", exact: true }).click();
           await page.getByRole("button", { name: "Edit Custom filter", exact: true }).click();

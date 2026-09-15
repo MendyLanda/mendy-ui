@@ -552,9 +552,9 @@ test("suggestions keep their positions when applied and return when removed", as
   await page.goto("/");
   const status = page.getByRole("button", { name: "Apply Status filter" });
   const assignee = page.getByRole("button", { name: "Apply Assignee filter" });
-  await assignee.evaluate(async (el) => {
-    await Promise.all(el.parentElement!.getAnimations().map((a) => a.finished.catch(() => {})));
-  });
+  await expect(
+    page.locator('[data-slot="filter-chip-entrance"]').filter({ has: assignee }),
+  ).toHaveCSS("transform", "none");
   await page.evaluate(() => document.fonts.ready);
   // Compare within the bar: browsers may scroll the page when activating a control.
   const offsetFromSearch = async () => {

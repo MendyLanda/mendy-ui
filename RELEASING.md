@@ -28,7 +28,7 @@ Release Please updates the root/package versions and manifest together. Do not b
 
 `fix` and `perf` produce patches; `feat` produces a minor. Mark incompatible changes with `!` or a `BREAKING CHANGE:` footer. Before 1.0, breaking changes produce a minor; from 1.0 they produce a major. For an intentional version override such as 1.0.0, use Release Please's `Release-As: 1.0.0` commit footer and review the generated PR.
 
-Release PRs use the built-in `GITHUB_TOKEN`. Because bot-created PRs do not trigger ordinary PR workflows, **Prepare release** explicitly dispatches CI on the release branch. No personal GitHub token is required.
+Release PRs use the built-in `GITHUB_TOKEN`. GitHub holds bot-triggered PR workflows for approval, so **Prepare release** explicitly dispatches CI on the release branch and reports its result as **Release checks** on the PR. You can ignore the redundant approval-required run. No personal GitHub token is required.
 
 ## Commit messages
 

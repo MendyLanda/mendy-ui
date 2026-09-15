@@ -71,3 +71,20 @@ test("query state examples expose loading, errors and recovery with accessible m
     }
   }
 });
+
+test("sheet documentation uses the packaged component and guards its example form", async ({
+  page,
+}) => {
+  await page.goto("/docs/components/sheet");
+  await page.getByRole("button", { name: "Open project", exact: true }).click();
+  const sheet = page.getByRole("dialog", { name: "Website", exact: true });
+  await expect(sheet).toBeVisible();
+  await expect(sheet).toHaveAccessibleDescription(
+    "Edit the name, pin this sheet, or open a related record.",
+  );
+  await sheet.getByRole("textbox", { name: "Project name", exact: true }).fill("Draft");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("alertdialog")).toBeVisible();
+  await page.getByRole("button", { name: "Discard changes", exact: true }).click();
+  await expect(sheet).toHaveCount(0);
+});

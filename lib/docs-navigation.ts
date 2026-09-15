@@ -31,6 +31,10 @@ export const docsGroups = [
     ],
   },
   {
+    title: "Sheet",
+    pages: [{ url: "/docs/components/sheet", title: "Overview & API" }],
+  },
+  {
     title: "Shared",
     pages: [
       { url: "/docs/localization", title: "Localization" },

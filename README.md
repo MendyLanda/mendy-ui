@@ -19,7 +19,7 @@ import "@mendylanda/ui/styles.css";
 | [Table](https://ui.mendylanda.com/docs/components/table)     | `@mendylanda/ui/table`   | Typed columns, virtual scrolling, sorting, resizing, pinning, selection, copying, and persistent preferences. |
 | [Filters](https://ui.mendylanda.com/docs/components/filters) | `@mendylanda/ui/filters` | Typed definitions, search, menus, editable chips, dynamic options, recognition, and optional URL persistence. |
 
-Use either component independently or pass a filter controller to `DataTable` to connect them. Your application owns queries, permissions, and data matching. The package owns shared interaction behavior.
+Use each component independently or pass a filter controller to `DataTable` to connect them. Your application owns queries, permissions, and data matching. The package owns shared interaction behavior.
 
 React 19 is required. Compiled, scoped CSS is included; Tailwind and nuqs are optional. Both components use your application's semantic colors, font, and radius. See [installation](https://ui.mendylanda.com/docs/installation), [styling](https://ui.mendylanda.com/docs/customization), and [keyboard behavior](https://ui.mendylanda.com/docs/accessibility).
 
@@ -62,3 +62,25 @@ The docs follow main. Use `npm install @mendylanda/ui@dev` to try unreleased cha
 ## Attribution
 
 See [NOTICE.md](NOTICE.md), [LICENSE](LICENSE), and [third-party licenses](THIRD_PARTY_LICENSES).
+
+## Sheet
+
+Side panels with automatic stacking, pinning, and guarded dismissal.
+
+```tsx
+import { Sheet, SheetProvider } from "@mendylanda/ui/sheet";
+
+<SheetProvider>
+  <Sheet>
+    <Sheet.Trigger>Open project</Sheet.Trigger>
+    <Sheet.Content>
+      <Sheet.Header title="Project" />
+      <Sheet.Body>Project details</Sheet.Body>
+    </Sheet.Content>
+  </Sheet>
+</SheetProvider>;
+```
+
+Use `useSheetCloseGuard(isDirty)` inside a form to protect unsaved changes. Use `useSheets().open({ id, render })` for instances that survive route navigation, with the provider mounted above the router outlet. Reload restoration is opt-in and stores identifiers, not form drafts. English, Hebrew, logical start/end placement, and reduced motion use the shared library settings.
+
+See the [Sheet guide](https://ui.mendylanda.com/docs/components/sheet) for controlled state, composition, persistence, and API details.

@@ -1,0 +1,185 @@
+---
+title: Sheet
+description: Side panels with automatic stacking, pinning, keyboard controls, and unsaved-change protection.
+---
+
+A sheet keeps a record or form alongside the page. Open another and the library places them side by side when they fit. On a smaller screen, the newest sheet covers the previous one. Pin a sheet to keep working in the page without closing it.
+
+<SheetDemo />
+
+## Start with a sheet
+
+Import the package stylesheet once in your application. No Tailwind configuration is required.
+
+```tsx
+import { Sheet, SheetProvider } from "@mendylanda/ui/sheet";
+import "@mendylanda/ui/styles.css";
+
+function ProjectPage() {
+  return (
+    <SheetProvider>
+      <Sheet>
+        <Sheet.Trigger>Edit project</Sheet.Trigger>
+        <Sheet.Content>
+          <Sheet.Header title="Edit project" />
+          <Sheet.Body>Project form</Sheet.Body>
+          <Sheet.Footer>
+            <Sheet.Close>Close</Sheet.Close>
+          </Sheet.Footer>
+        </Sheet.Content>
+      </Sheet>
+    </SheetProvider>
+  );
+}
+```
+
+The header includes pin and close buttons. Body scrolls independently while the header and footer stay visible. A standalone `Sheet` creates a local provider automatically. Use one shared provider when multiple sheets should coordinate, and give it `className="flex-1"` when it should fill a flex layout.
+
+Always provide a title through `Sheet.Header title` or `Sheet.Title`. Pass `description` to the header for a description. Use `asChild` on Trigger and Close to reuse your own buttons without nested button elements.
+
+## Defaults
+
+- Opens at the logical end edge, right in English and left in Hebrew, with a desired width of 520 CSS pixels.
+- Tiles floating sheets when their combined widths fit; otherwise shows the newest and keeps covered sheets mounted but inert.
+- Pins sheets beside the page and reserves their width in the provider's page wrapper. At least 320 pixels remain for the page. Pinning is unavailable below 768 pixels.
+- On narrower windows, pinned sheets return to the regular stack without forgetting their pinned state. They dock again when space returns.
+- Escape and a backdrop click request closing the top floating sheet. With only pinned sheets, Escape requests closing the most recently opened sheet. Clicking another visible sheet does not dismiss either one.
+- `P` pins the top eligible sheet when focus is outside a text input, editable area, or menu. Use the pin button to unpin.
+- Opening and repositioning animate, respecting reduced motion. Set `animation={false}` on the provider or content to disable motion.
+- Controls and close confirmations use the shared locale and theme. Square and rounded themes both inherit `--radius`.
+
+## Controlled state
+
+```tsx
+<Sheet open={open} onOpenChange={setOpen} width={640} side="end">
+  <Sheet.Content>
+    <Sheet.Header title="Project details" />
+    <Sheet.Body>
+      <ProjectDetails />
+    </Sheet.Body>
+  </Sheet.Content>
+</Sheet>
+```
+
+`defaultOpen` and `defaultPinned` support uncontrolled state. `pinned` and `onPinnedChange` make pin state controlled. `pinnable={false}` hides the pin action. Explicit changes to your controlled `open` prop are authoritative; use the sheet's close action when a close request should pass through guards.
+
+## Protect unsaved changes
+
+Register a guard inside the sheet's form. Multiple forms can register independently. Inline message objects are supported.
+
+```tsx
+import { useSheetCloseGuard } from "@mendylanda/ui/sheet";
+
+function ProjectForm() {
+  const form = useProjectForm();
+  useSheetCloseGuard(form.isDirty);
+  return <form>{/* fields */}</form>;
+}
+```
+
+Close, Escape, backdrop clicks, and `useSheets().close(id)` all consult the guard. The confirmation offers Keep editing, Discard changes, and Pin sheet when available. Pinning keeps the form mounted; it does not submit or save it. This guard does not intercept browser navigation, page reloads, or a parent unmounting a declarative sheet.
+
+## Keep sheets across navigation
+
+Use provider-managed instances for a sheet that must outlive the route that opened it. Put the provider above your router outlet, inside your authentication, query, and theme providers.
+
+```tsx
+import { Sheet, SheetProvider, useSheets } from "@mendylanda/ui/sheet";
+
+function App() {
+  return (
+    <SheetProvider>
+      <RouterOutlet />
+    </SheetProvider>
+  );
+}
+
+function ProjectLink({ projectId }: { projectId: string }) {
+  const sheets = useSheets();
+  return (
+    <button
+      onClick={() =>
+        sheets.open({
+          id: `project:${projectId}`,
+          render: () => <ProjectSheet projectId={projectId} />,
+        })
+      }
+    >
+      Open project
+    </button>
+  );
+}
+
+function ProjectSheet({ projectId }: { projectId: string }) {
+  return (
+    <Sheet.Content>
+      <Sheet.Header title="Project" />
+      <Sheet.Body>
+        <ProjectForm projectId={projectId} />
+      </Sheet.Body>
+    </Sheet.Content>
+  );
+}
+```
+
+Opening the same `id` focuses the existing instance and preserves its state. Managed content renders beneath `SheetProvider`, so it inherits providers above that provider, not route-local context. Pass record identifiers explicitly and fetch current data inside the content. Use a declarative sheet when route-local context and route-owned lifetime are preferable.
+
+## Restore pinned records after reload
+
+Persistence is opt-in. It stores record identifiers and pin order, not React elements, fetched data, or unsaved form drafts. The resolver returns content synchronously; that content can fetch its record asynchronously and render its own loading or error state.
+
+```tsx
+<SheetProvider
+  persistence={{
+    key: `project-sheets:${userId}:${workspaceId}`,
+    resolve(record) {
+      if (record.type !== "project" || typeof record.payload !== "string") return null;
+      return <ProjectSheet projectId={record.payload} />;
+    },
+  }}
+>
+  <RouterOutlet />
+</SheetProvider>
+```
+
+```tsx
+sheets.open({
+  id: `project:${projectId}`,
+  render: () => <ProjectSheet projectId={projectId} />,
+  persist: { type: "project", payload: projectId },
+});
+```
+
+The default storage is `sessionStorage`. Supply a `storage` implementing `getItem` and `setItem` to change it. Return `null` for unrecognized or inaccessible records. Use `onError` to report storage or resolver failures. Changing the persistence key resets managed instances, so scope it to the current user and workspace. Restoration never changes your URL or router configuration.
+
+## API
+
+| Export                                 | Purpose                                                                                                                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SheetProvider`                        | Coordinates sheets and reserves pinned space. Props: `animation`, `persistence`, `className`, `children`.                                                                                        |
+| `Sheet`                                | Controlled or uncontrolled open and pinned state. Props: `id`, `open`, `defaultOpen`, `onOpenChange`, `pinned`, `defaultPinned`, `onPinnedChange`, `pinnable`, `side`, `width`, `onBeforeClose`. |
+| `Sheet.Content`                        | Portaled panel. Accepts Radix Dialog content props, `className`, `style`, and `animation`.                                                                                                       |
+| `Sheet.Header`                         | `title`, `description`, `actions`, and built-in controls. Use `controls={false}` for a custom header.                                                                                            |
+| `Sheet.Body`, `Sheet.Footer`           | Scrollable content and fixed footer, accepting div props.                                                                                                                                        |
+| `Sheet.Trigger`, `Sheet.Close`         | Trigger and guarded close, with `asChild` support.                                                                                                                                               |
+| `Sheet.Pin`                            | Localized pin/unpin button; omitted when pinning is unavailable.                                                                                                                                 |
+| `Sheet.Title`, `Sheet.Description`     | Accessible naming for custom compositions.                                                                                                                                                       |
+| `useSheet()`                           | Current `open`, `pinned`, `docked` state and `close`, `pin`, `unpin` actions. `pinned` is intent; `docked` reflects available screen space.                                                      |
+| `useSheets()`                          | Provider controller: `open(options)`, `close(id)`, `closeTop()`, `pin(id)`, `unpin(id)`.                                                                                                         |
+| `useSheetCloseGuard(dirty, messages?)` | Protect local edits. Optional messages: `title`, `description`, `confirm`, `cancel`.                                                                                                             |
+
+Named exports such as `SheetContent` and `SheetHeader` are available alongside `Sheet.Content` and `Sheet.Header`.
+
+`onBeforeClose(reason)` may return `false` to reject a close request before the dirty guard runs. Reasons are `close-button`, `escape`, `outside`, and `programmatic`. The callback is synchronous. `onOpenChange` runs after a permitted close or confirmed discard.
+
+For shared translations, custom controls, and theme tokens, see [Localization](/docs/localization) and [Styling](/docs/customization).
+
+## Performance
+
+Typing in a guarded form does not update the sheet stack. `useSheet()` subscribes to open and pin state, so resizing panels does not rerender form contents. Viewport events are coalesced into one layout update per animation frame, and unchanged geometry keeps the same store snapshot.
+
+Covered sheets remain mounted to preserve drafts. Their own timers, subscriptions, and queries continue running; keep expensive application work bounded. Closing a managed sheet releases its rendered content after its exit animation.
+
+The browser suite exercises a stack of 24 sheets with 100 fields each, repeated open/close cycles, and CPU-throttled pin/unpin cycles. It checks content rerenders and DOM cleanup, with Chromium checks for listener and heap growth.
+
+When route-driven sheets load asynchronously, set `order` on `Sheet` to the opening sequence. This prevents an earlier request that finishes loading later from covering a newer sheet.

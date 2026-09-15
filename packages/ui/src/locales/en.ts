@@ -1,6 +1,15 @@
 import type { MendyLocale } from "../locale.js";
 
 export const englishMessages = {
+  sheetClose: "Close sheet",
+  sheetPin: "Pin sheet",
+  sheetUnpin: "Unpin sheet",
+  sheetUnsavedTitle: "Unsaved changes",
+  sheetUnsavedDescription: "Your changes will be lost if you close this sheet.",
+  sheetUnsavedPinDescription:
+    "Pin this sheet to keep your changes while you use the page, or discard them and close it.",
+  sheetKeepEditing: "Keep editing",
+  sheetDiscard: "Discard changes",
   search: "Search",
   searchOrFilter: "Search or filter",
   clearSearch: "Clear search",

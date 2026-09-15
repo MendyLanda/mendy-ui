@@ -5,6 +5,15 @@ export const he = {
   code: "he-IL",
   direction: "rtl",
   messages: {
+    sheetClose: "סגירת החלונית",
+    sheetPin: "הצמדת החלונית",
+    sheetUnpin: "ביטול הצמדת החלונית",
+    sheetUnsavedTitle: "שינויים שלא נשמרו",
+    sheetUnsavedDescription: "השינויים שלך יאבדו אם החלונית תיסגר.",
+    sheetUnsavedPinDescription:
+      "אפשר להצמיד את החלונית כדי לשמור את השינויים בזמן השימוש בעמוד, או לבטל אותם ולסגור אותה.",
+    sheetKeepEditing: "המשך עריכה",
+    sheetDiscard: "ביטול השינויים",
     search: "חיפוש",
     searchOrFilter: "חיפוש או סינון",
     clearSearch: "ניקוי החיפוש",

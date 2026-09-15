@@ -1,1 +1,4 @@
-{ "title": "Components", "pages": ["table", "filters"] }
+{
+  "title": "Components",
+  "pages": ["table", "filters", "sheet"]
+}

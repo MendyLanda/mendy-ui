@@ -10,9 +10,10 @@ I build components I want to use in my own projects, then keep their behavior in
 | Component                           | Start here                                      | What it owns                                                                                 |
 | ----------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | [Table](/docs/components/table)     | Supply rows, typed columns, and stable row IDs. | Rendering, virtualization, sorting, column controls, selection, copying, and loading states. |
+| [Sheet](/docs/components/sheet)     | Supply content and open state.                  | Stacking, pinning, focus, controls, and unsaved-change protection.                           |
 | [Filters](/docs/components/filters) | Define fields and choose a state hook.          | Search, option editors, applied chips, recognition, focus, and optional URL persistence.     |
 
-Your application owns its data queries, permissions, mutations, and matching rules. Neither component requires a particular API or router.
+Your application owns its data queries, permissions, mutations, and matching rules. No component requires a particular API or router.
 
 ## Install once
 
@@ -22,7 +23,7 @@ Your application owns its data queries, permissions, mutations, and matching rul
 import "@mendylanda/ui/styles.css";
 ```
 
-Both components share the stylesheet and your application's theme. Use React 19 and TypeScript. Tailwind is optional; Next.js and Vite consumers are tested against the built package. The [installation guide](/docs/installation) covers framework setup and Tailwind 3.
+All components share the stylesheet and your application's theme. Use React 19 and TypeScript. Tailwind is optional; Next.js and Vite consumers are tested against the built package. The [installation guide](/docs/installation) covers framework setup and Tailwind 3.
 
 ## Pick your level of control
 
@@ -34,6 +35,7 @@ A table does not require filters. A filter bar does not require a table. Passing
 
 - **Table:** [columns](/docs/table/columns), [layout](/docs/table/layout), [queries](/docs/table/data), [selection](/docs/table/selection), and [API](/docs/table/api).
 - **Filters:** [defaults](/docs/defaults), [definitions and state](/docs/system), [asynchronous options](/docs/advanced), and [API](/docs/api).
+- **Sheet:** [stacking, pinning, persistence, and API](/docs/components/sheet).
 - **Shared:** [styling](/docs/customization) and [keyboard behavior](/docs/accessibility).
 
 ## Ownership and license

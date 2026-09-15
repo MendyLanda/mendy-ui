@@ -2,6 +2,7 @@ import type { ComponentProps } from "react";
 import { ComponentSource } from "@/components/component-source";
 import { CopyButton } from "@/components/copy-button";
 import { InstallCommand } from "@/components/install-command";
+import { SheetDemo } from "@/examples/sheet-demo";
 import { FiltersDemo } from "@/examples/filters-demo";
 import { TextFilterDemo } from "@/examples/text-filter-demo";
 import { CustomFilterDemo } from "@/examples/custom-filter-demo";
@@ -11,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 // Typography and highlighted-code rendering adapted from startercn.
 export const mdxComponents = {
+  SheetDemo,
   AdvancedFiltersDemo,
   ProjectFiltersDemo,
   ComponentSource,

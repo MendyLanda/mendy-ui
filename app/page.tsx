@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, SlidersHorizontal, Table2 } from "lucide-react";
+import { ArrowRight, SlidersHorizontal, Table2, PanelRight } from "lucide-react";
 import { InstallCommand } from "@/components/install-command";
 import { ComponentSource } from "@/components/component-source";
 import { FiltersDemo } from "@/examples/filters-demo";
@@ -14,7 +14,7 @@ export default function HomePage() {
             Mendy UI
           </h1>
           <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
-            My collection of React components. Currently, Table and Filters: the components I use
+            My collection of React components. Table, Filters, and Sheet: the components I use
             across projects, with the small interactions already taken care of.
           </p>
           <Link
@@ -45,7 +45,7 @@ export default function HomePage() {
         </div>
         <ComponentSource name="filters-demo" />
       </section>
-      <section className="mt-12 grid gap-6 sm:grid-cols-2" aria-label="Components">
+      <section className="mt-12 grid gap-6 sm:grid-cols-3" aria-label="Components">
         <Link
           href="/docs/components/table"
           className="group rounded-xl border p-6 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
@@ -70,6 +70,18 @@ export default function HomePage() {
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Search, menus, editable chips, and typed state. Use it with a table, a list, or anywhere
             your application needs filters.
+          </p>
+        </Link>
+        <Link
+          href="/docs/components/sheet"
+          className="group rounded-xl border p-6 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <PanelRight className="mb-5 size-5 text-muted-foreground" aria-hidden="true" />
+          <h2 className="flex items-center justify-between text-xl font-medium">
+            Sheet <ArrowRight className="size-4" aria-hidden="true" />
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Side panels with automatic stacking, pinning, and protection for unsaved changes.
           </p>
         </Link>
       </section>

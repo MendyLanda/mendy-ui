@@ -55,6 +55,8 @@ import { useState } from "react";
 import { defineFilters, filter, FilterBar, useFilters, FilterRoot, FilterFieldEditor, MendyUIProvider } from "@mendylanda/ui/filters";
 import { Input } from "@mendylanda/ui/primitives/input";
 import { DataTable, defineColumns } from "@mendylanda/ui/table";
+import { Sheet, SheetProvider } from "@mendylanda/ui/sheet";
+import { Popover, PopoverTrigger, PopoverContent } from "@mendylanda/ui/primitives/popover";
 const tableColumns = defineColumns<{id:string;title:string}>(column => [column.accessor("title",{label:"Title"})]);
 const tableRows = [{id:"one",title:"First item"},{id:"two",title:"Second item"}];
 import type { MendyUIComponents } from "@mendylanda/ui/filters";
@@ -81,6 +83,7 @@ export default function App() {
     </div>
     <DataTable rows={tableRows} columns={tableColumns} getRowId={row=>row.id} label="Consumer table" height={180} />
     <section aria-label="Integrated table"><DataTable filters={tableFilters} rows={tableRows.filter(row=>row.title.toLowerCase().includes(tableFilters.search.toLowerCase()))} columns={tableColumns} getRowId={row=>row.id} label="Filtered consumer table" /></section>
+<SheetProvider animation={false}><Sheet><Sheet.Trigger>Open consumer sheet</Sheet.Trigger><Sheet.Content><Sheet.Header title="Consumer sheet"/><Sheet.Body>Portable sheet content<Popover><PopoverTrigger>Sheet popup</PopoverTrigger><PopoverContent><button>Popup option</button></PopoverContent></Popover></Sheet.Body></Sheet.Content></Sheet></SheetProvider>
     <output aria-label="Current values">{JSON.stringify(filters.values)}</output>
   </main>;
 }
@@ -359,6 +362,18 @@ for (const framework of ["vite", "next", "tailwind3"]) {
             .getByRole("button", { name: "Edit Status filter" }),
         ).toBeVisible();
       }
+      await page.getByRole("button", { name: "Open consumer sheet", exact: true }).click();
+      const sheet = page.getByRole("dialog", { name: "Consumer sheet", exact: true });
+      await expect(sheet).toBeVisible();
+      await expect(sheet).toHaveCSS("position", "fixed");
+      await expect(sheet).toHaveCSS("animation-name", "none");
+      await sheet.getByRole("button", { name: "Sheet popup" }).click();
+      await expect(page.getByRole("button", { name: "Popup option" })).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("button", { name: "Popup option" })).toHaveCount(0);
+      await expect(sheet).toBeVisible();
+      await page.getByRole("button", { name: "Close sheet", exact: true }).click();
+      await expect(sheet).toHaveCount(0);
       expect(errors).toEqual([]);
       await context.close();
     }

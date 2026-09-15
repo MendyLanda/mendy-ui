@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { SITE } from "@/constants/site";
 export const dynamic = "force-static";
-export const alt = "Mendy UI. React components by Mendy Landa. Table and Filters.";
+export const alt = "Mendy UI. React components by Mendy Landa. Table, Filters, and Sheet.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export default function Image() {

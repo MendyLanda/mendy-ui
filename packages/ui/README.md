@@ -1,8 +1,8 @@
 # Mendy UI
 
-React components by Mendy Landa. My collection currently includes Table and Filters, maintained in one package and shared across projects.
+React components by Mendy Landa. My collection currently includes Table, Filters, and Sheet, maintained in one package and shared across projects.
 
-Use either component independently or connect them. [Documentation and live examples](https://ui.mendylanda.com).
+Use each component independently or connect them. [Documentation and live examples](https://ui.mendylanda.com).
 
 ```sh
 npm install @mendylanda/ui
@@ -131,7 +131,7 @@ See [defaults and app configuration](https://ui.mendylanda.com/docs/defaults) fo
 
 ## Localization
 
-English is the default for Table and Filters. Set Hebrew once for built-in text, calendar labels, accessible announcements, and RTL behavior:
+English is the default for Table, Filters, and Sheet. Set Hebrew once for built-in text, calendar labels, accessible announcements, and RTL behavior:
 
 ```tsx
 import { MendyUIProvider } from "@mendylanda/ui";
@@ -143,3 +143,25 @@ import { he } from "@mendylanda/ui/locales/he";
 ```
 
 Use `messages` for individual wording overrides, or `defineLocale` to create a private dictionary with English fallbacks. Complete contributed dictionaries use the `MendyMessages` type. Application labels and values remain application-owned; locale changes preserve IDs and saved state. See [Localization](https://ui.mendylanda.com/docs/localization) for the live English/Hebrew example, Next.js usage, and formatting.
+
+## Sheet
+
+Side panels with automatic stacking, pinning, and guarded dismissal.
+
+```tsx
+import { Sheet, SheetProvider } from "@mendylanda/ui/sheet";
+
+<SheetProvider>
+  <Sheet>
+    <Sheet.Trigger>Open project</Sheet.Trigger>
+    <Sheet.Content>
+      <Sheet.Header title="Project" />
+      <Sheet.Body>Project details</Sheet.Body>
+    </Sheet.Content>
+  </Sheet>
+</SheetProvider>;
+```
+
+Use `useSheetCloseGuard(isDirty)` inside a form to protect unsaved changes. Use `useSheets().open({ id, render })` for instances that survive route navigation, with the provider mounted above the router outlet. Reload restoration is opt-in and stores identifiers, not form drafts. English, Hebrew, logical start/end placement, and reduced motion use the shared library settings.
+
+See the [Sheet guide](https://ui.mendylanda.com/docs/components/sheet) for controlled state, composition, persistence, and API details.

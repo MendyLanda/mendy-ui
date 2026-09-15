@@ -503,3 +503,24 @@ test("opening and focusing categories does not open an editor", async ({ page, i
     await expect(page.getByRole("dialog")).toHaveCount(0);
   }
 });
+
+test("delayed initial focus does not undo keyboard navigation", async ({ page, isMobile }) => {
+  test.skip(isMobile, "Desktop keyboard navigation");
+  await page.addInitScript(() => {
+    window.requestAnimationFrame = (callback) =>
+      window.setTimeout(() => callback(performance.now()), 250);
+    window.cancelAnimationFrame = (handle) => window.clearTimeout(handle);
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open filters", exact: true }).click();
+  const menu = page.getByRole("dialog", { name: "Filters", exact: true });
+  const status = menu.getByRole("button", { name: "Status", exact: true });
+  await status.evaluate((button) => {
+    button.focus();
+    button.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+  });
+  const priority = menu.getByRole("button", { name: "Priority", exact: true });
+  await expect(priority).toBeFocused();
+  await page.waitForTimeout(400);
+  await expect(priority).toBeFocused();
+});

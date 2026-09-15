@@ -109,6 +109,13 @@ export function FilterMenuPanel({
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
+      const active = document.activeElement;
+      // A slow frame must not reset navigation or an editor the user already entered.
+      if (
+        active !== content.current &&
+        (content.current?.contains(active) || editor.current?.contains(active))
+      )
+        return;
       const first =
         rows.current.get(initialSelection.current ?? "") ??
         [...rows.current.values()].find((button) => !button.disabled);

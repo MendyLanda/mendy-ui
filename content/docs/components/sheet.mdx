@@ -44,7 +44,7 @@ Always provide a title through `Sheet.Header title` or `Sheet.Title`. Pass `desc
 - Pins sheets beside the page and reserves their width in the provider's page wrapper. At least 320 pixels remain for the page. Pinning is unavailable below 768 pixels.
 - On narrower windows, pinned sheets return to the regular stack without forgetting their pinned state. They dock again when space returns.
 - Escape and a backdrop click request closing the top floating sheet. With only pinned sheets, Escape requests closing the most recently opened sheet. Clicking another visible sheet does not dismiss either one.
-- `P` pins the top eligible sheet when focus is outside a text input, editable area, or menu. Use the pin button to unpin.
+- `P` pins the top eligible sheet when focus is outside a text input, editable area, or menu. Once pinned, the pin control disappears; use Close to dismiss the sheet.
 - Opening and repositioning animate, respecting reduced motion. Set `animation={false}` on the provider or content to disable motion.
 - Controls and close confirmations use the shared locale and theme. Square and rounded themes both inherit `--radius`.
 
@@ -162,7 +162,7 @@ The default storage is `sessionStorage`. Supply a `storage` implementing `getIte
 | `Sheet.Header`                         | `title`, `description`, `actions`, and built-in controls. Use `controls={false}` for a custom header.                                                                                            |
 | `Sheet.Body`, `Sheet.Footer`           | Scrollable content and fixed footer, accepting div props.                                                                                                                                        |
 | `Sheet.Trigger`, `Sheet.Close`         | Trigger and guarded close, with `asChild` support.                                                                                                                                               |
-| `Sheet.Pin`                            | Localized pin/unpin button; omitted when pinning is unavailable.                                                                                                                                 |
+| `Sheet.Pin`                            | Localized pin button; hidden once pinned or when pinning is unavailable.                                                                                                                         |
 | `Sheet.Title`, `Sheet.Description`     | Accessible naming for custom compositions.                                                                                                                                                       |
 | `useSheet()`                           | Current `open`, `pinned`, `docked` state and `close`, `pin`, `unpin` actions. `pinned` is intent; `docked` reflects available screen space.                                                      |
 | `useSheets()`                          | Provider controller: `open(options)`, `close(id)`, `closeTop()`, `pin(id)`, `unpin(id)`.                                                                                                         |

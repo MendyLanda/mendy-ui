@@ -2,7 +2,7 @@
 import type { ComponentProps, ReactNode } from "react";
 import { useContext, useId, useLayoutEffect, useMemo } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Pin, PinOff, X } from "lucide-react";
+import { Pin, X } from "lucide-react";
 import { Button } from "../customization.js";
 import { useMendyLocale } from "../locale-context.js";
 import { cn } from "../utils.js";
@@ -40,24 +40,22 @@ export function SheetClose({ onClick, ...props }: ComponentProps<typeof Dialog.C
 export function SheetPin({ onClick, ...props }: ComponentProps<typeof Button>) {
   const instance = useSheetInstance();
   const { t } = useMendyLocale();
-  if (!instance.pinned && !instance.layout?.canPin) return null;
+  if (instance.pinned || !instance.layout?.canPin) return null;
   return (
     <Button
       type="button"
       variant="ghost"
       size="icon"
       {...props}
-      aria-label={props["aria-label"] ?? t(instance.pinned ? "sheetUnpin" : "sheetPin")}
-      aria-pressed={instance.pinned}
-      aria-keyshortcuts={instance.pinned ? undefined : "P"}
-      title={props.title ?? (instance.pinned ? t("sheetUnpin") : `${t("sheetPin")} (P)`)}
+      aria-label={props["aria-label"] ?? t("sheetPin")}
+      aria-keyshortcuts="P"
+      title={props.title ?? `${t("sheetPin")} (P)`}
       onClick={(event) => {
         onClick?.(event);
-        if (!event.defaultPrevented) instance.setPinned(!instance.pinned);
+        if (!event.defaultPrevented) instance.setPinned(true);
       }}
     >
-      {props.children ??
-        (instance.pinned ? <PinOff aria-hidden="true" /> : <Pin aria-hidden="true" />)}
+      {props.children ?? <Pin aria-hidden="true" />}
     </Button>
   );
 }

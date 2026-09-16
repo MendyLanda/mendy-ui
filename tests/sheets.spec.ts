@@ -40,6 +40,8 @@ test("every close route guards unsaved changes and pin retains them", async ({
       .getByRole("button", { name: "Pin sheet", exact: true })
       .click();
     await expect(page.locator("[data-mendy-sheet-overlay]")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^(Pin|Unpin) sheet$/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Close sheet", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Navigate" }).click();
     await expect(page.locator("[data-route]")).toHaveText("second");
     await expect(page.getByRole("textbox", { name: "Name", exact: true })).toHaveValue(
@@ -114,6 +116,7 @@ test("managed ids deduplicate; reload restores pinned identifiers without rewrit
   await page.reload();
   await expect(page.locator('[data-sheet-id="one"]')).toHaveAttribute("data-pinned", "true");
   await expect(page).toHaveURL(`${url}/?instant`);
+  await expect(page.getByRole("button", { name: /^(Pin|Unpin) sheet$/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Close sheet", exact: true }).click();
   await expect
     .poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem("sheet-test")!).sheets))

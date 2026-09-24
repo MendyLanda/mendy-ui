@@ -140,11 +140,12 @@ export function TableView<T extends object>({
     rowSelectionControls,
   );
   const focused = table.getFocusedCell();
+  const selectionFocusColumn = table.atoms.cellSelection.get().at(-1)?.focusColumnId;
   const { columns, columnGaps, cellStyle } = useColumnWindow(
     layout,
     container,
     viewportWidth,
-    focused?.column.id,
+    selectionFocusColumn ?? focused?.column.id,
     !autoRowHeight,
   );
   const columnIndexes = useMemo(

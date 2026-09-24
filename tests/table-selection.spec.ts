@@ -14,6 +14,138 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1200, height: 800 });
 });
 
+test("Meta and Control with Shift select to each table edge while keeping the anchor", async ({
+  page,
+}) => {
+  await page.goto("http://127.0.0.1:8796/?rows=20&columns=6");
+  const cell = page.locator('[data-row-id="5"][data-column-id="column-2"]');
+  const activeRange = () =>
+    page.evaluate(() => {
+      const { table } =
+        window as unknown as import("./table-performance/types").PerformanceHarnessWindow;
+      return table.atoms.cellSelection.get().at(-1);
+    });
+
+  await page.locator('[data-row-id="0"][data-column-id="column-0"]').focus();
+  await page.keyboard.press("Control+Shift+ArrowDown");
+  expect(await activeRange()).toMatchObject({
+    anchorRowId: "0",
+    anchorColumnId: "column-0",
+    focusRowId: "19",
+    focusColumnId: "column-0",
+  });
+
+  for (const modifier of ["Meta", "Control"]) {
+    for (const [arrow, rowId, columnId] of [
+      ["ArrowUp", "0", "column-2"],
+      ["ArrowDown", "19", "column-2"],
+      ["ArrowLeft", "5", "column-0"],
+      ["ArrowRight", "5", "column-5"],
+    ]) {
+      await cell.click();
+      await page.keyboard.press(`${modifier}+Shift+${arrow}`);
+      expect(await activeRange()).toMatchObject({
+        anchorRowId: "5",
+        anchorColumnId: "column-2",
+        focusRowId: rowId,
+        focusColumnId: columnId,
+      });
+      await expect(
+        page.locator(`[data-row-id="${rowId}"][data-column-id="${columnId}"]`),
+      ).toHaveAttribute("aria-selected", "true");
+    }
+  }
+
+  await cell.click();
+  await page.keyboard.press("Shift+ArrowDown");
+  await page.keyboard.press("Control+Shift+ArrowRight");
+  expect(await activeRange()).toMatchObject({
+    anchorRowId: "5",
+    anchorColumnId: "column-2",
+    focusRowId: "6",
+    focusColumnId: "column-5",
+  });
+  await page.keyboard.press("Control+Shift+ArrowLeft");
+  expect(await activeRange()).toMatchObject({
+    anchorRowId: "5",
+    anchorColumnId: "column-2",
+    focusRowId: "6",
+    focusColumnId: "column-0",
+  });
+
+  await page.evaluate(() => {
+    const { table } =
+      window as unknown as import("./table-performance/types").PerformanceHarnessWindow;
+    table.setSorting([{ id: "column-1", desc: true }]);
+  });
+  await cell.click();
+  await page.keyboard.press("Control+Shift+ArrowUp");
+  expect(await activeRange()).toMatchObject({
+    anchorRowId: "5",
+    focusRowId: "19",
+  });
+
+  await page.goto("http://127.0.0.1:8796/?rows=20&columns=6&disableFirstSelection");
+  await page.locator('[data-row-id="0"][data-column-id="column-1"]').focus();
+  await page.keyboard.press("Control+Shift+ArrowDown");
+  expect(await activeRange()).toMatchObject({
+    anchorRowId: "0",
+    anchorColumnId: "column-1",
+    focusRowId: "19",
+    focusColumnId: "column-1",
+  });
+});
+
+test("selection shortcuts leave a cell editor's text interaction alone", async ({ page }) => {
+  await page.goto("http://127.0.0.1:8796/?rows=20&columns=6&editor");
+  const editor = page.getByRole("textbox", { name: "Edit 5" });
+  await editor.click();
+  await page.keyboard.press("Control+Shift+ArrowRight");
+  await expect(editor).toBeFocused();
+  expect(
+    await page.evaluate(() => {
+      const { table } =
+        window as unknown as import("./table-performance/types").PerformanceHarnessWindow;
+      return table.atoms.cellSelection.get();
+    }),
+  ).toEqual([]);
+});
+
+test("edge selection follows displayed rows and selectable columns across virtualization", async ({
+  page,
+}) => {
+  await page.goto("http://127.0.0.1:8796/?rows=10000&columns=30&disableLastSelection");
+  await page.evaluate(() => {
+    const { table } =
+      window as unknown as import("./table-performance/types").PerformanceHarnessWindow;
+    table.setColumnVisibility({ "column-0": false });
+  });
+  await page.locator('[data-row-id="5"][data-column-id="column-2"]').click();
+  await page.keyboard.press("Control+Shift+ArrowRight");
+  await page.keyboard.press("Control+Shift+ArrowDown");
+  const selected = await page.evaluate(() => {
+    const { table } =
+      window as unknown as import("./table-performance/types").PerformanceHarnessWindow;
+    return { range: table.atoms.cellSelection.get().at(-1), count: table.getSelectedCellCount() };
+  });
+  expect(selected.range).toMatchObject({
+    anchorRowId: "5",
+    anchorColumnId: "column-2",
+    focusRowId: "9999",
+    focusColumnId: "column-28",
+  });
+  expect(selected.count).toBe(9995 * 27);
+  await expect(page.locator('[data-row-id="9999"][data-column-id="column-28"]')).toBeFocused();
+  await page.keyboard.press("Shift+ArrowUp");
+  expect(
+    await page.evaluate(() => {
+      const { table } =
+        window as unknown as import("./table-performance/types").PerformanceHarnessWindow;
+      return table.atoms.cellSelection.get().at(-1)?.focusRowId;
+    }),
+  ).toBe("9998");
+});
+
 test("copy survives scrolling the focused selection out of the viewport and back", async ({
   page,
 }) => {

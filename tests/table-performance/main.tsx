@@ -15,8 +15,8 @@ function App() {
   const [data, setData] = useState(rows);
   // Deliberately inline: changing captured values must never leave stale cells.
   const columns = defineColumns<Item>((c) =>
-    Array.from({ length: columnCount }, (_, i) =>
-      c.computed(`column-${i}`, (row) => row.value + i, {
+    Array.from({ length: columnCount }, (_, i) => ({
+      ...c.computed(`column-${i}`, (row) => row.value + i, {
         label: `Column ${i}`,
         size: 160,
         grow: false,
@@ -28,7 +28,11 @@ function App() {
           return `${row.value + i}:${revision}`;
         },
       }),
-    ),
+      enableCellSelection: !(
+        (params.has("disableFirstSelection") && i === 0) ||
+        (params.has("disableLastSelection") && i === columnCount - 1)
+      ),
+    })),
   );
   const table = useDataTable({ rows: [...data], columns, getRowId: (row) => row.id });
   React.useLayoutEffect(() => {

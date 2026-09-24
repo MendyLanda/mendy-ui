@@ -165,10 +165,39 @@ export function useTableInteraction<T extends object>({
     const direction = directions[event.key];
     if (direction) {
       event.preventDefault();
-      if (!table.getFocusedCell() && rows[0] && columns[0])
-        table.setFocusedCell(rows[0].id, columns[0].id);
-      else if (event.shiftKey) table.extendCellSelection(direction);
-      else table.moveCellSelection(direction);
+      const hadFocusedCell = Boolean(table.getFocusedCell());
+      if (!hadFocusedCell && rows[0]) {
+        const firstSelectable = columns.find(
+          (column) => column.columnDef.enableCellSelection !== false,
+        );
+        if (firstSelectable) table.setFocusedCell(rows[0].id, firstSelectable.id);
+      }
+      if (event.shiftKey && (event.metaKey || event.ctrlKey)) {
+        const selectableColumns = columns.filter(
+          (column) => column.columnDef.enableCellSelection !== false,
+        );
+        const targetRow = direction === "up" ? rows[0] : rows.at(-1);
+        const targetColumn = direction === "left" ? selectableColumns[0] : selectableColumns.at(-1);
+        if (rows.length && selectableColumns.length) {
+          table.setCellSelection((ranges) => {
+            const active = ranges.at(-1);
+            if (!active) return ranges;
+            return [
+              ...ranges.slice(0, -1),
+              {
+                ...active,
+                focusRowId:
+                  direction === "up" || direction === "down" ? targetRow!.id : active.focusRowId,
+                focusColumnId:
+                  direction === "left" || direction === "right"
+                    ? targetColumn!.id
+                    : active.focusColumnId,
+              },
+            ];
+          });
+        }
+      } else if (hadFocusedCell && event.shiftKey) table.extendCellSelection(direction);
+      else if (hadFocusedCell) table.moveCellSelection(direction);
       const range = table.atoms.cellSelection.get().at(-1);
       if (range) focusCell(range.focusRowId, range.focusColumnId);
     } else if (event.key === "Enter" && focused && onRowActivate) {

@@ -5,7 +5,7 @@ description: Select cells, select records, and export the intended data.
 
 ## Cell and row selection
 
-Click and drag to select cells. Shift extends a selection; arrow keys move between cells. Copy uses displayed column order and preserves blank cells in disjoint selections. Buttons, links, disclosure controls, inputs, and native text selections retain their own interaction.
+Click and drag to select cells. Arrow keys move between cells, and Shift+Arrow extends the selection one cell at a time. Command+Shift+Arrow on Mac, or Control+Shift+Arrow on Windows, extends it to the first or last displayed row or selectable column in that direction. Copy uses displayed column order and preserves blank cells in disjoint selections. Buttons, links, disclosure controls, inputs, and native text selections retain their own interaction.
 
 `onRowClick` handles a single click and becomes the Enter action when `onRowActivate` is absent. Supply both callbacks when a single click selects a row while double-click or Enter opens it. Selected rows receive the table highlight automatically. `isRowHighlighted` can add another application-owned highlight. Enable `enableRowSelection` to show checkboxes inside the first visible column. They appear on row hover, keyboard focus, or selection, and stay visible on touch screens. Space toggles a focused checkbox. The header checkbox selects the loaded rows, so loading another page does not silently select its records.
 

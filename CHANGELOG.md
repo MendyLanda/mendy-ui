@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.0](https://github.com/MendyLanda/mendy-ui/compare/v0.4.2...v0.5.0) (2026-09-24)
+
+
+### Features
+
+* **sheet:** add stacked sheets with pinning and guarded forms ([22deaa0](https://github.com/MendyLanda/mendy-ui/commit/22deaa0e96652fd09d9b4de517b4fd511797a565))
+* **table:** select to edges with modified arrow keys ([5a6956b](https://github.com/MendyLanda/mendy-ui/commit/5a6956b935fcee501a7aba15284e8d0a2636c6d1))
+
+
+### Fixes
+
+* **filters:** preserve navigation when initial focus is delayed ([b44a972](https://github.com/MendyLanda/mendy-ui/commit/b44a9721f450b4f8ce6e0bb3dc7e9e76452d2649))
+* **sheet:** hide pin control after pinning ([eaaf58b](https://github.com/MendyLanda/mendy-ui/commit/eaaf58b8af54105f1c6de74c527ff896a6af1e7f))
+
+
+### Performance
+
+* **sheet:** keep viewport resizing immediate ([e3417be](https://github.com/MendyLanda/mendy-ui/commit/e3417befc4d534f2cb6ddb33c3d31b6322c34147))
+
 ## [0.4.2](https://github.com/MendyLanda/mendy-ui/compare/v0.4.1...v0.4.2) (2026-09-15)
 
 

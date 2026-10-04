@@ -149,11 +149,13 @@ const filters = useControlledFilters({
 
 An existing state's field type must match its definition. Use `filter.options` for general string IDs, and literal option types for existing enums. Optional state fields read as the definition's default when undefined.
 
-## Existing debounced search
+## Responsive search
 
-`useFilterSearch(value, onChange, delay = 300)` keeps the input responsive while writes to an existing URL hook are debounced. It clears immediately, cancels pending writes on unmount, and keeps older URL acknowledgements from replacing newer typing.
+`FilterBar` and `FilterRoot` keep typing local and apply the main search after a 300 ms pause. This works with `useFilters`, `useUrlFilters`, and `useControlledFilters`. The controller's `search` is the applied query for matching data; the input preserves the exact typed text, including spaces. Applied queries are trimmed. Enter applies immediately, except while composing text. Clearing, pasting recognized filters, and selecting a filter cancel the timer and apply immediately with the current search draft. Closing the root or an external search/filter change discards pending typing. Older acknowledgements preserve newer typing.
 
-When replacing `controller.search` and `controller.setSearch` with this draft, also wrap `clear` to call `search.setValue("")` and `controller.clear()`. A custom search input with its own debounce must cancel pending writes on `meta.source === "clear"`. New projects using `useFilters` or `useUrlFilters` do not need this separate draft adapter.
+Set `searchDebounceMs` on the bar or root to change the delay. Set it to `0` to use immediate controller writes or retain an existing draft adapter. Calls to the controller outside the root remain immediate.
+
+For a standalone input, `useFilterSearch(value, onChange, delay = 300, options?)` returns `value`, `setValue`, and `flush`. It clears immediately, cancels pending writes on unmount, and preserves newer typing when an older applied value arrives. Empty searches call `onChange(null)`. Values are unchanged by default; pass `{ normalize: (text) => text.trim() }` to normalize applied queries while retaining the input text. Pass an applied filter or scope key as `options.context` so external changes also cancel unfinished typing. Call `flush()` on Enter. A custom clear-all action must call `setValue("")` as well as clearing its applied filters.
 
 ## Grouped fields
 

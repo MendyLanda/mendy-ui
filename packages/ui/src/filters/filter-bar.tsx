@@ -6,6 +6,7 @@ import { FilterCollection } from "./filter-collection.js";
 import type { ReactNode } from "react";
 import type { Choice, RuntimeField, SummaryPolicy } from "./filter-definition.js";
 import type { FilterController } from "./use-filters.js";
+import { useBufferedFilters } from "./use-buffered-filters.js";
 import type { FilterEntry, PasteAmbiguity } from "./filter-state.js";
 import {
   createContext,
@@ -63,6 +64,7 @@ export interface FilterMenuGroup {
 interface RootContext {
   direction: "ltr" | "rtl";
   filters: FilterController;
+  flushSearch(): void;
   summary: SummaryPolicy;
   closeMenuOnApply: boolean;
   suggestions: "when-empty" | "always" | "never";
@@ -96,6 +98,8 @@ function useRoot() {
 export interface FilterRootProps {
   classNames?: FilterClassNames;
   filters: FilterController;
+  /** Apply main search after a typing pause. Set 0 for immediate writes or an existing draft adapter. */
+  searchDebounceMs?: number;
   summary?: SummaryPolicy;
   /** Keep the filter menu open for applying more filters by default. */
   closeMenuOnApply?: boolean;
@@ -113,7 +117,8 @@ export function FilterRoot({ classNames, ...props }: FilterRootProps) {
   );
 }
 function FilterRootContent({
-  filters,
+  filters: appliedFilters,
+  searchDebounceMs = 300,
   summary = defaultSummary,
   suggestions = "always",
   closeMenuOnApply = false,
@@ -122,6 +127,7 @@ function FilterRootContent({
   className,
   children,
 }: FilterRootProps) {
+  const { filters, flushSearch } = useBufferedFilters(appliedFilters, searchDebounceMs);
   const { classNames } = useMendyUI();
   const locale = useMendyLocale();
   // Server HTML must not accept edits that React cannot handle yet. Client-only
@@ -144,6 +150,7 @@ function FilterRootContent({
     () => ({
       direction,
       filters,
+      flushSearch,
       summary,
       suggestions,
       closeMenuOnApply,
@@ -154,7 +161,17 @@ function FilterRootContent({
       ambiguous,
       setAmbiguous,
     }),
-    [filters, summary, suggestions, closeMenuOnApply, groups, disabled, ambiguous, direction],
+    [
+      filters,
+      flushSearch,
+      summary,
+      suggestions,
+      closeMenuOnApply,
+      groups,
+      disabled,
+      ambiguous,
+      direction,
+    ],
   );
   return (
     <FilterOptionCache.Provider value={cache}>
@@ -190,7 +207,7 @@ export function FilterBar({
   );
 }
 export function FilterSearch({ label, placeholder }: { label?: string; placeholder?: string }) {
-  const { filters, trigger, disabled, setAmbiguous, direction } = useRoot();
+  const { filters, flushSearch, trigger, disabled, setAmbiguous, direction } = useRoot();
   const { t } = useMendyLocale();
   const { classNames } = useMendyUI();
   const anchor = useRef<HTMLDivElement>(null);
@@ -248,6 +265,8 @@ export function FilterSearch({ label, placeholder }: { label?: string; placehold
                 event.preventDefault();
                 const result = filters.paste(event.currentTarget.value, { before: "", after: "" });
                 setAmbiguous(result.ambiguous);
+              } else {
+                flushSearch();
               }
             }
           }}

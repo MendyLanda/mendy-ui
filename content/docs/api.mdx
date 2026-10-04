@@ -12,6 +12,7 @@ Start with `FilterBar`. It renders search, the filter menu, applied chips, sugge
 | `filters`                 | Required controller from `useFilters`, `useUrlFilters`, or `useControlledFilters` |
 | `searchLabel`             | `Search`; accessible label for the search input                                   |
 | `searchPlaceholder`       | `Search or filter`                                                                |
+| `searchDebounceMs`        | `300`; main-search typing pause in milliseconds. `0` uses immediate writes        |
 | `showClear`               | `true`; show Clear all when a removable filter is active                          |
 | `summary`                 | `{ mode: "count", limit: 3 }`; individual fields can override it                  |
 | `suggestions`             | `"always"`; also accepts `"when-empty"` and `"never"`                             |
@@ -44,7 +45,7 @@ When placing `FilterClear` elsewhere, set `<FilterList showClear={false} />` to 
 | `useUrlFilters(definitions, options)`                            | Optional nuqs adapter from `@mendylanda/ui/filters/nuqs`; requires a persistence `scope`  |
 | `useControlledFilters({ definitions, value, onPatch, search? })` | Bind existing state without changing its shape                                            |
 | `useFilterController({ entries, value, search, apply })`         | Lower-level controller when you already have runtime entries                              |
-| `useFilterSearch(value, onChange, delay?)`                       | Responsive draft for an existing debounced search; clears immediately                     |
+| `useFilterSearch(value, onChange, delay?, options?)`             | Standalone search draft with immediate clear, `flush`, optional normalization and context |
 
 Controllers expose `values`, `search`, `entries`, `active`, `commit`, `batch`, `remove`, `clear`, `setSearch`, and `paste`, plus menu/editor state and feedback. `batch` applies one patch with optional search and source metadata. `clear` respects hidden, disabled, and non-removable fields. See [state and persistence](/docs/system#state-and-url-persistence) for URL settings and [binding existing state](/docs/system#binding-existing-state) for typed mappings.
 

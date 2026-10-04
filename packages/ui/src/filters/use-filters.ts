@@ -9,7 +9,8 @@ import type {
 } from "./filter-definition.js";
 import type { FilterEntry, PasteResult } from "./filter-state.js";
 import { useLayoutEffect, useRef, useState } from "react";
-import { classifyPaste, initialValues } from "./filter-state.js";
+import { initialValues } from "./filter-state.js";
+import { filterControllerActions } from "./filter-controller-actions.js";
 
 export interface FilterChange {
   source: "edit" | "remove" | "clear" | "paste" | "suggestion" | "search";
@@ -105,52 +106,14 @@ export function useFilterController<S>(options: ControllerOptions<S>): FilterCon
       if (!id) setError(null);
     },
     batch,
-    commit: (id, value, source) => batch({ [id]: value }, undefined, source),
-    remove(id) {
-      const entry = options.entries.find((item) => item.id === id);
-      if (entry?.field.removable !== false) {
-        batch({ [id]: entry?.field.clearValue }, undefined, "remove");
-        edit(null);
-      }
-    },
-    clear() {
-      batch(
-        Object.fromEntries(
-          options.entries.flatMap((entry) =>
-            entry.field.removable !== false && !entry.field.hidden && !entry.field.disabled
-              ? [[entry.id, entry.field.clearValue]]
-              : [],
-          ),
-        ),
-        "",
-        "clear",
-      );
-      edit(null);
-      setMenuOpen(false);
-      setOpenField(null);
-    },
-    setSearch: (search) => {
-      batch({}, search, "search");
-    },
-    paste(text, remainder) {
-      const result = classifyPaste(text, options.entries);
-      const unmatched = [...result.unmatched, ...result.ambiguous.map((item) => item.token)].join(
-        " ",
-      );
-      const search = remainder
-        ? [remainder.before, unmatched, remainder.after].filter(Boolean).join(" ")
-        : [options.search, unmatched].filter(Boolean).join(" ");
-      let cursor = [remainder ? remainder.before : options.search, result.unmatched.join(" ")]
-        .filter(Boolean)
-        .join(" ").length;
-      for (const item of result.ambiguous) {
-        if (cursor) cursor++;
-        item.searchRange = { start: cursor, end: cursor + item.token.length };
-        cursor += item.token.length;
-      }
-      batch(result.changes, search, "paste");
-      return result;
-    },
+    ...filterControllerActions({
+      entries: options.entries,
+      search: options.search,
+      batch,
+      edit,
+      setMenuOpen,
+      setOpenField,
+    }),
     error,
     shareable: true,
   };

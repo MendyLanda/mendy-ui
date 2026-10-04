@@ -1,47 +1,26 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useSearchDraft } from "./use-search-draft.js";
 
-/** Debounce URL-backed queries without replacing newer typing with an older URL acknowledgement. */
+export interface FilterSearchOptions {
+  /** Applied filters or another scope whose external changes discard unfinished typing. */
+  context?: string;
+  /** Normalize applied queries while preserving the exact text in the input. */
+  normalize?: (search: string) => string;
+}
+
+/** Buffer standalone search inputs; FilterRoot and FilterBar do this automatically. */
 export function useFilterSearch(
   value: string | null | undefined,
   onChange: (value: string | null) => void,
   delay = 300,
+  options: FilterSearchOptions = {},
 ) {
-  const committed = value ?? "";
-  const [state, setState] = useState({ committed, draft: committed });
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pending = useRef<string[]>([]);
-  const change = useRef(onChange);
-  useLayoutEffect(() => {
-    change.current = onChange;
+  const draft = useSearchDraft({
+    ...options,
+    value: value ?? "",
+    onApply: (search) => onChange(search || null),
+    delay,
   });
-  if (state.committed !== committed) {
-    setState({
-      committed,
-      draft: pending.current.includes(committed) ? state.draft : committed,
-    });
-  }
-  useLayoutEffect(() => {
-    const acknowledgement = pending.current.includes(committed);
-    pending.current = pending.current.filter((request) => request !== committed);
-    if (!acknowledgement && timer.current) clearTimeout(timer.current);
-  }, [committed]);
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
-  function setValue(next: string) {
-    if (timer.current) clearTimeout(timer.current);
-    setState((current) => ({ ...current, draft: next }));
-    function commit() {
-      if (next !== committed) pending.current.push(next);
-      change.current(next || null);
-    }
-    if (!next) commit();
-    else timer.current = setTimeout(commit, delay);
-  }
-  return { value: state.draft, setValue };
+  return { value: draft.value, setValue: draft.setValue, flush: draft.flush };
 }
